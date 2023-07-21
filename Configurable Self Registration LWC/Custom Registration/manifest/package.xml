@@ -22,5 +22,9 @@
         <members>User.Portal_Username__c</members>
         <name>CustomField</name>
     </types>
+    <types>
+        <members>Self_Registration_Log__c</members>
+        <name>CustomTab</name>
+    </types>
     <version>58.0</version>
 </Package>

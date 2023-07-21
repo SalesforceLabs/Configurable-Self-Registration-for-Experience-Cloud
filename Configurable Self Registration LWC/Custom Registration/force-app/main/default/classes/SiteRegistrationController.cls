@@ -1,16 +1,13 @@
 /***************************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce)
  * CREATE DATE    : 15/05/2023
+ * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
-
-/**
-* @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
-*/
 
 //TODO: Change 'without sharing' to 'sharing'?
 public without sharing class SiteRegistrationController {
 
-    //These maps are used to define fields that should be skipped from the registration form for creating User, Contact and Person Account.
+    //These maps are used to define fields that should be skipped from the registration form for creating External User, Contact and Person Account.
     public static Map<String, String> skipFieldDuringRegistration = new Map <String, String>{'password' => '','confirmPassword' => ''};
     public static Map<String, String> skipFieldDuringNewContactCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => ''};
     public static Map<String, String> skipFieldDuringNewPersonAccountCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => '', 'Email' => ''};
@@ -134,7 +131,7 @@ public without sharing class SiteRegistrationController {
             return !isUsernameValid; 
         }
 
-        messages.add('User with username ' +username + ' not found on NetworkId ' + networkId);
+        messages.add('User with username ' +username + ' not found on NetworkId ' + networkId + '. Username valid.');
         createLogEntry(loggingEnabled, String.join(messages,'\n'));
         return isUsernameValid;
     }
@@ -169,7 +166,10 @@ public without sharing class SiteRegistrationController {
 
         String pageUrl = null;
         Id record = null;
-        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions); 
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+       
+        System.debug('Configuration options: ' + configurationOptions);
+        System.debug('LWC Settings: ' + lwcSettings);
     
         try {
 
@@ -246,12 +246,61 @@ public without sharing class SiteRegistrationController {
      * @return returns a new ContactId on successful creation
      */
     @AuraEnabled
-    public static Contact createContact(String formInputs, String configurationOptions){
+    public static Id createContact(Map<String, Object> formInputs, Map<String, Object> configurationOptions){
+        Database.SaveResult srList = null;
+        Id recordId = null;
         try {
-            Contact contact = new Contact();
-           return contact; 
+            Contact newContact = new Contact();
+            newContact.put('AccountId', ConvertToString(configurationOptions.get('accountId')) );
+             
+            for(String key : formInputs.keySet()) {
+                if(!skipFieldDuringNewContactCreate.containsKey(key)) {
+                    newContact.put(key, formInputs.get(key));
+                }
+            }
+           srList = Database.insert(newContact, false);
+           if(srList.isSuccess()) {
+              return Id.valueOf(srList.getId());
+           }
+           return recordId; 
         } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
+            messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));
+            throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate')));
+        }
+    }
+
+    /**
+     * @description createPersonAccount description
+     * @param formInputs - JSON String of the submitted form values 
+     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+     * @return returns the Account Id (PersonAccount Id) on successful creation
+     */
+    @AuraEnabled
+    public static Id createPersonAccount(Map<String, Object> formInputs, Map<String, Object> configurationOptions){
+        Database.SaveResult srList = null;
+        Id recordId = null;
+        try {
+            Account newPersonAccount = new Account();
+            newPersonAccount.put('RecordTypeId', Id.valueOf(convertToString(configurationOptions.get('personAccountRecordTypeId'))));
+            for(String key : formInputs.keySet()) {
+                if(!skipFieldDuringNewPersonAccountCreate.containsKey(key)) {
+                    newPersonAccount.put(key, formInputs.get(key));
+                }
+                if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
+                    newPersonAccount.put('PersonEmail', formInputs.get(key)); 
+                }
+            }
+            //System.debug('Person Account to create' + newPersonAccount);
+            srList = Database.insert(newPersonAccount, false);
+            if(srList.isSuccess()) { 
+                return srList.getId();
+            }
+            return recordId;   
+        } catch (Exception e) {
+            messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));
+            throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate')));
         }
     }
 
@@ -262,46 +311,17 @@ public without sharing class SiteRegistrationController {
      * @return Id of the newly created record. Either Contact.AccountId if type is a Contact or Id if Person Account
      */
     public static Id createObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
-         
-        Database.SaveResult srList = null;
-
-        if(ConvertToString(configurationOptions.get('objectCreateType')) == 'N/A') {
+        if(ConvertToString(configurationOptions.get('objectCreateType'))  == 'Contact') {
+           return createContact(formInputs, configurationOptions);
+        }
+        else if(ConvertToString(configurationOptions.get('objectCreateType'))  == 'Person Account') {
+            return createPersonAccount(formInputs, configurationOptions);
+        }
+        else { //Object to create was set to 'N/A' which is not valid 
             messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
             createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
- 
-        if(ConvertToString(configurationOptions.get('objectCreateType'))  == 'Contact') {
-            Contact newContact = new Contact();
-            newContact.put('AccountId', ConvertToString(configurationOptions.get('accountId')) );
-             
-            for(String key : formInputs.keySet()) {
-                if(!skipFieldDuringNewContactCreate.containsKey(key)) {
-                    newContact.put(key, formInputs.get(key));
-                }
-            }
-            //System.debug('Contact to create' + newContact);
-            srList = Database.insert(newContact, false);
-        }
-        else { //It was a Person Account
-            Account newPersonAccount = new Account();
-            for(String key : formInputs.keySet()) {
-                if(!skipFieldDuringNewPersonAccountCreate.containsKey(key)) {
-                    newPersonAccount.put(key, formInputs.get(key));
-                }
-                if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
-                    newPersonAccount.put('PersonEmail', formInputs.get(key)); 
-                }
-            }
-            //System.debug('Person Account to create' + newPersonAccount);
-            srList = Database.insert(newPersonAccount, false); 
-        }
-
-        if(srList.isSuccess()) { //Operation was successful, for Contacts we need the AccountId. For Person Accounts, we use the Id of the record successfully created.
-            //System.debug('Successfully inserted record with ID: ' + srList.getId());
-            return ConvertToString(configurationOptions.get('objectCreateType'))  == 'Contact' ? ConvertToString(configurationOptions.get('accountId')) : srList.getId();      
-        }
-        throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate'))); 
     }
 
     /**
