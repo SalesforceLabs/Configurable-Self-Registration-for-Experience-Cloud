@@ -1,0 +1,95 @@
+<!-- ****************************************************************************
+ * AUTHOR         : Ekaterina Coburn
+ * CREATE DATE    : 05/05/2023
+ * PURPOSE        : Self Registration LWC component for Experience Builder pages
+ * SPECIAL NOTES  : Dependency on SiteRegistrationController.js class
+ * =============================================================================
+ * Change History :
+ ****************************************************************************-->
+
+ <template>
+    <div if:true={anyServerError} role="alert">
+        <span class="slds-text-color_destructive">{serverErrorMessage}</span>        
+    </div>
+
+    <div if:true={showComponentError} class="slds-is-relative slds-text-color_error">
+        <lightning-icon icon-name="utility:error" variant="error" alternative-text="Error!" title="Error" size="large"></lightning-icon> 
+        <lightning-formatted-text value={componentErrorMessage}></lightning-formatted-text>
+    </div>
+
+    <div if:true={showSpinner} class="slds-is-relative">
+        <lightning-spinner alternative-text="Loading..." role="status">
+        </lightning-spinner>
+    </div>
+
+    <div if:false={showComponentError}>
+        <lightning-input
+            type="text"
+            label="First Name"
+            name="FirstName"
+            onchange={handleOnChange}
+            field-level-help={fieldHelpFirstName}
+            required>
+        </lightning-input>
+
+        <lightning-input
+            type="text"
+            label="Last Name"
+            name="LastName"
+            onchange={handleOnChange}
+            field-level-help={fieldHelpLastName}
+            required>
+        </lightning-input>
+
+        <lightning-input
+            type="text"
+            label="Username"
+            name="Username"
+            onchange={handleOnChange}
+            field-level-help={fieldHelpUsername}
+            required>
+        </lightning-input>
+
+        <lightning-input
+            type="email"
+            label="Email"
+            name="Email"
+            onchange={handleOnChange}
+            field-level-help={fieldHelpEmail}
+            required>
+        </lightning-input>
+
+        <lightning-input
+            class="passwordCmp"
+            type="password"
+            name="password"
+            label="Password"
+            onchange={handleOnChange}
+            field-level-help={fieldHelpPassword}
+            required>
+        </lightning-input>
+
+        <lightning-input
+            class="confirmPasswordCmp"
+            type="password"
+            name="confirmPassword"
+            label="Confirm Password"            
+            onchange={handleOnChange}
+            field-level-help={fieldHelpPassword} 
+            required>
+        </lightning-input>
+
+        <!-- Custom Fields from a Custom Metadata created, and pulled in via setting on Component Property Panel -->
+        <template for:each={results} for:item="result">
+            <div key={result.fieldLabel}>
+                <lightning-input type={result.fieldType} label={result.fieldLabel} name={result.fieldName} field-level-help={result.fieldHelpText} message-when-pattern-mismatch={result.fieldMessage} pattern={result.fieldRegex} maxlength={result.fieldMaxLength} required={result.fieldRequired} onchange={handleOnChange}></lightning-input>
+            </div>
+        </template>
+    </div>
+
+    <div if:false={showComponentError} class="slds-col">
+        <div class="slds-align_absolute-center slds-var-m-top_small">
+            <lightning-button variant="brand" onclick={handleSignUpClick} disabled={isButtonDisabled} label={buttonLabel}></lightning-button>
+        </div>
+    </div>
+</template>
