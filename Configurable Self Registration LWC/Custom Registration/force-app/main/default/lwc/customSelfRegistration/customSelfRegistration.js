@@ -23,6 +23,7 @@ export default class customSelfRegistration extends LightningElement {
     @api createNotFound;
     @api objectCreateType;
     @api accountId;
+    @api personAccountRecordTypeId;
     @api enableCustomisation; 
     @api sendEmailConfirmation;
     @api accessLevelMode;
@@ -43,31 +44,8 @@ export default class customSelfRegistration extends LightningElement {
     @api fieldHelpPassword;
 
     @api results = null; //Results for custom configuration search
-    @track formInputs = {}; //Form values submitted.
-
-    //LWC Setting values - add to object to pass as one parameter to Apex
-    @api configurationOptions = {
-        'customQuery': this.customQuery,
-        'createNotFound': this.createNotFound,
-        'objectCreateType': this.objectCreateType,
-        'accountId': this.accountId, 
-        'enableCustomisation':  this.enableCustomisation,
-        'sendEmailConfirmation': this.sendEmailConfirmation,
-        'accessLevelMode': this.accessLevelMode,
-        'loggingEnabled': this.loggingEnabled,
-        'registerButtonSignUpMessage': this.registerButtonSignUpMessage,
-        'registerButtonWaitingMessage': this.registerButtonSignUpMessage,
-        'passwordMatchError': this.passwordMatchError,
-        'usernameTakenMessage': this.usernameTakenMessage,
-        'errorNoRecordFound': this.noRecordFoundError,
-        'errorOnCreate': this.errorOnCreate,
-        'portalLoginError': this.portalLoginError,
-        'fieldHelpFirstName': this.fieldHelpFirstName,
-        'fieldHelpLastName': this.fieldHelpLastName,
-        'fieldHelpUsername': this.fieldHelpUsername,
-        'fieldHelpEmail': this.fieldHelpEmail,
-        'fieldHelpPassword': this.fieldHelpPassword
-    }; 
+    @track formInputs = {}; //Form values submitted. 
+    configurationOptions = {};  //LWC Setting values - add to object to pass as one parameter to Apex 
 
     @api isButtonDisabled = false; 
     @api showSpinner = false;
@@ -182,9 +160,31 @@ export default class customSelfRegistration extends LightningElement {
 
         this._applyInputFormValidity();
 
+        //Add LWC configuration to the ConfigurationOptions object to pass to Apex as one parameter.
+        this.configurationOptions['customQuery'] = this.customQuery;
+        this.configurationOptions['createNotFound'] = this.createNotFound;
+        this.configurationOptions['objectCreateType'] = this.objectCreateType;
+        this.configurationOptions['accountId'] = this.accountId;
+        this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId, 
+        this.configurationOptions['enableCustomisation'] = this.enableCustomisation;
+        this.configurationOptions['sendEmailConfirmation'] = this.sendEmailConfirmation;
+        this.configurationOptions['accessLevelMode'] = this.accessLevelMode;
+        this.configurationOptions['loggingEnabled'] = this.loggingEnabled;
+        this.configurationOptions['registerButtonSignUpMessage'] = this.registerButtonSignUpMessage;
+        this.configurationOptions['registerButtonWaitingMessage'] = this.registerButtonSignUpMessage;
+        this.configurationOptions['passwordMatchError'] = this.passwordMatchError;
+        this.configurationOptions['usernameTakenMessage'] = this.usernameTakenMessage;
+        this.configurationOptions['errorNoRecordFound'] = this.noRecordFoundError;
+        this.configurationOptions['errorOnCreate'] = this.errorOnCreate;
+        this.configurationOptions['portalLoginError'] = this.portalLoginError;
+        this.configurationOptions['fieldHelpFirstName'] = this.fieldHelpFirstName;
+        this.configurationOptions['fieldHelpLastName'] = this.fieldHelpLastName;
+        this.configurationOptions['fieldHelpUsername'] = this.fieldHelpUsername;
+        this.configurationOptions['fieldHelpEmail'] = this.fieldHelpEmail;
+        this.configurationOptions['fieldHelpPassword'] = this.fieldHelpPassword;
+
         if(this._areAllInputFieldsValid()) {
             this.handleSubmit(true, this.registerButtonWaitingMessage, true);
-
             isValidUsername({
                 username: this.formInputs.Username,
                 loggingEnabled: this.loggingEnabled
