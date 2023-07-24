@@ -27,7 +27,13 @@
         <name>Create_Error_Log</name>
         <label>Create Error Log</label>
         <locationX>176</locationX>
-        <locationY>194</locationY>
+        <locationY>170</locationY>
+        <inputAssignments>
+            <field>Log_Type__c</field>
+            <value>
+                <elementReference>$Record.Log_Type__c</elementReference>
+            </value>
+        </inputAssignments>
         <inputAssignments>
             <field>Message__c</field>
             <value>
@@ -43,7 +49,7 @@
         <connector>
             <targetReference>Create_Error_Log</targetReference>
         </connector>
-        <object>Error_Log__e</object>
+        <object>Self_Registration_Event__e</object>
         <triggerType>PlatformEvent</triggerType>
     </start>
     <status>Active</status>

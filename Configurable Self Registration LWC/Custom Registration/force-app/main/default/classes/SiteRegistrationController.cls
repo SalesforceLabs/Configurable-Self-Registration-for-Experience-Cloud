@@ -49,7 +49,9 @@ public without sharing class SiteRegistrationController {
             for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c, Object_Name__c
                                                                    FROM Custom_Registration_Configuration__mdt 
                                                                    WHERE Portal_API_Name__c = :siteName
-                                                                   AND Object_Name__c = :sObjectName WITH SECURITY_ENFORCED]) {
+                                                                   AND Object_Name__c = :sObjectName
+                                                                   AND Active__c = true 
+                                                                   WITH SECURITY_ENFORCED]) {
            
                 if(String.isNotBlank(result)){
                     result += ',';
@@ -60,9 +62,17 @@ public without sharing class SiteRegistrationController {
                 jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
                 jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
                 jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '",';
-                jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '",'; 
-                jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '",';
                 jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '"';
+
+                if(String.isNotBlank(mapping.Field_Message__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '"';
+                }
+
+                if(String.isNotBlank(mapping.Field_Validation_REGEX__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
+                }
 
                 if(mapping.Field_Required__c) {
                     jsonPart += ',';
@@ -85,11 +95,12 @@ public without sharing class SiteRegistrationController {
      * @param message - a list of messages to store on the Platform Event
      */
     @AuraEnabled
-    public static void createLogEntry(Boolean loggingEnabled, String message){
-        try {
+    public static void createLogEntry(Boolean loggingEnabled, String message, String logType){
+       try {
             if(loggingEnabled) {
-                Error_Log__e newLog = new Error_Log__e();
+                Self_Registration_Event__e newLog = new Self_Registration_Event__e();
                 newLog.Message__c = message;
+                newLog.Log_Type__c = logType;
                 Eventbus.publish(newLog);
             } 
         } catch (Exception e) {
@@ -126,33 +137,44 @@ public without sharing class SiteRegistrationController {
         ];
 
         if(userList.size() >= 1) {
-            messages.add('User with username ' +username + ' already exists on NetworkId ' + networkId);
-            createLogEntry(loggingEnabled, String.join(messages,'\n'));    
+            messages.add('User with username ' +username + ' already exists on NetworkId ' + networkId + '. Username NOT valid.');
+            createLogEntry(loggingEnabled, String.join(messages,'\n'), 'Error');    
             return !isUsernameValid; 
         }
 
         messages.add('User with username ' +username + ' not found on NetworkId ' + networkId + '. Username valid.');
-        createLogEntry(loggingEnabled, String.join(messages,'\n'));
+        createLogEntry(loggingEnabled, String.join(messages,'\n'), 'Information');
         return isUsernameValid;
     }
 
     /**
      * @description Validates that the submitted password matches the Org's password policy.
-     * @param formInputs - JSON String of the submitted form values 
+     * @param formInputs - JSON String of the submitted form values
+     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
     @AuraEnabled
-    public static void validatePassword(String formInputs) {
-        User user = new User();
+    public static void validatePassword(String formInputs, String configurationOptions) {
+       
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        
+        try {
+            User user = new User();
     
-        for(String key : formJson.keySet()){
-            if(!skipFieldDuringRegistration.containsKey(key)) {
-                user.put(key, formJson.get(key));
+            for(String key : formJson.keySet()){
+                if(!skipFieldDuringRegistration.containsKey(key)) {
+                    user.put(key, formJson.get(key));
+                }
             }
-        }
 
-        user.CommunityNickname = generateCommunityNickname(convertToString(formJson.get('Username'))); 
-        Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword')));
+            user.CommunityNickname = generateCommunityNickname(convertToString(formJson.get('Username'))); 
+            Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword'))); 
+        }
+        catch (Exception ex) {
+           messages.add('An Unknown Error Occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formInputs);
+           createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+           throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
+        }
     }
 
     /**
@@ -165,41 +187,38 @@ public without sharing class SiteRegistrationController {
     public static String registerUser(String formInputs, String configurationOptions) { 
 
         String pageUrl = null;
-        Id record = null;
+        Id recordId = null;
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-       
-        System.debug('Configuration options: ' + configurationOptions);
-        System.debug('LWC Settings: ' + lwcSettings);
-    
+
         try {
 
             Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
            
             if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
                 messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + formJson);
-                record = getObject(formJson, lwcSettings);
-                messages.add('Record Id found was: ' + record);
+                recordId = getObject(formJson, lwcSettings);
+                messages.add('Record Id found was: ' + recordId);
             }
             
-            if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(record)) { 
+            if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(recordId)) { 
                 messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + 'Form Values: ' + formJson); 
-                record = createObject(formJson, lwcSettings);
-                messages.add('Created Record Id returned was: ' + record);   
+                recordId = createObject(formJson, lwcSettings);
+                messages.add('Created Record Id returned was: ' + recordId);   
             }
 
-            String userId = createExternalUser(formJson, record, ConvertToBoolean(lwcSettings.get('sendEmailConfirmation')));
+            String userId = createExternalUser(formJson, recordId, lwcSettings);
             if(String.isNotBlank(userId)) {
                 messages.add('External User Id created was: ' + userId);
                 pageUrl = loginUser(convertToString(formJson.get('Username')), convertToString(formJson.get('password')), lwcSettings);
             }
 
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'));
+            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
 
         } catch (AuraHandledException ex) {
             throw ex;
         } catch (Exception ex) {
             messages.add('An Unknown Error Occurred: ' + ex.getMessage());
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'));
+            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
 
@@ -234,7 +253,7 @@ public without sharing class SiteRegistrationController {
         }
         else { //No record found on specified query and CreateIfNotFound = False
             messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('errorNoRecordFound') + ' Form Values: ' + formInputs);
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));        
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
             throw new AuraHandledException(ConvertToString(configurationOptions.get('errorNoRecordFound'))); 
         }
     }
@@ -265,7 +284,7 @@ public without sharing class SiteRegistrationController {
            return recordId; 
         } catch (Exception e) {
             messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
             throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate')));
         }
     }
@@ -299,7 +318,7 @@ public without sharing class SiteRegistrationController {
             return recordId;   
         } catch (Exception e) {
             messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
             throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate')));
         }
     }
@@ -319,7 +338,7 @@ public without sharing class SiteRegistrationController {
         }
         else { //Object to create was set to 'N/A' which is not valid 
             messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
     }
@@ -347,15 +366,13 @@ public without sharing class SiteRegistrationController {
      * @description Attempts to create an external user which is linked to a Contact/Person Account that is found/created in other methods.
      * @param formInputs - JSON String of the submitted form values 
      * @param accountId - this is the AccountId that the External User is linked to.
-     * @param sendEmailConfirmation - controls whether an email confirmation is sent to the user from SF. Configurable from the Experience Builder panel.
+     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
      * @return String of External User Id created
      */
-    public static String createExternalUser(Map<String, Object> formInputs, Id accountId, Boolean sendEmailConfirmation) {
-        String userId = null;
-        
+    public static String createExternalUser(Map<String, Object> formInputs, Id accountId, Map<String, Object> configurationOptions) {
+        String userId = null; 
         User user = new User();
-        String password = convertToString(formInputs.get('password'));
-
+        
         for(String key : formInputs.keySet()) {
             if(!skipFieldDuringRegistration.containsKey(key)) {
                 user.put(key, formInputs.get(key));
@@ -363,8 +380,8 @@ public without sharing class SiteRegistrationController {
         }
 
         user.CommunityNickname = generateCommunityNickname(convertToString(formInputs.get('Username')));
-        userId = Site.createExternalUser(user, accountId, password, sendEmailConfirmation);
-
+        userId = Site.createExternalUser(user, accountId, convertToString(formInputs.get('password')), convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
+        
         return userId;
     }
 
@@ -391,7 +408,7 @@ public without sharing class SiteRegistrationController {
             }
         } catch (Exception e) {
             messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'));        
+            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');        
             throw new AuraHandledException(ConvertToString(configurationOptions.get('portalLoginError')));
         }
 
