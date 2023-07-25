@@ -6,7 +6,7 @@
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>
     <label>Log Type</label>
-    <length>10</length>
+    <length>11</length>
     <required>true</required>
     <type>Text</type>
     <unique>false</unique>

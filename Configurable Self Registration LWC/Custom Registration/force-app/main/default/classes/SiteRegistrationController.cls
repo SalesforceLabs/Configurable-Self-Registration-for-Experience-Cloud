@@ -13,7 +13,7 @@ public without sharing class SiteRegistrationController {
     public static Map<String, String> skipFieldDuringNewPersonAccountCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => '', 'Email' => ''};
     
     public static List<String> messages = new List<String>();
-
+    
     /**
     * @description Simple method to wrap Object's Key > String conversion for easy re-use.
     * @param valueToConvert - pass in an object and convert to a String value
@@ -32,6 +32,23 @@ public without sharing class SiteRegistrationController {
     @AuraEnabled
     public static Boolean convertToBoolean(Object valueToConvert) {
         return Boolean.valueOf(valueToConvert);
+    }
+
+    /**
+     * @description isPersonAccountEnabled - returns true if Person Accounts are enabled on the org by checking for IsPersonAccount field accessibilty on the Account object.
+     * @return boolean true or false
+     */
+    @AuraEnabled
+    public static Boolean isPersonAccountEnabled(){
+        try {
+            Integer fieldExists = [SELECT count() FROM FieldDefinition WHERE EntityDefinitionId = 'Account' AND DeveloperName = 'IsPersonAccount'];
+            if(fieldExists > 0) {
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
     }
 
     /**
@@ -93,6 +110,7 @@ public without sharing class SiteRegistrationController {
      * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Experience Cloud builder.
      * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
      * @param message - a list of messages to store on the Platform Event
+     * @param logType - the type of error to log, either 'Information' or 'Log'
      */
     @AuraEnabled
     public static void createLogEntry(Boolean loggingEnabled, String message, String logType){
@@ -270,18 +288,19 @@ public without sharing class SiteRegistrationController {
         Id recordId = null;
         try {
             Contact newContact = new Contact();
-            newContact.put('AccountId', ConvertToString(configurationOptions.get('accountId')) );
+            newContact.put('AccountId', ConvertToString(configurationOptions.get('accountId')));
              
             for(String key : formInputs.keySet()) {
                 if(!skipFieldDuringNewContactCreate.containsKey(key)) {
                     newContact.put(key, formInputs.get(key));
                 }
             }
-           srList = Database.insert(newContact, false);
-           if(srList.isSuccess()) {
-              return Id.valueOf(srList.getId());
-           }
-           return recordId; 
+
+            srList = Database.insert(newContact, false);
+            if(srList.isSuccess()) { //Return the AccountId if the Contact creation was successful, this is what is used during External User creation not the Contact Id!
+                return ConvertToString(configurationOptions.get('accountId'));
+            }
+            return recordId; 
         } catch (Exception e) {
             messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
             createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');

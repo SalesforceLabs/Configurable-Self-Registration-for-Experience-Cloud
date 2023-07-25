@@ -12,7 +12,7 @@ import validatePassword from '@salesforce/apex/SiteRegistrationController.valida
 import isValidUsername from '@salesforce/apex/SiteRegistrationController.isValidUsername';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
-
+import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 export default class customSelfRegistration extends LightningElement {
     
     @api fieldSetObjectNameParam = 'User'; //Hardcoded to User, the fields that we map to on the registration form go here as per the out of box solution.
@@ -82,8 +82,24 @@ export default class customSelfRegistration extends LightningElement {
         //Enforces an Account Id which starts with 001. 
         if(this.createNotFound && this.objectCreateType == 'Contact' && this.accountId.substring(0,3) != '001' && (this.accountId.length == 15 || this.accountId.length == 18)) {
             this._setComponentError(true, 'Account Id parameter must start with 001 (Account Object Type).');
+        }
+        
+        //Checks if Person Accounts are enabled on the org if Object Create Type is 'Person Account' and Create If Not Found = TRUE
+        if(this.createNotFound && this.objectCreateType == 'Person Account') {
+            checkPersonAccount().then((enabled) => {
+                if(!enabled) {
+                   this._setComponentError(true, 'Person Accounts are not enabled on this org.'); 
+                } 
+            }).catch(error=>{
+               console.log(error); 
+            })
+        }
+        
+        //Check if the Person Account Record Type is set if the Object Create Type is 'Person Account' and Create If Not Found = TRUE
+        if(this.createNotFound && this.objectCreateType == 'Person Account' && this.personAccountRecordTypeId == '') {
+           this._setComponentError(true, 'Please select a Person Account Record Type from the list to create a Person Account during registration.');  
         } 
-         
+
         //Gets the customisation records from Custom Metadata if setting is enabled 
         if(this.enableCustomisation && this.fieldSetObjectNameParam) {
             getCustomConfiguration({sObjectName: this.fieldSetObjectNameParam}).then(result=>{
