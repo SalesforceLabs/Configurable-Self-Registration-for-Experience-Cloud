@@ -192,7 +192,8 @@ export default class customSelfRegistration extends LightningElement {
             .then((isValid) => {
                 if(isValid === true) {
                     validatePassword({
-                        formInputs: JSON.stringify(this.formInputs)
+                        formInputs: JSON.stringify(this.formInputs),
+                        configurationOptions: JSON.stringify(this.configurationOptions)
                     })
                     .then(() => {
                         registerUser({ 
