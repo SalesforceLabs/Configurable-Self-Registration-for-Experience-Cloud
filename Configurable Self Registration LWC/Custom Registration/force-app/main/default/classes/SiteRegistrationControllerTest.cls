@@ -25,10 +25,7 @@ private class SiteRegistrationControllerTest {
         Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
-
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-       
+ 
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
@@ -45,9 +42,6 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-       
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
@@ -61,9 +55,6 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-      
         try {
              SiteRegistrationController.registerUser(formInputs, configurationOptions);
         }
@@ -94,9 +85,6 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email", "accessLevelMode":"System", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false","errorMultipleRecordsFound":"Multiple records found", "portalLoginError":"There was a problem logging in"}';
 
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
- 
         try {
             SiteRegistrationController.registerUser(formInputs, configurationOptions);
         }
@@ -115,10 +103,7 @@ private class SiteRegistrationControllerTest {
         
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
-
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-       
+ 
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
@@ -135,9 +120,6 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue" }';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-       
         try {
             SiteRegistrationController.registerUser(formInputs, configurationOptions); 
         }
@@ -161,9 +143,6 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
@@ -175,9 +154,6 @@ private class SiteRegistrationControllerTest {
             
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
-
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
 
         try {
              SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -192,9 +168,6 @@ private class SiteRegistrationControllerTest {
     private static void registerUserCreateObjectUnknownTypeTest() {            
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "createNotFound":"true", "objectCreateType":"N/A", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
-
-        Map<String, Object> formInputsObject = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
 
         try {
              SiteRegistrationController.registerUser(formInputs, configurationOptions);
