@@ -1,5 +1,5 @@
 /**
- * @description Simple class to create some test accounts/contacts for testing LWC. 
+ * @description Simple class to create some test accounts/contacts for testing LWC. Not used in main solution. 
  * @author Jamie Lowe - jamielowe1990/jlowesfdc
 **/
 public with sharing class CreateContactTestData {
