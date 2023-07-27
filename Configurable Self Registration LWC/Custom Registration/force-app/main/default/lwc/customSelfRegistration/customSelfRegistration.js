@@ -15,7 +15,6 @@ import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 export default class customSelfRegistration extends LightningElement {
     
-    @api fieldSetObjectNameParam = 'User'; //Hardcoded to User, the fields that we map to on the registration form go here as per the out of box solution.
     @api buttonLabel = 'Sign Up'; //Default Button label
     
     //These are custom properties in the component configuration within Experience Cloud.
@@ -35,6 +34,7 @@ export default class customSelfRegistration extends LightningElement {
     @api passwordMatchError;
     @api usernameTakenMessage;
     @api noRecordFoundError;
+    @api multipleRecordsFoundError 
     @api errorOnCreate;
     @api portalLoginError;
     @api fieldHelpFirstName;
@@ -42,6 +42,7 @@ export default class customSelfRegistration extends LightningElement {
     @api fieldHelpUsername;
     @api fieldHelpEmail;
     @api fieldHelpPassword;
+    @api fieldHelpConfirmPassword;
 
     @api results = null; //Results for custom configuration search
     @track formInputs = {}; //Form values submitted. 
@@ -64,9 +65,20 @@ export default class customSelfRegistration extends LightningElement {
            this._setComponentError(true, 'Only Contact or Account objects are supported with the Custom SOQL Query on this component.');
         }
 
+        //Check the custom query for Account, and if the Person Accounts are not enabled then error.
+        if(queryParts[3] == 'Account') {
+            checkPersonAccount().then((enabled) => {
+                if(!enabled) {
+                   this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
+                } 
+            }).catch(error=>{
+               console.log(error); 
+            })
+        }
+
         //Checks Object Type to Create is set correctly when the component is set to create a new record, otherwise displays an error.        
         if(this.createNotFound && this.objectCreateType == 'N/A') {
-            this._setComponentError(true, 'Object Type to Create cannot be "N/A" when Create Record function is set to TRUE.');
+            this._setComponentError(true, 'Object Type to Create cannot be "N/A" when the Create Record function is set to TRUE.');
         }
 
         //Enforces an Account Id to be entered if creating a Contact
@@ -101,8 +113,8 @@ export default class customSelfRegistration extends LightningElement {
         } 
 
         //Gets the customisation records from Custom Metadata if setting is enabled 
-        if(this.enableCustomisation && this.fieldSetObjectNameParam) {
-            getCustomConfiguration({sObjectName: this.fieldSetObjectNameParam}).then(result=>{
+        if(this.enableCustomisation) {
+            getCustomConfiguration().then(result=>{
                 this.results = JSON.parse(result);
             }).catch(error=>{
                 console.log(error);
@@ -191,6 +203,7 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['passwordMatchError'] = this.passwordMatchError;
         this.configurationOptions['usernameTakenMessage'] = this.usernameTakenMessage;
         this.configurationOptions['errorNoRecordFound'] = this.noRecordFoundError;
+        this.configurationOptions['errorMultipleRecordsFound'] = this.multipleRecordsFoundError;
         this.configurationOptions['errorOnCreate'] = this.errorOnCreate;
         this.configurationOptions['portalLoginError'] = this.portalLoginError;
         this.configurationOptions['fieldHelpFirstName'] = this.fieldHelpFirstName;
@@ -198,6 +211,7 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['fieldHelpUsername'] = this.fieldHelpUsername;
         this.configurationOptions['fieldHelpEmail'] = this.fieldHelpEmail;
         this.configurationOptions['fieldHelpPassword'] = this.fieldHelpPassword;
+        this.configurationOptions['fieldHelpConfirmPassword'] = this.fieldHelpConfirmPassword;
 
         if(this._areAllInputFieldsValid()) {
             this.handleSubmit(true, this.registerButtonWaitingMessage, true);

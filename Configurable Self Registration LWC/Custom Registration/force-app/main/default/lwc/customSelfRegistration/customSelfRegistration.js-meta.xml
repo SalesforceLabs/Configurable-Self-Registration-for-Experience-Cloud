@@ -52,6 +52,11 @@
                 description="Error message shown if the SOQL query doesn't find any results. Shown to the user."
                 default="There was a problem locating your details, please check them and try again or contact us for further assistance."
                 required="true"></property>
+            <property label="Multiple Records Found Error Message" name="multipleRecordsFoundError"
+                type="String"
+                description="Error message shown if the SOQL query finds more than one result. Shown to the user."
+                default="There was a problem locating your details, please check them and try again or contact us for further assistance."
+                required="true"></property>
             <property label="Record Create Error Message" name="errorOnCreate" type="String"
                 description="Error message shown if a failure occurs creating a new record during registration. Shown to the user."
                 default="There was a problem registering your details. Please contact us for assistance."
@@ -75,6 +80,9 @@
                 description="Set the help text that shows next to the Email field"></property>
             <property label="Form Field: Password Help Text" name="fieldHelpPassword" type="String"
                 description="Set the help text that shows next to the Password field"></property>
+            <property label="Form Field: Confirm Password Help Text" name="fieldHelpConfirmPassword"
+                type="String"
+                description="Set the help text that shows next to the Confirm Password field"></property>
 
             <!-- Logging option into custom object -->
             <property label="Create Log Entry for Registrations" name="loggingEnabled"
