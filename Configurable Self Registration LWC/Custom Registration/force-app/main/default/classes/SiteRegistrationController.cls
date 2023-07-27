@@ -4,7 +4,6 @@
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
 
-//TODO: Change 'without sharing' to 'sharing'?
 public with sharing class SiteRegistrationController {
 
     //These maps are used to define fields that should be skipped from the registration form for creating External User, Contact and Person Account.
@@ -18,6 +17,10 @@ public with sharing class SiteRegistrationController {
     public static Boolean testPersonAccountStatus;
     private static Boolean orgPersonAccountStatus = Schema.sObjectType.Account.fields.getMap().containsKey('isPersonAccount');
 
+    /**
+     * @description isPersonAccountEnabled tests whether the org currently has Person Accounts enabled. Checks for existence of the isPersonAccount field.
+     * @return returns true/false depending on setup of the org.
+     */
     @AuraEnabled
     public static Boolean isPersonAccountEnabled() {
         return testPersonAccountStatus != null ? testPersonAccountStatus : orgPersonAccountStatus;
