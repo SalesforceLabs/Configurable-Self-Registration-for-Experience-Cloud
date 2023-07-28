@@ -215,44 +215,12 @@ export default class customSelfRegistration extends LightningElement {
 
         if(this._areAllInputFieldsValid()) {
             this.handleSubmit(true, this.registerButtonWaitingMessage, true);
-            isValidUsername({
-                username: this.formInputs.Username,
-                loggingEnabled: this.loggingEnabled
-            })
-            .then((isValid) => {
-                if(isValid === true) {
-                    validatePassword({
-                        formInputs: JSON.stringify(this.formInputs),
-                        configurationOptions: JSON.stringify(this.configurationOptions)
-                    })
-                    .then(() => {
-                        registerUser({ 
-                            formInputs: JSON.stringify(this.formInputs),
-                            configurationOptions: JSON.stringify(this.configurationOptions)
-                        })
-                        .then((pageUrl) => {
-                            if(pageUrl){
-                                window.location.href = pageUrl;
-                            }
-                        })
-                        .catch((error) => {
-                            this.handleSubmit(false, this.registerButtonSignUpMessage, false);                            
-                            this._setServerError(error.body.message);
-                            event.preventDefault();
-                        });
-                    })
-                    .catch((error) => {
-                        this.handleSubmit(false, this.registerButtonSignUpMessage, false);
-                        this._setServerError(error.body.message);
-                    });
-                } else { 
-                    this.handleSubmit(false, this.registerButtonSignUpMessage, false);
-                    this._setServerError(this.usernameTakenMessage);
-                    event.preventDefault();
+            registerUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.configurationOptions)}).then((pageUrl) => {
+                if(pageUrl){
+                    window.location.href = pageUrl;
                 }
-            })
-            .catch((error) => {
-                this.handleSubmit(false, this.registerButtonSignUpMessage, false);
+            }).catch((error) => {
+                this.handleSubmit(false, this.registerButtonSignUpMessage, false);                            
                 this._setServerError(error.body.message);
                 event.preventDefault();
             });

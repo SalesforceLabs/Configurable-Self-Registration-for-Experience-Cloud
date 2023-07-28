@@ -4,7 +4,7 @@
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
 
-public with sharing class SiteRegistrationController {
+public without sharing class SiteRegistrationController {
 
     //These maps are used to define fields that should be skipped from the registration form for creating External User, Contact and Person Account.
     public static Map<String, String> skipFieldDuringRegistration = new Map <String, String>{'password' => '','confirmPassword' => ''};
@@ -125,19 +125,20 @@ public with sharing class SiteRegistrationController {
 
     /**
      * @description isValidUsername Checks to see if the username supplied by the user on the registration form is available
-     * @param username - Passes in the submitted username field from the self registration form.
-     * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
+     * @param formInputs - JSON String of the submitted form values
+     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      * @return Boolean true if username is taken, otherwise false.
      */ 
     @AuraEnabled
-    public static Boolean isValidUsername(String username, Boolean loggingEnabled) {
+    public static Boolean isValidUsername(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
         Boolean isUsernameValid = true;
         List<NetworkMember> userList = null;
+        String username = convertToString(formInputs.get('Username'));
 
         //Get the Network Id for the current Experience Cloud Site
         String networkId = Network.getNetworkId();
 
-        messages.add('Looking for registered user with username ' +username + ' on NetworkId ' + networkId);    
+        messages.add('Looking for registered user with username ' + username + ' on NetworkId ' + networkId);    
 
         //Query the Network Member table which holds entries for the registrations. This allows for username re-use if there are multiple portals in an org, but not for the same portal!
         //SF assigns a username by taking the submitted value then appending everything after the "@" automatically and randomly to keep unique.
@@ -152,13 +153,12 @@ public with sharing class SiteRegistrationController {
         ];
 
         if(userList.size() >= 1) {
-            messages.add('User with username ' +username + ' already exists on NetworkId ' + networkId + '. Username NOT valid.');
-            createLogEntry(loggingEnabled, String.join(messages,'\n'), 'Error');    
-            return !isUsernameValid; 
+            messages.add('User with username ' + username + ' already exists on NetworkId ' + networkId + '. Username NOT valid.');
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');    
+            throw new AuraHandledException(convertToString(configurationOptions.get('usernameTakenMessage'))); 
         }
 
-        messages.add('User with username ' +username + ' not found on NetworkId ' + networkId + '. Username valid.');
-        createLogEntry(loggingEnabled, String.join(messages,'\n'), 'Information');
+        messages.add('User with username ' + username + ' not found on NetworkId ' + networkId + '. Username valid.');
         return isUsernameValid;
     }
 
@@ -168,11 +168,8 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
     @AuraEnabled
-    public static void validatePassword(String formInputs, String configurationOptions) {
-       
-        Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-        
+    public static void validatePassword(Map<String, Object> formJson, Map<String, Object> lwcSettings) {
+
         try {
             User user = new User();
     
@@ -187,10 +184,15 @@ public with sharing class SiteRegistrationController {
                 Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword'))); 
             } 
         }
-        catch (Exception ex) {
-           messages.add('An Unknown Error Occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formInputs);
+        catch (SObjectException ex) {
+           messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
+        }
+        catch (Exception ex) {
+           messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
+           createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+           throw new AuraHandledException(ex.getMessage()); //This is deliberate as the Site.Validate function returns useful information about the password failure
         }
     }
 
@@ -206,35 +208,38 @@ public with sharing class SiteRegistrationController {
         String pageUrl = null;
         Id recordId = null;
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+
+        Boolean isValidUsername = isValidUsername(formJson, lwcSettings);
+        validatePassword(formJson, lwcSettings);
 
         try {
-
-            Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-           
+                 
             if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
                 messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + formJson);
                 recordId = getObject(formJson, lwcSettings);
                 messages.add('Record Id found was: ' + recordId);
             }
-            
+        
             if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(recordId)) { 
-                messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + 'Form Values: ' + formJson); 
+                messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + formJson); 
                 recordId = createObject(formJson, lwcSettings);
                 messages.add('Created Record Id returned was: ' + recordId);   
             }
 
             String userId = createExternalUser(formJson, recordId, lwcSettings);
-            
+        
             if(Test.isRunningTest()) {
-               userId = '123'; 
+                userId = '123'; 
             }
-            
+        
             if(String.isNotBlank(userId)) {
                 messages.add('External User Id created was: ' + userId);
                 pageUrl = loginUser(convertToString(formJson.get('Username')), convertToString(formJson.get('password')), lwcSettings);
             }
 
             createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
+
         } catch (Exception ex) {
             messages.add('An Unknown Error Occurred: ' + ex.getMessage());
             createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
@@ -257,10 +262,10 @@ public with sharing class SiteRegistrationController {
 
         //Configurable via the component config panel. May affect what record is found based on org settings. Default is 'System'
         if(configurationOptions.get('accessLevelMode') == 'System') { 
-           recordList = Database.queryWithBinds(ConvertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
+           recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
         }
         else {
-           recordList = Database.queryWithBinds(ConvertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+           recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
         }
 
         if(!recordList.isEmpty() && recordList.size() == 1) {
@@ -269,16 +274,16 @@ public with sharing class SiteRegistrationController {
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
             messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('errorMultipleRecordsFound') + ' Form Values: ' + formInputs);
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
-            throw new AuraHandledException(ConvertToString(configurationOptions.get('errorMultipleRecordsFound'))); 
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
+            throw new AuraHandledException(convertToString(configurationOptions.get('errorMultipleRecordsFound'))); 
         }
-        else if (ConvertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
+        else if (convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
             return null;
         }
         else { //No record found on specified query and CreateIfNotFound = False 
             messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('errorNoRecordFound') + ' Form Values: ' + formInputs);
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
-            throw new AuraHandledException(ConvertToString(configurationOptions.get('errorNoRecordFound'))); 
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
+            throw new AuraHandledException(convertToString(configurationOptions.get('errorNoRecordFound'))); 
         }
     }
 
@@ -294,7 +299,7 @@ public with sharing class SiteRegistrationController {
         Id recordId = null;
         try {
             Contact newContact = new Contact();
-            newContact.put('AccountId', ConvertToString(configurationOptions.get('accountId')));
+            newContact.put('AccountId', convertToString(configurationOptions.get('accountId')));
              
             for(String key : formInputs.keySet()) {
                 if(!skipFieldDuringNewContactCreate.containsKey(key)) {
@@ -304,13 +309,13 @@ public with sharing class SiteRegistrationController {
 
             srList = Database.insert(newContact, false);
             if(srList.isSuccess()) { //Return the AccountId if the Contact creation was successful, this is what is used during External User creation not the Contact Id!
-                return ConvertToString(configurationOptions.get('accountId'));
+                return convertToString(configurationOptions.get('accountId'));
             }
             return recordId; 
         } catch (Exception e) {
             messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
-            throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate')));
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            throw new AuraHandledException(convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
 
@@ -342,8 +347,8 @@ public with sharing class SiteRegistrationController {
             return recordId;   
         } catch (Exception e) {
             messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
-            throw new AuraHandledException(ConvertToString(configurationOptions.get('errorOnCreate')));
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            throw new AuraHandledException(convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
 
@@ -354,15 +359,15 @@ public with sharing class SiteRegistrationController {
      * @return Id of the newly created record. Either Contact.AccountId if type is a Contact or Id if Person Account
      */
     public static Id createObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
-        if(ConvertToString(configurationOptions.get('objectCreateType'))  == 'Contact') {
+        if(convertToString(configurationOptions.get('objectCreateType'))  == 'Contact') {
            return createContact(formInputs, configurationOptions);
         }
-        else if(ConvertToString(configurationOptions.get('objectCreateType'))  == 'Person Account') {
+        else if(convertToString(configurationOptions.get('objectCreateType'))  == 'Person Account') {
             return createPersonAccount(formInputs, configurationOptions);
         }
         else { //Object to create was set to 'N/A' which is not valid 
             messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
     }
@@ -432,8 +437,8 @@ public with sharing class SiteRegistrationController {
             }
         } catch (Exception e) {
             messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
-            createLogEntry(ConvertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');        
-            throw new AuraHandledException(ConvertToString(configurationOptions.get('portalLoginError')));
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');        
+            throw new AuraHandledException(convertToString(configurationOptions.get('portalLoginError')));
         }
 
         return pageUrl;
