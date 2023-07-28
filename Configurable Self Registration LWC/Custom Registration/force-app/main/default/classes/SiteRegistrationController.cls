@@ -168,7 +168,7 @@ public without sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
     @AuraEnabled
-    public static void validatePassword(Map<String, Object> formJson, Map<String, Object> lwcSettings) {
+    public static void validatePassword(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
 
         try {
             User user = new User();
@@ -210,7 +210,7 @@ public without sharing class SiteRegistrationController {
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
 
-        Boolean isValidUsername = isValidUsername(formJson, lwcSettings);
+        isValidUsername(formJson, lwcSettings);
         validatePassword(formJson, lwcSettings);
 
         try {

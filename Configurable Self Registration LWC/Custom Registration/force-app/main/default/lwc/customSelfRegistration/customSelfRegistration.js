@@ -8,8 +8,6 @@
  *****************************************************************************************************/
 
 import { LightningElement, api, track} from 'lwc';
-import validatePassword from '@salesforce/apex/SiteRegistrationController.validatePassword';
-import isValidUsername from '@salesforce/apex/SiteRegistrationController.isValidUsername';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
