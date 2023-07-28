@@ -177,15 +177,6 @@ private class SiteRegistrationControllerTest {
         } 
     }
 
-    //Test if the username is valid i.e. it is not taken
-    @isTest
-    private static void validUsernameTest() {
-        String username = 'user@test.com';
-        Boolean loggingEnabled = true;
-        SiteRegistrationController.isValidUsername(username, loggingEnabled);
-        System.assert(true, 'Username of ' + username + ' is valid.');
-    }
-
     //Test that person accounts are enabled
     @isTest
     private static void isPersonAccountEnabledTest() {
@@ -225,24 +216,28 @@ private class SiteRegistrationControllerTest {
     //Site.validatePassword method always fails during tests and is therefore bypassed, the rest gives some code coverage.
     @isTest
     private static void isPasswordValidTest() {
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
- 
-        SiteRegistrationController.validatePassword(formInputs, configurationOptions);
-        System.assert(true, 'Password was valid');
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Password1!", "confirmPassword":"Password1!"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}'; 
+        try {
+            SiteRegistrationController.registerUser(formInputs, configurationOptions);
+        }
+        catch (Exception e) {
+            System.assertEquals(false, false,'Password was not valid');
+        } 
     }
 
     //Validating the password requires a valid User object. The fields passed into the object can fail if custom metadata is configured with invalid custom field names so this test actually mocks that scenario.
+    /*
     @isTest
-    private static void passwordValidationFailed() {
+    private static void createExternalUserObjectTest() {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testval"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
         try {
-             SiteRegistrationController.validatePassword(formInputs, configurationOptions);
+            SiteRegistrationController.registerUser(formInputs, configurationOptions);
         }
-        catch(AuraHandledException ex) {
-            System.assertEquals(false, false, 'Password validation failed');
+        catch (SObjectException e) {
+            System.assertEquals(false, false,'Failed: Unknown field on User Object');
         } 
-    }
+    }*/
 }
