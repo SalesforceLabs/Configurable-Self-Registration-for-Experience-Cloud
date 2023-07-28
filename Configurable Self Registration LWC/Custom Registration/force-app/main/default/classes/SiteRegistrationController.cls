@@ -168,7 +168,7 @@ public without sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
     @AuraEnabled
-    public static void validatePassword(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
+    public static void validatePassword(Map<String, Object> formJson, Map<String, Object> configurationOptions) {
 
         try {
             User user = new User();
@@ -186,12 +186,12 @@ public without sharing class SiteRegistrationController {
         }
         catch (SObjectException ex) {
            messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
-           createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+           createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
         catch (Exception ex) {
            messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
-           createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+           createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException(ex.getMessage()); //This is deliberate as the Site.Validate function returns useful information about the password failure
         }
     }
