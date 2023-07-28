@@ -164,7 +164,7 @@ public without sharing class SiteRegistrationController {
 
     /**
      * @description Validates that the submitted password matches the Org's password policy.
-     * @param formInputs - JSON String of the submitted form values
+     * @param formJson - JSON String of the submitted form values
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
     @AuraEnabled
