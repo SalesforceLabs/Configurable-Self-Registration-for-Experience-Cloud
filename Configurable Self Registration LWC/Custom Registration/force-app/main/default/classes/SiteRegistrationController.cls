@@ -4,7 +4,7 @@
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
 
-public without sharing class SiteRegistrationController {
+public with sharing class SiteRegistrationController {
 
     //These maps are used to define fields that should be skipped from the registration form for creating External User, Contact and Person Account.
     public static Map<String, String> skipFieldDuringRegistration = new Map <String, String>{'password' => '','confirmPassword' => ''};
@@ -212,40 +212,31 @@ public without sharing class SiteRegistrationController {
 
         isValidUsername(formJson, lwcSettings);
         validatePassword(formJson, lwcSettings);
-
-        try {
-                 
-            if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
-                messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + formJson);
-                recordId = getObject(formJson, lwcSettings);
-                messages.add('Record Id found was: ' + recordId);
-            }
-        
-            if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(recordId)) { 
-                messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + formJson); 
-                recordId = createObject(formJson, lwcSettings);
-                messages.add('Created Record Id returned was: ' + recordId);   
-            }
-
-            String userId = createExternalUser(formJson, recordId, lwcSettings);
-        
-            if(Test.isRunningTest()) {
-                userId = '123'; 
-            }
-        
-            if(String.isNotBlank(userId)) {
-                messages.add('External User Id created was: ' + userId);
-                pageUrl = loginUser(convertToString(formJson.get('Username')), convertToString(formJson.get('password')), lwcSettings);
-            }
-
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
-
-        } catch (Exception ex) {
-            messages.add('An Unknown Error Occurred: ' + ex.getMessage());
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
-            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
+  
+        if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
+            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + formJson);
+            recordId = getObject(formJson, lwcSettings);
+            messages.add('Record Id found was: ' + recordId);
+        }
+    
+        if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(recordId)) { 
+            messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + formJson); 
+            recordId = createObject(formJson, lwcSettings);
+            messages.add('Created Record Id returned was: ' + recordId);   
         }
 
+        String userId = createExternalUser(formJson, recordId, lwcSettings);
+    
+        if(Test.isRunningTest()) {
+            userId = '123'; 
+        }
+    
+        if(String.isNotBlank(userId)) {
+            messages.add('External User Id created was: ' + userId);
+            pageUrl = loginUser(convertToString(formJson.get('Username')), convertToString(formJson.get('password')), lwcSettings);
+        }
+
+        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
         return pageUrl;
     }
 
