@@ -4,7 +4,7 @@
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Portal API Name</label>
-    <length>20</length>
+    <length>255</length>
     <required>true</required>
     <type>Text</type>
     <unique>false</unique>

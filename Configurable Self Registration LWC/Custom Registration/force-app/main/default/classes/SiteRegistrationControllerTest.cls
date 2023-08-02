@@ -131,21 +131,24 @@ private class SiteRegistrationControllerTest {
     //Mock a scenario where we register a user and do not create a new record because an existing record is found.
     @isTest
     private static void registerUserNoCreateObjectRecordFoundTest() {
-
+        
         Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-        Account acc = new Account();
-        acc.RecordTypeId = recordTypeId;
-        acc.FirstName = 'Test';
-        acc.LastName = 'Contact';
-        acc.PersonEmail = 'user@test.com';
+
+        Schema.SObjectType targetType = Schema.getGlobalDescribe().get('Account');
+        SObject newObject = targetType.newSObject(); 
+        Account acc = (Account)newObject;
+        acc.put('RecordTypeId', recordTypeId);
+        acc.put('FirstName', 'Test');
+        acc.put('LastName', 'PA');
+        acc.put('PersonEmail', 'user@test.com');
         insert acc;
-            
+        
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
-
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
+        
     }
 
     //Mock a scenario where we register a user and no existing user is found, plus the createNotFound setting is off which causes a failure.
