@@ -2,7 +2,7 @@
  * @description retrieves PersonAccount Record Type Ids to populate a picklist on the Self Registration LWC
  * @author Jamie Lowe - jamielowe1990/jlowesfdc
  */ 
-global class RetrievePersonAccountRecordTypes extends VisualEditor.DynamicPickList {
+global with sharing class RetrievePersonAccountRecordTypes extends VisualEditor.DynamicPickList {
 
     global VisualEditor.DynamicPickListRows myValues = new VisualEditor.DynamicPickListRows();
 
@@ -30,7 +30,7 @@ global class RetrievePersonAccountRecordTypes extends VisualEditor.DynamicPickLi
      */
     global override VisualEditor.DynamicPickListRows getValues() {
     
-        List<RecordType> rt = new List<RecordType>([SELECT Id,Name,SobjectType,IsActive FROM RecordType WHERE SobjectType = 'Account' AND IsActive = true]);
+        List<RecordType> rt = new List<RecordType>([SELECT Id,Name,SobjectType,IsActive FROM RecordType WHERE SobjectType = 'Account' AND IsActive = true WITH SECURITY_ENFORCED]);
 
         for (RecordType r : rt) {
             VisualEditor.DataRow value = new VisualEditor.DataRow(r.Name, String.valueOf(r.Id));
