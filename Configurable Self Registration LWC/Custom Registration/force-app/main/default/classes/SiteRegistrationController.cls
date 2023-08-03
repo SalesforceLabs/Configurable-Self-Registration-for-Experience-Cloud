@@ -132,26 +132,16 @@ public with sharing class SiteRegistrationController {
     @AuraEnabled
     public static Boolean isValidUsername(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
         Boolean isUsernameValid = true;
-        List<NetworkMember> userList = null;
         String username = convertToString(formInputs.get('Username'));
 
         //Get the Network Id for the current Experience Cloud Site
         String networkId = Network.getNetworkId();
 
+        //This class runs without sharing as access cannot be granted to the Guest User and the SiteRegisterController runs as a Guest.
+        List<NetworkMember> userList = RetrieveNetworkMembers.validateUsername(username, networkId);
+
         messages.add('Looking for registered user with username ' + username + ' on NetworkId ' + networkId);    
-
-        //Query the Network Member table which holds entries for the registrations. This allows for username re-use if there are multiple portals in an org, but not for the same portal!
-        //SF assigns a username by taking the submitted value then appending everything after the "@" automatically and randomly to keep unique.
-        //Formula field is used to calculate value we are interested i.e. the submitted value with no domain that we can query with '='. 
-        //This way, if the username changes in anyway, filter continues to work as a 2nd field doesn't need to be updated!
-        userList = [
-            SELECT Id, Member.Portal_Username__c, Member.Id, NetworkId
-            FROM NetworkMember 
-            WHERE Member.Portal_Username__c = :username
-            AND NetworkId = :networkId
-            WITH SECURITY_ENFORCED
-        ];
-
+        
         if(userList.size() >= 1) {
             messages.add('User with username ' + username + ' already exists on NetworkId ' + networkId + '. Username NOT valid.');
             createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');    

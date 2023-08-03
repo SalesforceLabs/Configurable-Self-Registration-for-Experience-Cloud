@@ -42,7 +42,7 @@ public with sharing class CreateContactTestData {
         for(Integer i = 1; i <= noOfAccounts; i++) {
             Account newAccount = new Account();
             newAccount.LastName = newAccountName + ' ' + i;
-            newAccount.RecordTypeId = '012Ho000000UCdfIAG';
+            newAccount.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
             newAccount.PersonEmail = 'jamie.lowe+personacctest' + i + '@salesforce.com';
             newAccs.add(newAccount);
         }
