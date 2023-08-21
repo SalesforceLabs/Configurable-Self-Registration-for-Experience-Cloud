@@ -1,5 +1,5 @@
 /***************************************************************************************************************
- * AUTHOR         : Jamie Lowe (Salesforce)
+ * AUTHOR         : Jamie Lowe (Salesforce) & Ekaterina Coburn (Salesforce)
  * CREATE DATE    : 15/05/2023
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/

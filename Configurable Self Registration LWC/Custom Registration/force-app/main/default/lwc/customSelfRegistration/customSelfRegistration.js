@@ -1,5 +1,5 @@
 /*****************************************************************************************************
- * AUTHOR         : Jamie Lowe
+ * AUTHOR         : Jamie Lowe (Salesforce) & Ekaterina Coburn (Salesforce)
  * CREATE DATE    : 05/05/2023
  * PURPOSE        : Self Registration LWC component for Experience Builder pages
  * SPECIAL NOTES  : Dependency on SiteRegistrationController.js class
