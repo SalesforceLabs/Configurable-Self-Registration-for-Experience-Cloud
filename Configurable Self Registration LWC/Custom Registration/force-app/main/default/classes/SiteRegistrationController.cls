@@ -279,6 +279,8 @@ public with sharing class SiteRegistrationController {
         Database.SaveResult srList = null;
         Id recordId = null;
         try {
+            List<Contact> newContacts = new List<Contact>();
+            
             Contact newContact = new Contact();
             newContact.put('AccountId', convertToString(configurationOptions.get('accountId')));
              
@@ -286,9 +288,12 @@ public with sharing class SiteRegistrationController {
                 if(!skipFieldDuringNewContactCreate.containsKey(key)) {
                     newContact.put(key, formInputs.get(key));
                 }
+                newContacts.add(newContact);
             }
 
-            srList = Database.insert(newContact, false);
+            SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newContacts);
+            srList = Database.insert(securityDecision.getRecords()[0], false);
+
             if(srList.isSuccess()) { //Return the AccountId if the Contact creation was successful, this is what is used during External User creation not the Contact Id!
                 return convertToString(configurationOptions.get('accountId'));
             }
@@ -311,6 +316,7 @@ public with sharing class SiteRegistrationController {
         Database.SaveResult srList = null;
         Id recordId = null;
         try {
+            List<Account> newPersonAccounts = new List<Account>();
             Account newPersonAccount = new Account();
             newPersonAccount.put('RecordTypeId', Id.valueOf(convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             for(String key : formInputs.keySet()) {
@@ -320,8 +326,12 @@ public with sharing class SiteRegistrationController {
                 if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
                     newPersonAccount.put('PersonEmail', formInputs.get(key)); 
                 }
+                newPersonAccounts.add(newPersonAccount);
             }
-            srList = Database.insert(newPersonAccount, false);
+
+            SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newPersonAccounts);
+            srList = Database.insert(securityDecision.getRecords()[0], false);
+
             if(srList.isSuccess()) { 
                 return srList.getId();
             }
