@@ -13,7 +13,7 @@ import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 export default class customSelfRegistration extends LightningElement {
     
-    @api buttonLabel = 'Sign Up'; //Default Button label
+    @api buttonLabel;
     
     //These are custom properties in the component configuration within Experience Cloud.
     @api customQuery;
@@ -32,7 +32,7 @@ export default class customSelfRegistration extends LightningElement {
     @api passwordMatchError;
     @api usernameTakenMessage;
     @api noRecordFoundError;
-    @api multipleRecordsFoundError 
+    @api multipleRecordsFoundError;
     @api errorOnCreate;
     @api portalLoginError;
     @api fieldHelpFirstName;
@@ -55,7 +55,7 @@ export default class customSelfRegistration extends LightningElement {
 
     connectedCallback() {
 
-        //Check validity of various settings before showing the component to the user.
+        this.handleSubmit(true, this.registerButtonSignUpMessage, true);
 
         //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
         let queryParts = this.customQuery.split(" ");
@@ -197,7 +197,7 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['accessLevelMode'] = this.accessLevelMode;
         this.configurationOptions['loggingEnabled'] = this.loggingEnabled;
         this.configurationOptions['registerButtonSignUpMessage'] = this.registerButtonSignUpMessage;
-        this.configurationOptions['registerButtonWaitingMessage'] = this.registerButtonSignUpMessage;
+        this.configurationOptions['registerButtonWaitingMessage'] = this.registerButtonWaitingMessage;
         this.configurationOptions['passwordMatchError'] = this.passwordMatchError;
         this.configurationOptions['usernameTakenMessage'] = this.usernameTakenMessage;
         this.configurationOptions['errorNoRecordFound'] = this.noRecordFoundError;
