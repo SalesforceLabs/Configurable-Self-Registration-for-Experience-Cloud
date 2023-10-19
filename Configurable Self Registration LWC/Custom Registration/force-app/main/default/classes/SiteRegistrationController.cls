@@ -254,7 +254,14 @@ public with sharing class SiteRegistrationController {
 
         if(!recordList.isEmpty() && recordList.size() == 1) {
             String objectType = recordList.getSObjectType().getDescribe().getName();
-            return objectType == 'Contact' ? (Id)recordList[0].get('AccountId') : (Id)recordList[0].get('Id');
+            switch on objectType {
+                when 'Contact', 'Case' {
+                    return (Id)recordList[0].get('AccountId');
+                }
+                when else { //TODO: Intended to work for Accounts. Further support might be required here for other objects as and when they get added.
+                    return (Id)recordList[0].get('Id');
+                }
+            }
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
             messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('errorMultipleRecordsFound') + ' Form Values: ' + formInputs);
@@ -434,6 +441,8 @@ public with sharing class SiteRegistrationController {
             createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');        
             throw new AuraHandledException(convertToString(configurationOptions.get('portalLoginError')));
         }
+        messages.add('User successfully logged into the portal.');
+        createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
 
         return pageUrl;
     }

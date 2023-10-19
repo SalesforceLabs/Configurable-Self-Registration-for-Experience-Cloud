@@ -12,7 +12,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void getCustomConfigurationTest() {
     
-        String expected = '[{"fieldType":"text","fieldName":"Test_Field__c","fieldLabel":"Test Field","fieldHelpText":"some test help text","fieldMaxLength":"10","fieldMessage":"a test message","fieldRegex":"[0-9]","fieldRequired":"true"}]';     
+        String expected = '[{"fieldType":"text","fieldName":"FirstName","fieldLabel":"First Name","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Please enter a First Name","fieldRequired":"true"},{"fieldType":"text","fieldName":"LastName","fieldLabel":"Last Name","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Please enter a Last Name","fieldRequired":"true"},{"fieldType":"text","fieldName":"Username","fieldLabel":"Username","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Please enter a username","fieldRequired":"true"},{"fieldType":"email","fieldName":"Email","fieldLabel":"Email","fieldClass":"null","fieldMaxLength":"255","fieldMessage":"Please enter an email address","fieldRequired":"true"},{"fieldType":"password","fieldName":"password","fieldLabel":"Password","fieldClass":"passwordCmp","fieldMaxLength":"40","fieldMessage":"Please enter a password","fieldRequired":"true"},{"fieldType":"password","fieldName":"confirmPassword","fieldLabel":"Confirm Password","fieldClass":"confirmPasswordCmp","fieldMaxLength":"40","fieldMessage":"Please enter confirm your password","fieldRequired":"true"}]';     
         String result =  SiteRegistrationController.getCustomConfiguration();
         
         System.assertEquals(expected, result, 'Retrieved custom configuration');
