@@ -57,16 +57,14 @@ public with sharing class SiteRegistrationController {
         try {
 
             String siteName = Site.getName();
-            if(Test.isRunningTest()) {
-                siteName = 'TestSite';
-            }
-                        
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c
-                                                                   FROM Custom_Registration_Configuration__mdt 
-                                                                   WHERE Portal_API_Name__c = :siteName                                                                   
-                                                                   AND Active__c = true
-                                                                   WITH SECURITY_ENFORCED]) {
-           
+            
+            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
+                                    FROM Custom_Registration_Configuration__mdt 
+                                    WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
+                                    OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
+                                    WITH SECURITY_ENFORCED 
+                                    ORDER BY Display_Order__c]
+                ) {
                 if(String.isNotBlank(result)){
                     result += ',';
                 } 
@@ -75,7 +73,7 @@ public with sharing class SiteRegistrationController {
                 jsonPart += '"fieldType":"' + mapping.Field_Type__c + '",'; 
                 jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
                 jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
-                jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '",';
+                jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
                 jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '"';
 
                 if(String.isNotBlank(mapping.Field_Message__c)) {
@@ -91,6 +89,11 @@ public with sharing class SiteRegistrationController {
                 if(mapping.Field_Required__c) {
                     jsonPart += ',';
                     jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '"';
+                }
+
+                if(String.isNotBlank(mapping.Field_Help_Text__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '"';
                 }
              
                 jsonPart += '}';

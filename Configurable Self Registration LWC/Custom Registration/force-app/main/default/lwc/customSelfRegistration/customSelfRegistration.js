@@ -21,7 +21,6 @@ export default class customSelfRegistration extends LightningElement {
     @api objectCreateType;
     @api accountId;
     @api personAccountRecordTypeId;
-    @api enableCustomisation; 
     @api sendEmailConfirmation;
     @api accessLevelMode;
     @api loggingEnabled;
@@ -55,12 +54,12 @@ export default class customSelfRegistration extends LightningElement {
 
     connectedCallback() {
 
-        this.handleSubmit(true, this.registerButtonSignUpMessage, true);
+        this.handleSubmit(false, this.registerButtonSignUpMessage, false);
 
         //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
         let queryParts = this.customQuery.split(" ");
-        if(this.customQuery == null || (queryParts[3] != 'Contact' &&  queryParts[3] != 'Account')) {
-           this._setComponentError(true, 'Only Contact or Account objects are supported with the Custom SOQL Query on this component.');
+        if(this.customQuery == null || (queryParts[3] != 'Contact' &&  queryParts[3] != 'Account' &&  queryParts[3] != 'Case')) {
+           this._setComponentError(true, 'Only Contact, Account or Case objects are supported with the Custom SOQL Query on this component.');
         }
 
         //Check the custom query for Account, and if the Person Accounts are not enabled then error.
@@ -110,14 +109,12 @@ export default class customSelfRegistration extends LightningElement {
            this._setComponentError(true, 'Please select a Person Account Record Type from the list to create a Person Account during registration.');  
         } 
 
-        //Gets the customisation records from Custom Metadata if setting is enabled 
-        if(this.enableCustomisation) {
-            getCustomConfiguration().then(result=>{
-                this.results = JSON.parse(result);
-            }).catch(error=>{
-                console.log(error);
-            })
-        }
+        //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
+        getCustomConfiguration().then(result=>{
+            this.results = JSON.parse(result);
+        }).catch(error=>{
+            console.log(error);
+        })
     }
 
     _applyInputFormValidity() {
@@ -191,8 +188,7 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['createNotFound'] = this.createNotFound;
         this.configurationOptions['objectCreateType'] = this.objectCreateType;
         this.configurationOptions['accountId'] = this.accountId;
-        this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId, 
-        this.configurationOptions['enableCustomisation'] = this.enableCustomisation;
+        this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId;
         this.configurationOptions['sendEmailConfirmation'] = this.sendEmailConfirmation;
         this.configurationOptions['accessLevelMode'] = this.accessLevelMode;
         this.configurationOptions['loggingEnabled'] = this.loggingEnabled;

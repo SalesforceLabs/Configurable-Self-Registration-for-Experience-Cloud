@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Type__c</fullName>
-    <defaultValue>&quot;text&quot;</defaultValue>
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Field Type</label>
@@ -13,14 +12,53 @@
             <sorted>false</sorted>
             <value>
                 <fullName>text</fullName>
-                <default>false</default>
+                <default>true</default>
                 <label>text</label>
+            </value>
+            <value>
+                <fullName>password</fullName>
+                <default>false</default>
+                <label>password</label>
+            </value>
+            <value>
+                <fullName>email</fullName>
+                <default>false</default>
+                <label>email</label>
+            </value>
+            <value>
+                <fullName>tel</fullName>
+                <default>false</default>
+                <label>tel</label>
             </value>
             <value>
                 <fullName>checkbox</fullName>
                 <default>false</default>
-                <isActive>false</isActive>
                 <label>checkbox</label>
+            </value>
+            <value>
+                <fullName>date</fullName>
+                <default>false</default>
+                <label>date</label>
+            </value>
+            <value>
+                <fullName>number</fullName>
+                <default>false</default>
+                <label>number</label>
+            </value>
+            <value>
+                <fullName>datetime</fullName>
+                <default>false</default>
+                <label>datetime</label>
+            </value>
+            <value>
+                <fullName>time</fullName>
+                <default>false</default>
+                <label>time</label>
+            </value>
+            <value>
+                <fullName>url</fullName>
+                <default>false</default>
+                <label>url</label>
             </value>
             <value>
                 <fullName>checkbox-button</fullName>
@@ -29,70 +67,10 @@
                 <label>checkbox-button</label>
             </value>
             <value>
-                <fullName>date</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>date</label>
-            </value>
-            <value>
-                <fullName>datetime</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>datetime</label>
-            </value>
-            <value>
-                <fullName>email</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>email</label>
-            </value>
-            <value>
-                <fullName>file</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>file</label>
-            </value>
-            <value>
-                <fullName>number</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>number</label>
-            </value>
-            <value>
-                <fullName>password</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>password</label>
-            </value>
-            <value>
-                <fullName>search</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>search</label>
-            </value>
-            <value>
-                <fullName>tel</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>tel</label>
-            </value>
-            <value>
-                <fullName>time</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>time</label>
-            </value>
-            <value>
                 <fullName>toggle</fullName>
                 <default>false</default>
                 <isActive>false</isActive>
                 <label>toggle</label>
-            </value>
-            <value>
-                <fullName>url</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>url</label>
             </value>
         </valueSetDefinition>
     </valueSet>
