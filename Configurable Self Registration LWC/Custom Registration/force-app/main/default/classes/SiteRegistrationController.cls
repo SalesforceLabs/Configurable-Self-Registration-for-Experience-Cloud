@@ -43,7 +43,10 @@ public with sharing class SiteRegistrationController {
     */
     @AuraEnabled
     public static Boolean convertToBoolean(Object valueToConvert) {
-        return Boolean.valueOf(valueToConvert);
+        if(valueToConvert != null) {
+            return Boolean.valueOf(valueToConvert);
+        }
+        return false;
     }
 
     /**
@@ -107,6 +110,30 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
+     * @description Checks to see if the Logging setting is activated.
+     * @return true/false depending on setting value.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Boolean isLoggingEnabled() {
+        List<Custom_Registration_Settings__mdt> logSetting = new List<Custom_Registration_Settings__mdt>();
+        try {
+            logSetting = [SELECT Id, Activate_Setting__c, MasterLabel
+                       FROM Custom_Registration_Settings__mdt 
+                       WHERE (MasterLabel = 'Enable Logging' AND Activate_Setting__c = true)
+                       WITH SECURITY_ENFORCED
+                       LIMIT 1];
+        }
+        catch(Exception ex) {
+            return false;
+        }
+        
+        if(!logSetting.isEmpty() && logSetting.size() == 1) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Experience Cloud builder.
      * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
      * @param message - a list of messages to store on the Platform Event
@@ -167,7 +194,7 @@ public with sharing class SiteRegistrationController {
             User user = new User();
     
             for(String key : formJson.keySet()){
-                if(!skipFieldDuringRegistration.containsKey(key)) {
+                if(!skipFieldDuringRegistration.containsKey(key) && !key.contains('__c')) {
                     user.put(key, formJson.get(key));
                 }
             }
@@ -212,7 +239,7 @@ public with sharing class SiteRegistrationController {
             messages.add('Record Id found was: ' + recordId);
         }
     
-        if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(recordId)) { 
+        if(convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
             messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + formJson); 
             recordId = createObject(formJson, lwcSettings);
             messages.add('Created Record Id returned was: ' + recordId);   
@@ -402,16 +429,31 @@ public with sharing class SiteRegistrationController {
     public static String createExternalUser(Map<String, Object> formInputs, Id accountId, Map<String, Object> configurationOptions) {
         String userId = null; 
         User user = new User();
-        
+
         for(String key : formInputs.keySet()) {
-            if(!skipFieldDuringRegistration.containsKey(key)) {
+            if(!skipFieldDuringRegistration.containsKey(key) && !key.contains('__c')) {
                 user.put(key, formInputs.get(key));
-            }
+            }                 
         }
 
         user.CommunityNickname = generateCommunityNickname(convertToString(formInputs.get('Username')));
-        userId = Site.createExternalUser(user, accountId, convertToString(formInputs.get('password')), convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
-        
+
+        try {
+            userId = Site.createExternalUser(user, accountId, convertToString(formInputs.get('password')), convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
+        }
+        catch (Site.ExternalUserCreateException e) { //The site class ony throws one type of exception so we have to manually handle error messages here.
+            messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            
+            //Horrible error message. Show a configuration message instead from the property panel.
+            //This means that the the matched contact (using the custom query) is already a portal user and therefore can't register again.
+            if(e.getMessage().contains('portal user already exists for contact')) { 
+                throw new AuraHandledException(convertToString(configurationOptions.get('portalRegistrationUserExists')));
+            }
+            else { //Anything else, show the generic message.
+                throw new AuraHandledException(convertToString(configurationOptions.get('portalRegistrationError')));
+            }
+        }
         return userId;
     }
 
@@ -442,8 +484,6 @@ public with sharing class SiteRegistrationController {
             throw new AuraHandledException(convertToString(configurationOptions.get('portalLoginError')));
         }
         messages.add('User successfully logged into the portal.');
-        createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
-
         return pageUrl;
     }
 }

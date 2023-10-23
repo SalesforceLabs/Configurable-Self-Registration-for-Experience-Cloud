@@ -28,7 +28,7 @@
     </values>
     <values>
         <field>Field_Message__c</field>
-        <value xsi:type="xsd:string">Please enter a username</value>
+        <value xsi:type="xsd:string">Special characters are not allowed in Usernames</value>
     </values>
     <values>
         <field>Field_Name__c</field>
@@ -44,7 +44,7 @@
     </values>
     <values>
         <field>Field_Validation_REGEX__c</field>
-        <value xsi:nil="true"/>
+        <value xsi:type="xsd:string">[a-zA-Z0-9]+</value>
     </values>
     <values>
         <field>Portal_API_Name__c</field>

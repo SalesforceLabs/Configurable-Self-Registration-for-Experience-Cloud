@@ -20,7 +20,8 @@
                 default="System" required="true" />
             <property label="Create Record on Registration (if not found)" name="createNotFound"
                 type="Boolean"
-                description="Create a Contact record of the specified type, if a record is not found when registering"></property>
+                description="Create a Contact record of the specified type, if a record is not found when registering"
+                default="false"></property>
             <property label="Object Type to Create" name="objectCreateType" type="String"
                 default="N/A" datasource="N/A,Contact,Person Account"
                 description="Choose an object type. The registration process creates a new record if the SOQL query doesn't find any results. NOTE: Create record on Registration must be set to TRUE."></property>
@@ -64,12 +65,16 @@
                 description="Error message shown if a failure occurs logging into the portal after registration. Shown to the user."
                 default="There was a problem logging you into the portal. Please contact us for further assistance."
                 required="true"></property>
-
-            <!-- Logging option into custom object -->
-            <property label="Create Log Entry for Registrations" name="loggingEnabled"
-                type="Boolean"
-                description="Creates a Self Registration Log record for every self registration attempt."
-                default="false"></property>
+            <property label="User Creation Error Message" name="portalRegistrationError"
+                type="String"
+                description="Error message shown if a failure occurs during registration when creating a new user. Shown to the user."
+                default="There was a problem during registration. Please contact us for further assistance."
+                required="true"></property>
+            <property label="Already Registered Error Message" name="portalRegistrationUserExists"
+                type="String"
+                description="Error message shown if the matched contact is already a portal user. Shown to the user."
+                default="User is already registered. Please login to continue."
+                required="true"></property>
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>
