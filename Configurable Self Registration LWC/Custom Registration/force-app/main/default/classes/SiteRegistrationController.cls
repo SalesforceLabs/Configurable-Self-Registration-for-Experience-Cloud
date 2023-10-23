@@ -33,7 +33,10 @@ public with sharing class SiteRegistrationController {
     */
     @AuraEnabled
     public static String convertToString(Object valueToConvert) {
-        return String.valueOf(valueToConvert);
+        if(valueToConvert != null) {
+            return String.valueOf(valueToConvert);
+        }
+        return '';
     }
 
     /**
