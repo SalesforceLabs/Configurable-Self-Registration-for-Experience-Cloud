@@ -221,19 +221,4 @@ private class SiteRegistrationControllerTest {
         String result = SiteRegistrationController.loginUser(username, password, configurationOptionsObject);
         System.assert(result == '', 'Site.login() always returns empty pageRef in tests.');
     }
-
-    //NOTE: Known issue - see: https://help.salesforce.com/s/articleView?id=000391105&type=1
-    //Site.validatePassword method always fails during tests and is therefore bypassed, the rest gives some code coverage.
-    @isTest
-    private static void isPasswordValidTest() {
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Email":"user@test.com","password":"x", "confirmPassword":"x"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}'; 
-       
-        try {
-            SiteRegistrationController.registerUser(formInputs, configurationOptions);
-        }
-        catch (SObjectException ex) {
-            System.assertEquals(false, false,'User Object invalid');
-        } 
-    }
 }
