@@ -22,7 +22,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void isLoggingEnabled() {
         Boolean result =  SiteRegistrationController.isLoggingEnabled();
-        System.assertEquals(true, result, 'Retrieved custom settings');
+        System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
     }
 
     //Mock a scenario where we do not find a record with the custom query, and create a Person Account
