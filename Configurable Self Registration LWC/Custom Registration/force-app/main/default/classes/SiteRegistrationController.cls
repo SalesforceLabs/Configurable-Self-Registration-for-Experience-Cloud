@@ -25,6 +25,26 @@ public with sharing class SiteRegistrationController {
     public static Boolean isPersonAccountEnabled() {
         return testPersonAccountStatus != null ? testPersonAccountStatus : orgPersonAccountStatus;
     }
+
+    /**
+     * @description pass in a map and remove the password elements from any logging for security
+     * @return return the sanitised version of the map by removing infomration
+     */
+    @AuraEnabled
+    public static Map<String, Object> sanitiseJson(Map<String, Object> formJson) {
+        Map<String,Object> newFormJSON = new Map<String,Object>();
+        
+        for(String key : formJson.keySet()){
+            if(key == 'password' || key == 'confirmPassword') {
+                newFormJSON.put(key, 'HIDDEN');
+            }
+            else {
+                newFormJSON.put(key, formJson.get(key));
+            }
+        }
+
+        return newFormJson;
+    }
     
     /**
     * @description Simple method to wrap Object's Key > String conversion for easy re-use.
@@ -207,7 +227,7 @@ public with sharing class SiteRegistrationController {
                 Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword'))); 
             } 
         }
-        catch (SObjectException ex) {
+        catch (SObjectException ex) { 
            messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
@@ -232,18 +252,22 @@ public with sharing class SiteRegistrationController {
         Id recordId = null;
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+        
+        //Remove the Password/Confirm Password stored in the Self Registration Logs.
+        Map<String, Object> sanitisedFormJson = new Map<String, Object>();
+        sanitisedFormJson = sanitiseJson(formJson);
 
         isValidUsername(formJson, lwcSettings);
         validatePassword(formJson, lwcSettings);
   
         if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
-            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + formJson);
-            recordId = getObject(formJson, lwcSettings);
+            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + sanitisedFormJson);
+            recordId = getObject(sanitisedFormJson, lwcSettings);
             messages.add('Record Id found was: ' + recordId);
         }
     
         if(convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
-            messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + formJson); 
+            messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + sanitisedFormJson); 
             recordId = createObject(formJson, lwcSettings);
             messages.add('Created Record Id returned was: ' + recordId);   
         }
