@@ -7,10 +7,11 @@
  * Change History :
  *****************************************************************************************************/
 
-import { LightningElement, api, track} from 'lwc';
+import {LightningElement, api, track} from 'lwc';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
+import isLoggingEnabled from '@salesforce/apex/SiteRegistrationController.isLoggingEnabled';
 export default class customSelfRegistration extends LightningElement {
     
     @api buttonLabel;
@@ -21,10 +22,8 @@ export default class customSelfRegistration extends LightningElement {
     @api objectCreateType;
     @api accountId;
     @api personAccountRecordTypeId;
-    @api enableCustomisation; 
     @api sendEmailConfirmation;
     @api accessLevelMode;
-    @api loggingEnabled;
     
     //As above, but these are message configuration properties.
     @api registerButtonSignUpMessage;
@@ -35,6 +34,8 @@ export default class customSelfRegistration extends LightningElement {
     @api multipleRecordsFoundError;
     @api errorOnCreate;
     @api portalLoginError;
+    @api portalRegistrationError;
+    @api portalRegistrationUserExists;
     @api fieldHelpFirstName;
     @api fieldHelpLastName;
     @api fieldHelpUsername;
@@ -55,12 +56,12 @@ export default class customSelfRegistration extends LightningElement {
 
     connectedCallback() {
 
-        this.handleSubmit(true, this.registerButtonSignUpMessage, true);
+        this.handleSubmit(false, this.registerButtonSignUpMessage, false);
 
         //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
         let queryParts = this.customQuery.split(" ");
-        if(this.customQuery == null || (queryParts[3] != 'Contact' &&  queryParts[3] != 'Account')) {
-           this._setComponentError(true, 'Only Contact or Account objects are supported with the Custom SOQL Query on this component.');
+        if(this.customQuery == null || (queryParts[3] != 'Contact' &&  queryParts[3] != 'Account' &&  queryParts[3] != 'Case')) {
+           this._setComponentError(true, 'Only Contact, Account or Case objects are supported with the Custom SOQL Query on this component.');
         }
 
         //Check the custom query for Account, and if the Person Accounts are not enabled then error.
@@ -104,29 +105,30 @@ export default class customSelfRegistration extends LightningElement {
                console.log(error); 
             })
         }
+
+        //Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
+        isLoggingEnabled().then((enabled) => {
+            this.configurationOptions['loggingEnabled'] = enabled;
+        }).catch(error=>{
+            console.log(error); 
+        })
         
         //Check if the Person Account Record Type is set if the Object Create Type is 'Person Account' and Create If Not Found = TRUE
         if(this.createNotFound && this.objectCreateType == 'Person Account' && this.personAccountRecordTypeId == '') {
            this._setComponentError(true, 'Please select a Person Account Record Type from the list to create a Person Account during registration.');  
         } 
 
-        //Gets the customisation records from Custom Metadata if setting is enabled 
-        if(this.enableCustomisation) {
-            getCustomConfiguration().then(result=>{
-                this.results = JSON.parse(result);
-            }).catch(error=>{
-                console.log(error);
-            })
-        }
+        //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
+        getCustomConfiguration().then(result=>{
+            this.results = JSON.parse(result);
+        }).catch(error=>{
+            console.log(error);
+        })
     }
 
     _applyInputFormValidity() {
-        this._resetServerError();
-        this._applyCustomValidation();
-    }
-
-    _applyCustomValidation() {
-        this._applyCustomPassportValidity();
+       this._resetServerError();
+       this._applyCustomPassportValidity();
     }
 
     _applyCustomPassportValidity() {
@@ -173,7 +175,7 @@ export default class customSelfRegistration extends LightningElement {
     }
 
     handleOnChange(event) {
-        this.formInputs[event.target.name] = event.target.value; 
+        this.formInputs[event.target.name] = event.target.value;
     }
 
     handleSubmit(spinnerState, buttonText, buttonState) {
@@ -186,16 +188,19 @@ export default class customSelfRegistration extends LightningElement {
 
         this._applyInputFormValidity();
 
+        //Set the Username to be the email address if not provided on the form.
+        if(!this.formInputs['Username'] || this.formInputs['Username'] == '') {
+            this.formInputs['Username'] = this.formInputs['Email'];
+        }
+
         //Add LWC configuration to the ConfigurationOptions object to pass to Apex as one parameter.
         this.configurationOptions['customQuery'] = this.customQuery;
         this.configurationOptions['createNotFound'] = this.createNotFound;
         this.configurationOptions['objectCreateType'] = this.objectCreateType;
         this.configurationOptions['accountId'] = this.accountId;
-        this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId, 
-        this.configurationOptions['enableCustomisation'] = this.enableCustomisation;
+        this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId;
         this.configurationOptions['sendEmailConfirmation'] = this.sendEmailConfirmation;
         this.configurationOptions['accessLevelMode'] = this.accessLevelMode;
-        this.configurationOptions['loggingEnabled'] = this.loggingEnabled;
         this.configurationOptions['registerButtonSignUpMessage'] = this.registerButtonSignUpMessage;
         this.configurationOptions['registerButtonWaitingMessage'] = this.registerButtonWaitingMessage;
         this.configurationOptions['passwordMatchError'] = this.passwordMatchError;
@@ -204,6 +209,8 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['errorMultipleRecordsFound'] = this.multipleRecordsFoundError;
         this.configurationOptions['errorOnCreate'] = this.errorOnCreate;
         this.configurationOptions['portalLoginError'] = this.portalLoginError;
+        this.configurationOptions['portalRegistrationError'] = this.portalRegistrationError;
+        this.configurationOptions['portalRegistrationUserExists'] = this.portalRegistrationUserExists;
         this.configurationOptions['fieldHelpFirstName'] = this.fieldHelpFirstName;
         this.configurationOptions['fieldHelpLastName'] = this.fieldHelpLastName;
         this.configurationOptions['fieldHelpUsername'] = this.fieldHelpUsername;

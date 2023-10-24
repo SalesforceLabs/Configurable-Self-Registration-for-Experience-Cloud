@@ -20,7 +20,8 @@
                 default="System" required="true" />
             <property label="Create Record on Registration (if not found)" name="createNotFound"
                 type="Boolean"
-                description="Create a Contact record of the specified type, if a record is not found when registering"></property>
+                description="Create a Contact record of the specified type, if a record is not found when registering"
+                default="false"></property>
             <property label="Object Type to Create" name="objectCreateType" type="String"
                 default="N/A" datasource="N/A,Contact,Person Account"
                 description="Choose an object type. The registration process creates a new record if the SOQL query doesn't find any results. NOTE: Create record on Registration must be set to TRUE."></property>
@@ -32,8 +33,6 @@
             <property label="Send Email Confirmation" name="sendEmailConfirmation" type="Boolean"
                 description="Send email confirmation on successful registration of a user. Consider switching off, if using another solution for sending email communications such as Marketing Cloud"
                 default="true"></property>
-            <property label="Use Custom Configuration" name="enableCustomisation" type="Boolean"
-                description="Adds Custom Field Configuration from Custom Metadata to the Self Registration Component. Ensure 'Active' = TRUE on any configuration you wish to use with this component, otherwise it is ignored."></property>
             <property label="Sign Up Button Label" name="registerButtonSignUpMessage" type="String"
                 description="Text used on the submit button" default="Sign Up" required="true"></property>
             <property label="Sign Up Button Waiting Message" name="registerButtonWaitingMessage"
@@ -66,29 +65,16 @@
                 description="Error message shown if a failure occurs logging into the portal after registration. Shown to the user."
                 default="There was a problem logging you into the portal. Please contact us for further assistance."
                 required="true"></property>
-
-            <!-- Form Help Text Properties for out of the box fields, everything else is configured
-            in Custom Metadata  -->
-            <property label="Form Field: First Name Help Text" name="fieldHelpFirstName"
+            <property label="User Creation Error Message" name="portalRegistrationError"
                 type="String"
-                description="Set the help text that shows next to the First Name field"></property>
-            <property label="Form Field: Last Name Help Text" name="fieldHelpLastName" type="String"
-                description="Set the help text that shows next to the Last Name field"></property>
-            <property label="Form Field: Username Help Text" name="fieldHelpUsername" type="String"
-                description="Set the help text that shows next to the Username field"></property>
-            <property label="Form Field: Email Help Text" name="fieldHelpEmail" type="String"
-                description="Set the help text that shows next to the Email field"></property>
-            <property label="Form Field: Password Help Text" name="fieldHelpPassword" type="String"
-                description="Set the help text that shows next to the Password field"></property>
-            <property label="Form Field: Confirm Password Help Text" name="fieldHelpConfirmPassword"
+                description="Error message shown if a failure occurs during registration when creating a new user. Shown to the user."
+                default="There was a problem during registration. Please contact us for further assistance."
+                required="true"></property>
+            <property label="Already Registered Error Message" name="portalRegistrationUserExists"
                 type="String"
-                description="Set the help text that shows next to the Confirm Password field"></property>
-
-            <!-- Logging option into custom object -->
-            <property label="Create Log Entry for Registrations" name="loggingEnabled"
-                type="Boolean"
-                description="Creates a Self Registration Log record for every self registration attempt."
-                default="false"></property>
+                description="Error message shown if the matched contact is already a portal user. Shown to the user."
+                default="User is already registered. Please login to continue."
+                required="true"></property>
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

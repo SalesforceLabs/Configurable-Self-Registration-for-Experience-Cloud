@@ -8,14 +8,21 @@
 @isTest
 private class SiteRegistrationControllerTest {
 
-    //Retrieve custom metadata. Uses a test record created via the Managed Package as Custom metadata can't easily be tested as they can't be inserted in tests.
+    //Retrieve custom metadata. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
     @isTest
     private static void getCustomConfigurationTest() {
     
-        String expected = '[{"fieldType":"text","fieldName":"Test_Field__c","fieldLabel":"Test Field","fieldHelpText":"some test help text","fieldMaxLength":"10","fieldMessage":"a test message","fieldRegex":"[0-9]","fieldRequired":"true"}]';     
+        String expected = '[{"fieldType":"text","fieldName":"FirstName","fieldLabel":"First Name","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Please enter a First Name","fieldRequired":"true"},{"fieldType":"text","fieldName":"LastName","fieldLabel":"Last Name","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Please enter a Last Name","fieldRequired":"true"},{"fieldType":"text","fieldName":"Username","fieldLabel":"Username","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Special characters are not allowed in Usernames","fieldRegex":"[a-zA-Z0-9]+","fieldRequired":"true"},{"fieldType":"email","fieldName":"Email","fieldLabel":"Email","fieldClass":"null","fieldMaxLength":"255","fieldMessage":"Please enter an email address","fieldRequired":"true"},{"fieldType":"password","fieldName":"password","fieldLabel":"Password","fieldClass":"passwordCmp","fieldMaxLength":"40","fieldMessage":"Please enter a password","fieldRequired":"true"},{"fieldType":"password","fieldName":"confirmPassword","fieldLabel":"Confirm Password","fieldClass":"confirmPasswordCmp","fieldMaxLength":"40","fieldMessage":"Please enter confirm your password","fieldRequired":"true"}]';     
         String result =  SiteRegistrationController.getCustomConfiguration();
         
         System.assertEquals(expected, result, 'Retrieved custom configuration');
+    }
+
+    //Retrieve and test custom settings. 1 is installed by the package and is all is used right now.
+    @isTest
+    private static void isLoggingEnabled() {
+        Boolean result =  SiteRegistrationController.isLoggingEnabled();
+        System.assertEquals(true, result, 'Retrieved custom settings');
     }
 
     //Mock a scenario where we do not find a record with the custom query, and create a Person Account
@@ -219,28 +226,14 @@ private class SiteRegistrationControllerTest {
     //Site.validatePassword method always fails during tests and is therefore bypassed, the rest gives some code coverage.
     @isTest
     private static void isPasswordValidTest() {
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Password1!", "confirmPassword":"Password1!"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Email":"user@test.com","password":"x", "confirmPassword":"x"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}'; 
+       
         try {
             SiteRegistrationController.registerUser(formInputs, configurationOptions);
         }
-        catch (Exception e) {
-            System.assertEquals(false, false,'Password was not valid');
+        catch (SObjectException ex) {
+            System.assertEquals(false, false,'User Object invalid');
         } 
     }
-
-    //Validating the password requires a valid User object. The fields passed into the object can fail if custom metadata is configured with invalid custom field names so this test actually mocks that scenario.
-    /*
-    @isTest
-    private static void createExternalUserObjectTest() {
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testval"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
- 
-        try {
-            SiteRegistrationController.registerUser(formInputs, configurationOptions);
-        }
-        catch (SObjectException e) {
-            System.assertEquals(false, false,'Failed: Unknown field on User Object');
-        } 
-    }*/
 }

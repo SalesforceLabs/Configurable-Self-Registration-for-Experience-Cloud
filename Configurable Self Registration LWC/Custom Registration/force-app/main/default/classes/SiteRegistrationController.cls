@@ -25,6 +25,26 @@ public with sharing class SiteRegistrationController {
     public static Boolean isPersonAccountEnabled() {
         return testPersonAccountStatus != null ? testPersonAccountStatus : orgPersonAccountStatus;
     }
+
+    /**
+     * @description pass in a map and remove the password elements from any logging for security
+     * @return return the sanitised version of the map by removing infomration
+     */
+    @AuraEnabled
+    public static Map<String, Object> sanitiseJson(Map<String, Object> formJson) {
+        Map<String,Object> newFormJSON = new Map<String,Object>();
+        
+        for(String key : formJson.keySet()){
+            if(key == 'password' || key == 'confirmPassword') {
+                newFormJSON.put(key, 'HIDDEN');
+            }
+            else {
+                newFormJSON.put(key, formJson.get(key));
+            }
+        }
+
+        return newFormJson;
+    }
     
     /**
     * @description Simple method to wrap Object's Key > String conversion for easy re-use.
@@ -33,7 +53,10 @@ public with sharing class SiteRegistrationController {
     */
     @AuraEnabled
     public static String convertToString(Object valueToConvert) {
-        return String.valueOf(valueToConvert);
+        if(valueToConvert != null) {
+            return String.valueOf(valueToConvert);
+        }
+        return '';
     }
 
     /**
@@ -43,7 +66,10 @@ public with sharing class SiteRegistrationController {
     */
     @AuraEnabled
     public static Boolean convertToBoolean(Object valueToConvert) {
-        return Boolean.valueOf(valueToConvert);
+        if(valueToConvert != null) {
+            return Boolean.valueOf(valueToConvert);
+        }
+        return false;
     }
 
     /**
@@ -57,16 +83,14 @@ public with sharing class SiteRegistrationController {
         try {
 
             String siteName = Site.getName();
-            if(Test.isRunningTest()) {
-                siteName = 'TestSite';
-            }
-                        
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c
-                                                                   FROM Custom_Registration_Configuration__mdt 
-                                                                   WHERE Portal_API_Name__c = :siteName                                                                   
-                                                                   AND Active__c = true
-                                                                   WITH SECURITY_ENFORCED]) {
-           
+            
+            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
+                                    FROM Custom_Registration_Configuration__mdt 
+                                    WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
+                                    OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
+                                    WITH SECURITY_ENFORCED 
+                                    ORDER BY Display_Order__c]
+                ) {
                 if(String.isNotBlank(result)){
                     result += ',';
                 } 
@@ -75,7 +99,7 @@ public with sharing class SiteRegistrationController {
                 jsonPart += '"fieldType":"' + mapping.Field_Type__c + '",'; 
                 jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
                 jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
-                jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '",';
+                jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
                 jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '"';
 
                 if(String.isNotBlank(mapping.Field_Message__c)) {
@@ -92,6 +116,11 @@ public with sharing class SiteRegistrationController {
                     jsonPart += ',';
                     jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '"';
                 }
+
+                if(String.isNotBlank(mapping.Field_Help_Text__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '"';
+                }
              
                 jsonPart += '}';
                 result += jsonPart;
@@ -101,6 +130,30 @@ public with sharing class SiteRegistrationController {
             result += ex.getLineNumber() + ' : ' + ex.getMessage();
         }
         return '['+result+']';
+    }
+
+    /**
+     * @description Checks to see if the Logging setting is activated.
+     * @return true/false depending on setting value.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Boolean isLoggingEnabled() {
+        List<Custom_Registration_Settings__mdt> logSetting = new List<Custom_Registration_Settings__mdt>();
+        try {
+            logSetting = [SELECT Id, Activate_Setting__c, MasterLabel
+                       FROM Custom_Registration_Settings__mdt 
+                       WHERE (MasterLabel = 'Enable Logging' AND Activate_Setting__c = true)
+                       WITH SECURITY_ENFORCED
+                       LIMIT 1];
+        }
+        catch(Exception ex) {
+            return false;
+        }
+        
+        if(!logSetting.isEmpty() && logSetting.size() == 1) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -164,7 +217,7 @@ public with sharing class SiteRegistrationController {
             User user = new User();
     
             for(String key : formJson.keySet()){
-                if(!skipFieldDuringRegistration.containsKey(key)) {
+                if(!skipFieldDuringRegistration.containsKey(key) && !key.contains('__c')) {
                     user.put(key, formJson.get(key));
                 }
             }
@@ -174,7 +227,7 @@ public with sharing class SiteRegistrationController {
                 Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword'))); 
             } 
         }
-        catch (SObjectException ex) {
+        catch (SObjectException ex) { 
            messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
@@ -199,18 +252,22 @@ public with sharing class SiteRegistrationController {
         Id recordId = null;
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+        
+        //Remove the Password/Confirm Password stored in the Self Registration Logs.
+        Map<String, Object> sanitisedFormJson = new Map<String, Object>();
+        sanitisedFormJson = sanitiseJson(formJson);
 
         isValidUsername(formJson, lwcSettings);
         validatePassword(formJson, lwcSettings);
   
         if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
-            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + formJson);
-            recordId = getObject(formJson, lwcSettings);
+            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + sanitisedFormJson);
+            recordId = getObject(sanitisedFormJson, lwcSettings);
             messages.add('Record Id found was: ' + recordId);
         }
     
-        if(convertToBoolean(lwcSettings.get('createNotFound'))  && String.isBlank(recordId)) { 
-            messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + formJson); 
+        if(convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
+            messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + sanitisedFormJson); 
             recordId = createObject(formJson, lwcSettings);
             messages.add('Created Record Id returned was: ' + recordId);   
         }
@@ -251,7 +308,14 @@ public with sharing class SiteRegistrationController {
 
         if(!recordList.isEmpty() && recordList.size() == 1) {
             String objectType = recordList.getSObjectType().getDescribe().getName();
-            return objectType == 'Contact' ? (Id)recordList[0].get('AccountId') : (Id)recordList[0].get('Id');
+            switch on objectType {
+                when 'Contact', 'Case' {
+                    return (Id)recordList[0].get('AccountId');
+                }
+                when else { //TODO: Intended to work for Accounts. Further support might be required here for other objects as and when they get added.
+                    return (Id)recordList[0].get('Id');
+                }
+            }
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
             messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('errorMultipleRecordsFound') + ' Form Values: ' + formInputs);
@@ -392,16 +456,31 @@ public with sharing class SiteRegistrationController {
     public static String createExternalUser(Map<String, Object> formInputs, Id accountId, Map<String, Object> configurationOptions) {
         String userId = null; 
         User user = new User();
-        
+
         for(String key : formInputs.keySet()) {
-            if(!skipFieldDuringRegistration.containsKey(key)) {
+            if(!skipFieldDuringRegistration.containsKey(key) && !key.contains('__c')) {
                 user.put(key, formInputs.get(key));
-            }
+            }                 
         }
 
         user.CommunityNickname = generateCommunityNickname(convertToString(formInputs.get('Username')));
-        userId = Site.createExternalUser(user, accountId, convertToString(formInputs.get('password')), convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
-        
+
+        try {
+            userId = Site.createExternalUser(user, accountId, convertToString(formInputs.get('password')), convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
+        }
+        catch (Site.ExternalUserCreateException e) { //The site class ony throws one type of exception so we have to manually handle error messages here.
+            messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            
+            //Horrible error message. Show a configuration message instead from the property panel.
+            //This means that the the matched contact (using the custom query) is already a portal user and therefore can't register again.
+            if(e.getMessage().contains('portal user already exists for contact')) { 
+                throw new AuraHandledException(convertToString(configurationOptions.get('portalRegistrationUserExists')));
+            }
+            else { //Anything else, show the generic message.
+                throw new AuraHandledException(convertToString(configurationOptions.get('portalRegistrationError')));
+            }
+        }
         return userId;
     }
 
@@ -431,7 +510,7 @@ public with sharing class SiteRegistrationController {
             createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');        
             throw new AuraHandledException(convertToString(configurationOptions.get('portalLoginError')));
         }
-
+        messages.add('User successfully logged into the portal.');
         return pageUrl;
     }
 }
