@@ -175,7 +175,7 @@ export default class customSelfRegistration extends LightningElement {
     }
 
     handleOnChange(event) {
-        this.formInputs[event.target.name] = event.target.value;
+        this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     }
 
     handleSubmit(spinnerState, buttonText, buttonState) {
