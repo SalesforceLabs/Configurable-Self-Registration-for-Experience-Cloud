@@ -64,6 +64,8 @@ export default class customSelfRegistration extends LightningElement {
            this._setComponentError(true, 'Only Contact, Account or Case objects are supported with the Custom SOQL Query on this component.');
         }
 
+        this.configurationOptions['objectToQuery'] = queryParts[3]; //Pass this through to Apex so we can check data types of fields in the query.
+
         //Check the custom query for Account, and if the Person Accounts are not enabled then error.
         if(queryParts[3] == 'Account') {
             checkPersonAccount().then((enabled) => {
