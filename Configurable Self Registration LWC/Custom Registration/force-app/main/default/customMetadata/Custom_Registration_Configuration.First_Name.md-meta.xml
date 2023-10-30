@@ -28,11 +28,15 @@
     </values>
     <values>
         <field>Field_Message__c</field>
-        <value xsi:type="xsd:string">Please enter a First Name</value>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Field_Name__c</field>
         <value xsi:type="xsd:string">FirstName</value>
+    </values>
+    <values>
+        <field>Field_Required_Message__c</field>
+        <value xsi:type="xsd:string">Please enter a First Name</value>
     </values>
     <values>
         <field>Field_Required__c</field>

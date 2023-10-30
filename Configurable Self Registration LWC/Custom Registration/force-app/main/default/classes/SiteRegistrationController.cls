@@ -97,7 +97,7 @@ public with sharing class SiteRegistrationController {
 
             String siteName = Site.getName();
             
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
+            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
                                     FROM Custom_Registration_Configuration__mdt 
                                     WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
                                     OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
@@ -125,9 +125,10 @@ public with sharing class SiteRegistrationController {
                     jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
                 }
 
-                if(mapping.Field_Required__c) {
+                if(mapping.Field_Required__c && String.isNotBlank(mapping.Field_Required_Message__c)) {
                     jsonPart += ',';
-                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '"';
+                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '",';
+                    jsonPart += '"fieldRequiredMessage":"' + mapping.Field_Required_Message__c + '"';
                 }
 
                 if(String.isNotBlank(mapping.Field_Help_Text__c)) {

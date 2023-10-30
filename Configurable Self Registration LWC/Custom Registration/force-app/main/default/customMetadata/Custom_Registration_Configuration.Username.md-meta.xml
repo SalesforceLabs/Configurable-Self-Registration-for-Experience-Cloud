@@ -4,7 +4,7 @@
     <protected>true</protected>
     <values>
         <field>Active__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
     <values>
         <field>Display_Order__c</field>
@@ -33,6 +33,10 @@
     <values>
         <field>Field_Name__c</field>
         <value xsi:type="xsd:string">Username</value>
+    </values>
+    <values>
+        <field>Field_Required_Message__c</field>
+        <value xsi:type="xsd:string">Username is required</value>
     </values>
     <values>
         <field>Field_Required__c</field>
