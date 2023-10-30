@@ -8,7 +8,7 @@
     </values>
     <values>
         <field>Display_Order__c</field>
-        <value xsi:type="xsd:double">4.0</value>
+        <value xsi:type="xsd:double">5.0</value>
     </values>
     <values>
         <field>Field_Class__c</field>
@@ -28,11 +28,15 @@
     </values>
     <values>
         <field>Field_Message__c</field>
-        <value xsi:type="xsd:string">Please enter an email address</value>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Field_Name__c</field>
         <value xsi:type="xsd:string">Email</value>
+    </values>
+    <values>
+        <field>Field_Required_Message__c</field>
+        <value xsi:type="xsd:string">Please enter an email address</value>
     </values>
     <values>
         <field>Field_Required__c</field>

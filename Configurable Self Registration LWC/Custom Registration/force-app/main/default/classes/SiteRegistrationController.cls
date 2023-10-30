@@ -10,7 +10,8 @@ public with sharing class SiteRegistrationController {
     public static Map<String, String> skipFieldDuringRegistration = new Map <String, String>{'password' => '','confirmPassword' => ''};
     public static Map<String, String> skipFieldDuringNewContactCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => ''};
     public static Map<String, String> skipFieldDuringNewPersonAccountCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => '', 'Email' => ''};
-    
+    public static Map<String, String> skipFieldDuringDataTypeCheck = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => '', 'Email' => '', 'FirstName' => '', 'LastName' => ''};
+
     public static List<String> messages = new List<String>();
 
     @TestVisible
@@ -27,8 +28,20 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
+     * @description pass in an object name and field name.
+     * @param objName the object name to check
+     * @param fieldName the field name to check
+     * @return return true if the object and field both exist. If the object has been removed it will also return false. If the object exists but the field doesn’t it will return false.
+     */
+    public static boolean checkFieldExists(String objName, string fieldName) {
+        SObject so = Schema.getGlobalDescribe().get(objName).newSObject();
+        return so.getSobjectType().getDescribe().fields.getMap().containsKey(fieldName);
+    }
+
+    /**
      * @description pass in a map and remove the password elements from any logging for security
-     * @return return the sanitised version of the map by removing infomration
+     * @param formJson - pass in a map of JSON to sanitise
+     * @return return the sanitised version of the map by removing information
      */
     @AuraEnabled
     public static Map<String, Object> sanitiseJson(Map<String, Object> formJson) {
@@ -84,7 +97,7 @@ public with sharing class SiteRegistrationController {
 
             String siteName = Site.getName();
             
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
+            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
                                     FROM Custom_Registration_Configuration__mdt 
                                     WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
                                     OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
@@ -112,9 +125,10 @@ public with sharing class SiteRegistrationController {
                     jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
                 }
 
-                if(mapping.Field_Required__c) {
+                if(mapping.Field_Required__c && String.isNotBlank(mapping.Field_Required_Message__c)) {
                     jsonPart += ',';
-                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '"';
+                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '",';
+                    jsonPart += '"fieldRequiredMessage":"' + mapping.Field_Required_Message__c + '"';
                 }
 
                 if(String.isNotBlank(mapping.Field_Help_Text__c)) {
@@ -217,7 +231,7 @@ public with sharing class SiteRegistrationController {
             User user = new User();
     
             for(String key : formJson.keySet()){
-                if(!skipFieldDuringRegistration.containsKey(key) && !key.contains('__c')) {
+                if(!skipFieldDuringRegistration.containsKey(key) && checkFieldExists('User', key)) {
                     user.put(key, formJson.get(key));
                 }
             }
@@ -227,13 +241,13 @@ public with sharing class SiteRegistrationController {
                 Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword'))); 
             } 
         }
-        catch (SObjectException ex) { 
-           messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
+        catch (SObjectException ex) {
+           messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
         catch (Exception ex) {
-           messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + formJson);
+           messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
            throw new AuraHandledException(ex.getMessage()); //This is deliberate as the Site.Validate function returns useful information about the password failure
         }
@@ -287,7 +301,6 @@ public with sharing class SiteRegistrationController {
         return pageUrl;
     }
 
-    //TODO: Needs check on CRUD permissions for fields otherwise it might cause a failure.
     /**
      * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
      * @param formInputs - JSON String of the submitted form values 
@@ -298,14 +311,32 @@ public with sharing class SiteRegistrationController {
     private static Id getObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
         List<sObject> recordList = new List<sObject>();
 
-        //Configurable via the component config panel. May affect what record is found based on org settings. Default is 'System'
-        if(configurationOptions.get('accessLevelMode') == 'System') { 
-           recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
-        }
-        else {
-           recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+        //Process the inputs to convert strings to relevant data types to prevent SOQL errors
+        //https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
+        //https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
+        //TODO: Don't call getGlobalDescribe in a loop for each field!
+        for(String key : formInputs.keySet()) { 
+            if(!skipFieldDuringDataTypeCheck.containsKey(key)) {
+                Schema.DisplayType dataType = Schema.getGlobalDescribe().get(convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
+                
+                //Now we have the data type of the field, convert as required.
+                //TODO: Other types might be needed... Datetime/time/checkbox?
+                if(convertToString(dataType) == 'DATE') {
+                    Date d = Date.valueOf(convertToString(formInputs.get(key)));
+                    formInputs.put(key,d);
+                }
+            }    
         }
 
+        //Configurable via the component config panel. May affect what record is found based on org settings. Default is 'System'
+        //TODO: Needs check on CRUD permissions for fields in the query otherwise it might cause a failure. Use stripInaccessible()?
+        if(configurationOptions.get('accessLevelMode') == 'System') { 
+            recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
+        }
+        else {
+            recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+        }
+    
         if(!recordList.isEmpty() && recordList.size() == 1) {
             String objectType = recordList.getSObjectType().getDescribe().getName();
             switch on objectType {
@@ -458,7 +489,7 @@ public with sharing class SiteRegistrationController {
         User user = new User();
 
         for(String key : formInputs.keySet()) {
-            if(!skipFieldDuringRegistration.containsKey(key) && !key.contains('__c')) {
+            if(!skipFieldDuringRegistration.containsKey(key) && checkFieldExists('User', key)) {
                 user.put(key, formInputs.get(key));
             }                 
         }
