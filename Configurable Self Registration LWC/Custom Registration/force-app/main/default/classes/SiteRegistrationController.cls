@@ -91,8 +91,10 @@ public with sharing class SiteRegistrationController {
      * @see customSelfRegistration.html
      */
     @AuraEnabled(cacheable=true)
-    public static String getCustomConfiguration() {
+    public static String getCustomConfiguration(String urlParams) {
         String result = '';
+        Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
+
         try {
 
             String siteName = Site.getName();
@@ -114,6 +116,13 @@ public with sharing class SiteRegistrationController {
                 jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
                 jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
                 jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '"';
+                
+                for(String key : urlParameters.keySet()) {
+                    if(mapping.Field_Name__c == key) {
+                        jsonPart += ',';
+                        jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
+                    }
+                }
 
                 if(String.isNotBlank(mapping.Field_Message__c)) {
                     jsonPart += ',';
@@ -316,7 +325,7 @@ public with sharing class SiteRegistrationController {
         //https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
         //TODO: Don't call getGlobalDescribe in a loop for each field!
         for(String key : formInputs.keySet()) { 
-            if(!skipFieldDuringDataTypeCheck.containsKey(key)) {
+            if(!skipFieldDuringDataTypeCheck.containsKey(key) && checkFieldExists(convertToString(configurationOptions.get('objectToQuery')), key)) {
                 Schema.DisplayType dataType = Schema.getGlobalDescribe().get(convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
                 
                 //Now we have the data type of the field, convert as required.

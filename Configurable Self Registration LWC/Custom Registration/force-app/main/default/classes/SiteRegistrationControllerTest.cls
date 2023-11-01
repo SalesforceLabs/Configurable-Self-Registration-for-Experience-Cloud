@@ -11,9 +11,9 @@ private class SiteRegistrationControllerTest {
     //Retrieve custom metadata. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
     @isTest
     private static void getCustomConfigurationTest() {
-    
-        String expected = '[{"fieldType":"text","fieldName":"FirstName","fieldLabel":"First Name","fieldClass":"null","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please enter a First Name"},{"fieldType":"text","fieldName":"LastName","fieldLabel":"Last Name","fieldClass":"null","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please enter a Last Name"},{"fieldType":"text","fieldName":"Username","fieldLabel":"Username","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Special characters are not allowed in Usernames","fieldRegex":"[a-zA-Z0-9]+","fieldRequired":"true","fieldRequiredMessage":"Username is required"},{"fieldType":"email","fieldName":"Email","fieldLabel":"Email","fieldClass":"null","fieldMaxLength":"255.0","fieldRequired":"true","fieldRequiredMessage":"Please enter an email address"},{"fieldType":"password","fieldName":"password","fieldLabel":"Password","fieldClass":"passwordCmp","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please enter a password"},{"fieldType":"password","fieldName":"confirmPassword","fieldLabel":"Confirm Password","fieldClass":"confirmPasswordCmp","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please confirm your password"}]';     
-        String result =  SiteRegistrationController.getCustomConfiguration();
+        String urlParams = '{"FirstName":"Test"}';
+        String expected = '[{"fieldType":"text","fieldName":"FirstName","fieldLabel":"First Name","fieldClass":"null","fieldMaxLength":"40.0","fieldValue":"Test","fieldRequired":"true","fieldRequiredMessage":"Please enter a First Name"},{"fieldType":"text","fieldName":"LastName","fieldLabel":"Last Name","fieldClass":"null","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please enter a Last Name"},{"fieldType":"text","fieldName":"Username","fieldLabel":"Username","fieldClass":"null","fieldMaxLength":"40","fieldMessage":"Special characters are not allowed in Usernames","fieldRegex":"[a-zA-Z0-9]+","fieldRequired":"true","fieldRequiredMessage":"Username is required"},{"fieldType":"email","fieldName":"Email","fieldLabel":"Email","fieldClass":"null","fieldMaxLength":"255.0","fieldRequired":"true","fieldRequiredMessage":"Please enter an email address"},{"fieldType":"password","fieldName":"password","fieldLabel":"Password","fieldClass":"passwordCmp","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please enter a password"},{"fieldType":"password","fieldName":"confirmPassword","fieldLabel":"Confirm Password","fieldClass":"confirmPasswordCmp","fieldMaxLength":"40.0","fieldRequired":"true","fieldRequiredMessage":"Please confirm your password"}]';     
+        String result =  SiteRegistrationController.getCustomConfiguration(urlParams);
         
         System.assertEquals(expected, result, 'Retrieved custom configuration');
     }
@@ -60,7 +60,7 @@ private class SiteRegistrationControllerTest {
 
         Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
              SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -125,7 +125,7 @@ private class SiteRegistrationControllerTest {
         insert acc;
         
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue" }';
-        String configurationOptions = '{"loggingEnabled":"true", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
             SiteRegistrationController.registerUser(formInputs, configurationOptions); 
