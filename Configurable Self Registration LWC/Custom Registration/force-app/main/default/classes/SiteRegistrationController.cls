@@ -6,12 +6,6 @@
 
 public with sharing class SiteRegistrationController {
 
-    //These maps are used to define fields that should be skipped from the registration form for creating External User, Contact and Person Account.
-    public static Map<String, String> skipFieldDuringRegistration = new Map <String, String>{'password' => '','confirmPassword' => ''};
-    public static Map<String, String> skipFieldDuringNewContactCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => ''};
-    public static Map<String, String> skipFieldDuringNewPersonAccountCreate = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => '', 'Email' => ''};
-    public static Map<String, String> skipFieldDuringDataTypeCheck = new Map <String, String>{'password' => '','confirmPassword' => '', 'Username' => '', 'Email' => '', 'FirstName' => '', 'LastName' => ''};
-
     public static List<String> messages = new List<String>();
 
     @TestVisible
@@ -240,7 +234,7 @@ public with sharing class SiteRegistrationController {
             User user = new User();
     
             for(String key : formJson.keySet()){
-                if(!skipFieldDuringRegistration.containsKey(key) && checkFieldExists('User', key)) {
+                if(checkFieldExists('User', key)) {
                     user.put(key, formJson.get(key));
                 }
             }
@@ -275,6 +269,8 @@ public with sharing class SiteRegistrationController {
         Id recordId = null;
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+
+        System.debug('Form Inputs: ' + formJson);
         
         //Remove the Password/Confirm Password stored in the Self Registration Logs.
         Map<String, Object> sanitisedFormJson = new Map<String, Object>();
@@ -325,11 +321,11 @@ public with sharing class SiteRegistrationController {
         //https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
         //TODO: Don't call getGlobalDescribe in a loop for each field!
         for(String key : formInputs.keySet()) { 
-            if(!skipFieldDuringDataTypeCheck.containsKey(key) && checkFieldExists(convertToString(configurationOptions.get('objectToQuery')), key)) {
+            if(checkFieldExists(convertToString(configurationOptions.get('objectToQuery')), key)) {
                 Schema.DisplayType dataType = Schema.getGlobalDescribe().get(convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
                 
                 //Now we have the data type of the field, convert as required.
-                //TODO: Other types might be needed... Datetime/time/checkbox?
+                //TODO: Other types might be needed... Datetime/time
                 if(convertToString(dataType) == 'DATE') {
                     Date d = Date.valueOf(convertToString(formInputs.get(key)));
                     formInputs.put(key,d);
@@ -339,13 +335,20 @@ public with sharing class SiteRegistrationController {
 
         //Configurable via the component config panel. May affect what record is found based on org settings. Default is 'System'
         //TODO: Needs check on CRUD permissions for fields in the query otherwise it might cause a failure. Use stripInaccessible()?
-        if(configurationOptions.get('accessLevelMode') == 'System') { 
-            recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
+        try {
+            if(configurationOptions.get('accessLevelMode') == 'System') { 
+                recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
+            }
+            else {
+                recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+            }
         }
-        else {
-            recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+        catch(Exception e) {
+            messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
-    
+        
         if(!recordList.isEmpty() && recordList.size() == 1) {
             String objectType = recordList.getSObjectType().getDescribe().getName();
             switch on objectType {
@@ -389,7 +392,7 @@ public with sharing class SiteRegistrationController {
             newContact.put('AccountId', convertToString(configurationOptions.get('accountId')));
              
             for(String key : formInputs.keySet()) {
-                if(!skipFieldDuringNewContactCreate.containsKey(key)) {
+                if(checkFieldExists('Contact', key)) {
                     newContact.put(key, formInputs.get(key));
                 }
                 newContacts.add(newContact);
@@ -424,7 +427,7 @@ public with sharing class SiteRegistrationController {
             Account newPersonAccount = new Account();
             newPersonAccount.put('RecordTypeId', Id.valueOf(convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             for(String key : formInputs.keySet()) {
-                if(!skipFieldDuringNewPersonAccountCreate.containsKey(key)) {
+                if(checkFieldExists('Account', key)) {
                     newPersonAccount.put(key, formInputs.get(key));
                 }
                 if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
@@ -498,7 +501,7 @@ public with sharing class SiteRegistrationController {
         User user = new User();
 
         for(String key : formInputs.keySet()) {
-            if(!skipFieldDuringRegistration.containsKey(key) && checkFieldExists('User', key)) {
+            if(checkFieldExists('User', key)) {
                 user.put(key, formInputs.get(key));
             }                 
         }
