@@ -317,18 +317,28 @@ public with sharing class SiteRegistrationController {
         List<sObject> recordList = new List<sObject>();
 
         //Process the inputs to convert strings to relevant data types to prevent SOQL errors
-        //https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
-        //https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
+        //Dates: https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
+        //Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
+        //Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
+        //Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
         //TODO: Don't call getGlobalDescribe in a loop for each field!
         for(String key : formInputs.keySet()) { 
             if(checkFieldExists(convertToString(configurationOptions.get('objectToQuery')), key)) {
                 Schema.DisplayType dataType = Schema.getGlobalDescribe().get(convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
                 
                 //Now we have the data type of the field, convert as required.
-                //TODO: Other types might be needed... Datetime/time
                 if(convertToString(dataType) == 'DATE') {
                     Date d = Date.valueOf(convertToString(formInputs.get(key)));
                     formInputs.put(key,d);
+                }
+                if(convertToString(dataType) == 'TIME') {
+                    String[] strTimeSplit = convertToString(formInputs.get(key)).split(':');
+                    Time t = Time.newInstance(Integer.valueOf(strTimeSplit[0]),  Integer.valueOf(strTimeSplit[1]), 0, 0);
+                    formInputs.put(key,t);
+                }
+                if(convertToString(dataType) == 'DATETIME') {
+                    Datetime dt = (DateTime)JSON.deserialize('"' + convertToString(formInputs.get(key)) +'"', DateTime.class);
+                    formInputs.put(key,dt);
                 }
             }    
         }
