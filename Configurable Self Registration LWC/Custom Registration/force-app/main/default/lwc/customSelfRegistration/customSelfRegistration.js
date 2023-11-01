@@ -7,7 +7,8 @@
  * Change History :
  *****************************************************************************************************/
 
-import {LightningElement, api, track} from 'lwc';
+import {LightningElement, api, track, wire} from 'lwc';
+import {CurrentPageReference} from 'lightning/navigation';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
@@ -53,6 +54,17 @@ export default class customSelfRegistration extends LightningElement {
     @api showComponentError = false;
     @api componentErrorMessage = null;
     @api serverErrorMessage = null;
+
+    //Get the URL Parameters so we can pass any predefined values through to the form and pre-set values.
+    currentPageReference = null; 
+    urlParameters = null;
+
+    @wire(CurrentPageReference)
+    getStateParameters(currentPageReference) {
+        if (currentPageReference) {
+            this.urlParameters = currentPageReference.state;
+        }
+    }
 
     connectedCallback() {
 
@@ -121,7 +133,7 @@ export default class customSelfRegistration extends LightningElement {
         } 
 
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
-        getCustomConfiguration().then(result=>{
+        getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
             this.results = JSON.parse(result);
         }).catch(error=>{
             console.log(error);

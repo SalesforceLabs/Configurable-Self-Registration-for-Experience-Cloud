@@ -26,7 +26,7 @@
         <!-- Fields created in custom metadata are displayed here when the component renders -->
         <template for:each={results} for:item="result">
             <div key={result.fieldLabel}>
-                <lightning-input type={result.fieldType} class={result.fieldClass} label={result.fieldLabel} name={result.fieldName} field-level-help={result.fieldHelpText} 
+                <lightning-input type={result.fieldType} class={result.fieldClass} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue} field-level-help={result.fieldHelpText} 
                     message-when-pattern-mismatch={result.fieldMessage} pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} maxlength={result.fieldMaxLength} required={result.fieldRequired} onchange={handleOnChange}></lightning-input>
             </div>
         </template>
