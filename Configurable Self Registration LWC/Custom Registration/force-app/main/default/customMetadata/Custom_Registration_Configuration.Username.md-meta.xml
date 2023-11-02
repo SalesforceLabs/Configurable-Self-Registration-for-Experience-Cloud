@@ -4,7 +4,7 @@
     <protected>true</protected>
     <values>
         <field>Active__c</field>
-        <value xsi:type="xsd:boolean">false</value>
+        <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
         <field>Display_Order__c</field>
@@ -27,12 +27,28 @@
         <value xsi:type="xsd:double">40.0</value>
     </values>
     <values>
+        <field>Field_Message_Too_Long__c</field>
+        <value xsi:type="xsd:string">Maximum of 40 characters are allowed</value>
+    </values>
+    <values>
+        <field>Field_Message_Too_Short__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
         <field>Field_Message__c</field>
         <value xsi:type="xsd:string">Special characters are not allowed in Usernames</value>
     </values>
     <values>
+        <field>Field_Min_Length__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
         <field>Field_Name__c</field>
         <value xsi:type="xsd:string">Username</value>
+    </values>
+    <values>
+        <field>Field_Placeholder__c</field>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Field_Required_Message__c</field>
