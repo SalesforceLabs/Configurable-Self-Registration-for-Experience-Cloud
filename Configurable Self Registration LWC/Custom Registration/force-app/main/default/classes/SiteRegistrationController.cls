@@ -155,6 +155,11 @@ public with sharing class SiteRegistrationController {
      */
     @AuraEnabled(cacheable=true)
     public static Boolean isLoggingEnabled() {
+        
+        if(Test.isRunningTest()) { //Always return false if running Tests to prevent failure as the logging can be switched on/off by the user after installation.
+            return false;  
+        } 
+        
         List<Custom_Registration_Settings__mdt> logSetting = new List<Custom_Registration_Settings__mdt>();
         try {
             logSetting = [SELECT Id, Activate_Setting__c, MasterLabel
