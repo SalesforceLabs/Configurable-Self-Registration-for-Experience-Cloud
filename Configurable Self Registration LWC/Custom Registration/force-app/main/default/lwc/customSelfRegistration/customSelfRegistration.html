@@ -26,8 +26,10 @@
         <!-- Fields created in custom metadata are displayed here when the component renders -->
         <template for:each={results} for:item="result">
             <div key={result.fieldLabel}>
-                <lightning-input type={result.fieldType} class={result.fieldClass} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue} field-level-help={result.fieldHelpText} 
-                    message-when-pattern-mismatch={result.fieldMessage} pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} maxlength={result.fieldMaxLength} required={result.fieldRequired} onchange={handleOnChange}></lightning-input>
+                <lightning-input type={result.fieldType} class={result.fieldClass} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue} field-level-help={result.fieldHelpText} placeholder={result.fieldPlaceholder}
+                message-when-pattern-mismatch={result.fieldMessage} pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} required={result.fieldRequired} checked={result.fieldChecked}
+                message-when-too-short={result.fieldMinLengthMessage} min-length={result.fieldMinLength} message-when-too-long={result.fieldMaxLengthMessage} maxlength={result.fieldMaxLength} onchange={handleOnChange}
+                min={result.fieldMinValue} message-when-range-underflow={result.fieldMessageUnder} max={result.fieldMaxValue} message-when-range-overflow={result.fieldMessageOver}></lightning-input>
             </div>
         </template>
     </div>

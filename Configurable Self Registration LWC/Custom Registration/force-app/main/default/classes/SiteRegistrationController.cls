@@ -93,7 +93,10 @@ public with sharing class SiteRegistrationController {
 
             String siteName = Site.getName();
             
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, Field_Max_Length__c, Field_Required__c, Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c 
+            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, 
+                    Field_Min_Length__c, Field_Max_Length__c, Field_Required__c, Field_Placeholder__c, 
+                    Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c, Field_Message_Too_Short__c, Field_Message_Too_Long__c,
+                    Minimum_Value__c, Maximum_Value__c, Field_Under_Minimum_Range_Message__c, Field_Over_Max_Range_Message__c 
                                     FROM Custom_Registration_Configuration__mdt 
                                     WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
                                     OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
@@ -109,22 +112,38 @@ public with sharing class SiteRegistrationController {
                 jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
                 jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
                 jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
-                jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '"';
+                jsonPart += '"fieldMinValue":"' + mapping.Minimum_Value__c + '",';
+                jsonPart += '"fieldMessageUnder":"' + mapping.Field_Under_Minimum_Range_Message__c + '",';
+                jsonPart += '"fieldMaxValue":"' + mapping.Maximum_Value__c + '",';
+                jsonPart += '"fieldMessageOver":"' + mapping.Field_Over_Max_Range_Message__c + '",';
+                jsonPart += '"fieldMinLength":"' + mapping.Field_Min_Length__c + '",';
+                jsonPart += '"fieldMinLengthMessage":"' + mapping.Field_Message_Too_Short__c + '",';
+                jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '",';
+
+                //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
+                //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
+                jsonPart += '"fieldMaxLengthMessage":"' + mapping.Field_Message_Too_Long__c + '"'; 
                 
                 for(String key : urlParameters.keySet()) {
                     if(mapping.Field_Name__c == key) {
                         jsonPart += ',';
-                        jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
+                        if(convertToBoolean(urlParameters.get(key))) {
+                            jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
+                        }
+                        else {
+                            jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
+                        }
                     }
                 }
 
-                if(String.isNotBlank(mapping.Field_Message__c)) {
+                if(String.isNotBlank(mapping.Field_Placeholder__c)) {
                     jsonPart += ',';
-                    jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '"';
+                    jsonPart += '"fieldPlaceholder":"' + mapping.Field_Placeholder__c + '"';
                 }
 
-                if(String.isNotBlank(mapping.Field_Validation_REGEX__c)) {
+                if(String.isNotBlank(mapping.Field_Message__c) && String.isNotBlank(mapping.Field_Validation_REGEX__c)) {
                     jsonPart += ',';
+                    jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '",';
                     jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
                 }
 
@@ -146,6 +165,7 @@ public with sharing class SiteRegistrationController {
         catch(Exception ex) {
             result += ex.getLineNumber() + ' : ' + ex.getMessage();
         }
+        System.debug('JSON Final String: ' + '['+result+']');
         return '['+result+']';
     }
 

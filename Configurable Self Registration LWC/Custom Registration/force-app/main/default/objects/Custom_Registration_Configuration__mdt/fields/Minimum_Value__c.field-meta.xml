@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Minimum_Value__c</fullName>
+    <description>Supported for number, time, date and datetime fields only. Set the minimum number or earliest date that is allowed to be entered.</description>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Supported for number, time, date and datetime fields only. Set the minimum number or earliest date that is allowed to be entered.</inlineHelpText>
+    <label>Minimum Value</label>
+    <length>30</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
