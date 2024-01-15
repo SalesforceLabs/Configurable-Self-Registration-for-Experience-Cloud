@@ -165,7 +165,6 @@ public with sharing class SiteRegistrationController {
         catch(Exception ex) {
             result += ex.getLineNumber() + ' : ' + ex.getMessage();
         }
-        System.debug('JSON Final String: ' + '['+result+']');
         return '['+result+']';
     }
 
@@ -294,8 +293,6 @@ public with sharing class SiteRegistrationController {
         Id recordId = null;
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-
-        System.debug('Form Inputs: ' + formJson);
         
         //Remove the Password/Confirm Password stored in the Self Registration Logs.
         Map<String, Object> sanitisedFormJson = new Map<String, Object>();
@@ -333,8 +330,8 @@ public with sharing class SiteRegistrationController {
 
     /**
      * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
-     * @param formInputs - JSON String of the submitted form values 
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+     * @param formInputs - Map of the submitted form values 
+     * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
      * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
      * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
      */
@@ -368,15 +365,11 @@ public with sharing class SiteRegistrationController {
             }    
         }
 
-        //Configurable via the component config panel. May affect what record is found based on org settings. Default is 'System'
-        //TODO: Needs check on CRUD permissions for fields in the query otherwise it might cause a failure. Use stripInaccessible()?
+        //Configurable via the component config panel. May affect what record is found based on org settings.
+        //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
+        //See: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_AccessLevel.htm
         try {
-            if(configurationOptions.get('accessLevelMode') == 'System') { 
-                recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
-            }
-            else {
-                recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
-            }
+            recordList = RetrieveRecordsForQuery.getRecords(formInputs, configurationOptions);
         }
         catch(Exception e) {
             messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
