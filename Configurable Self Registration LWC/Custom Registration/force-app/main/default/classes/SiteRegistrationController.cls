@@ -573,7 +573,7 @@ public with sharing class SiteRegistrationController {
         String pageUrl = null;
 
         try {
-            ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + '/');
+            ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + convertToString(configurationOptions.get('portalRegistrationRedirect')));
             String startUrl = homePageRef.getUrl();
             ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
 

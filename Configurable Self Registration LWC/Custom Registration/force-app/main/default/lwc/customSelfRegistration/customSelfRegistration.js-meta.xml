@@ -75,6 +75,11 @@
                 description="Error message shown if the matched contact is already a portal user. Shown to the user."
                 default="User is already registered. Please login to continue."
                 required="true"></property>
+            <property label="Redirect URL After Registration" name="portalRegistrationRedirect"
+                type="String"
+                description="Set the URL that the user will be redirected to once they successfully register"
+                default="/"
+                required="true" />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

@@ -37,12 +37,7 @@ export default class customSelfRegistration extends LightningElement {
     @api portalLoginError;
     @api portalRegistrationError;
     @api portalRegistrationUserExists;
-    @api fieldHelpFirstName;
-    @api fieldHelpLastName;
-    @api fieldHelpUsername;
-    @api fieldHelpEmail;
-    @api fieldHelpPassword;
-    @api fieldHelpConfirmPassword;
+    @api portalRegistrationRedirect;
 
     @api results = null; //Results for custom configuration search
     @track formInputs = {}; //Form values submitted. 
@@ -225,12 +220,7 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['portalLoginError'] = this.portalLoginError;
         this.configurationOptions['portalRegistrationError'] = this.portalRegistrationError;
         this.configurationOptions['portalRegistrationUserExists'] = this.portalRegistrationUserExists;
-        this.configurationOptions['fieldHelpFirstName'] = this.fieldHelpFirstName;
-        this.configurationOptions['fieldHelpLastName'] = this.fieldHelpLastName;
-        this.configurationOptions['fieldHelpUsername'] = this.fieldHelpUsername;
-        this.configurationOptions['fieldHelpEmail'] = this.fieldHelpEmail;
-        this.configurationOptions['fieldHelpPassword'] = this.fieldHelpPassword;
-        this.configurationOptions['fieldHelpConfirmPassword'] = this.fieldHelpConfirmPassword;
+        this.configurationOptions['portalRegistrationRedirect'] = this.portalRegistrationRedirect;
 
         if(this._areAllInputFieldsValid()) {
             this.handleSubmit(true, this.registerButtonWaitingMessage, true);
