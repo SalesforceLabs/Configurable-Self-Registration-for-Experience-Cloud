@@ -26,5 +26,5 @@
         <members>Self_Registration_Log__c</members>
         <name>CustomTab</name>
     </types>
-    <version>58.0</version>
+    <version>59.0</version>
 </Package>
