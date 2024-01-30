@@ -13,8 +13,6 @@ import registerUser from '@salesforce/apex/SiteRegistrationController.registerUs
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 import isLoggingEnabled from '@salesforce/apex/SiteRegistrationController.isLoggingEnabled';
-//import {loadStyle} from 'lightning/platformResourceLoader';
-//import customStyles from '@salesforce/resourceUrl/customStyles';
 
 export default class customSelfRegistration extends LightningElement {
     
@@ -76,10 +74,6 @@ export default class customSelfRegistration extends LightningElement {
             this.urlParameters = currentPageReference.state;
         }
     }
-
-    /*renderedCallback() {
-        Promise.all([loadStyle(this, customStyles)])
-    }*/
 
     connectedCallback() {
 
