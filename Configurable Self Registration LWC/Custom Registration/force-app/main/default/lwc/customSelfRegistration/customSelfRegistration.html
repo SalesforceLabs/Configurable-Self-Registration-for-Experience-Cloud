@@ -24,19 +24,50 @@
 
     <div if:false={showComponentError}>
         <!-- Fields created in custom metadata are displayed here when the component renders -->
-        <template for:each={results} for:item="result">
-            <div key={result.fieldLabel}>
-                <lightning-input type={result.fieldType} class={result.fieldClass} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue} field-level-help={result.fieldHelpText} placeholder={result.fieldPlaceholder}
-                message-when-pattern-mismatch={result.fieldMessage} pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} required={result.fieldRequired} checked={result.fieldChecked}
-                message-when-too-short={result.fieldMinLengthMessage} min-length={result.fieldMinLength} message-when-too-long={result.fieldMaxLengthMessage} maxlength={result.fieldMaxLength} onchange={handleOnChange}
-                min={result.fieldMinValue} message-when-range-underflow={result.fieldMessageUnder} max={result.fieldMaxValue} message-when-range-overflow={result.fieldMessageOver}></lightning-input>
-            </div>
-        </template>
+        <div>
+            <template for:each={results} for:item="result">
+                <div key={result.fieldLabel}>
+                   <div class="slds-is-relative">
+                        <div class="slds-form-element">
+                            <div class={result.fieldParentClass}>
+                                <template lwc:if={result.fieldShowPasswordVisibility}> <!-- Password fields with Show/Hide functionality require special functionality-->
+                                    <lightning-icon size="x-small" icon-name={passwordIcon} title="" onclick={togglePassword} class={result.fieldIconClass}></lightning-icon>
+                                    <lightning-input type={passwordType} variant={result.fieldLabelVariant} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue}
+                                        class={result.fieldClass} required={result.fieldRequired} field-level-help={result.fieldHelpText}
+                                        placeholder={result.fieldPlaceholder} message-when-pattern-mismatch={result.fieldMessage}
+                                        pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} checked={result.fieldChecked}
+                                        message-when-too-short={result.fieldMinLengthMessage} min-length={result.fieldMinLength}
+                                        message-when-too-long={result.fieldMaxLengthMessage} maxlength={result.fieldMaxLength} onchange={handleOnChange} onblur={handleOnBlur}
+                                        min={result.fieldMinValue} message-when-range-underflow={result.fieldMessageUnder} max={result.fieldMaxValue}
+                                        message-when-range-overflow={result.fieldMessageOver}>
+                                    </lightning-input>
+                                </template>
+
+                                <template lwc:else> <!-- Default state -->
+                                    <template if:true={result.fieldShowIcon}>
+                                        <lightning-icon size="x-small" icon-name={result.fieldIconName} title="" class={result.fieldIconClass}></lightning-icon>
+                                    </template>
+                                    <lightning-input type={result.fieldType} variant={result.fieldLabelVariant} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue}
+                                        class={result.fieldClass} required={result.fieldRequired} field-level-help={result.fieldHelpText}
+                                        placeholder={result.fieldPlaceholder} message-when-pattern-mismatch={result.fieldMessage}
+                                        pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} checked={result.fieldChecked}
+                                        message-when-too-short={result.fieldMinLengthMessage} min-length={result.fieldMinLength}
+                                        message-when-too-long={result.fieldMaxLengthMessage} maxlength={result.fieldMaxLength} onchange={handleOnChange} onblur={handleOnBlur}
+                                        min={result.fieldMinValue} message-when-range-underflow={result.fieldMessageUnder} max={result.fieldMaxValue}
+                                        message-when-range-overflow={result.fieldMessageOver}>
+                                    </lightning-input>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
     </div>
 
     <div if:false={showComponentError} class="slds-col">
         <div class="slds-align_absolute-center slds-var-m-top_small">
-            <lightning-button variant="brand" onclick={handleSignUpClick} disabled={isButtonDisabled} label={buttonLabel}></lightning-button>
+            <lightning-button variant="brand" class="slds-button slds-button_brand slds-size_full slds-align_absolute-center slds-truncate" onclick={handleSignUpClick} disabled={isButtonDisabled} label={buttonLabel}></lightning-button>
         </div>
     </div>
 </template>

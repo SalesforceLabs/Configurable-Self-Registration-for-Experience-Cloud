@@ -1,5 +1,5 @@
 /*****************************************************************************************************
- * AUTHOR         : Jamie Lowe (Salesforce) & Ekaterina Coburn (Salesforce)
+ * AUTHOR         : Jamie Lowe (Salesforce)
  * CREATE DATE    : 05/05/2023
  * PURPOSE        : Self Registration LWC component for Experience Builder pages
  * SPECIAL NOTES  : Dependency on SiteRegistrationController.js class
@@ -13,18 +13,21 @@ import registerUser from '@salesforce/apex/SiteRegistrationController.registerUs
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 import isLoggingEnabled from '@salesforce/apex/SiteRegistrationController.isLoggingEnabled';
+//import {loadStyle} from 'lightning/platformResourceLoader';
+//import customStyles from '@salesforce/resourceUrl/customStyles';
+
 export default class customSelfRegistration extends LightningElement {
     
     @api buttonLabel;
     
     //These are custom properties in the component configuration within Experience Cloud.
     @api customQuery;
+    @api accessLevelMode;
     @api createNotFound;
     @api objectCreateType;
     @api accountId;
     @api personAccountRecordTypeId;
     @api sendEmailConfirmation;
-    @api accessLevelMode;
     
     //As above, but these are message configuration properties.
     @api registerButtonSignUpMessage;
@@ -53,6 +56,19 @@ export default class customSelfRegistration extends LightningElement {
     //Get the URL Parameters so we can pass any predefined values through to the form and pre-set values.
     currentPageReference = null; 
     urlParameters = null;
+    showPassword = false;
+
+    get passwordIcon() {
+        return this.showPassword ? 'utility:preview' : 'utility:hide';
+    }
+    
+    get passwordType() {
+        return this.showPassword ? 'text' : 'password';
+    }
+    
+    togglePassword() {
+        this.showPassword = !this.showPassword;
+    }
 
     @wire(CurrentPageReference)
     getStateParameters(currentPageReference) {
@@ -60,6 +76,10 @@ export default class customSelfRegistration extends LightningElement {
             this.urlParameters = currentPageReference.state;
         }
     }
+
+    /*renderedCallback() {
+        Promise.all([loadStyle(this, customStyles)])
+    }*/
 
     connectedCallback() {
 
@@ -135,28 +155,16 @@ export default class customSelfRegistration extends LightningElement {
         })
     }
 
-    _applyInputFormValidity() {
-       this._resetServerError();
-       this._applyCustomPassportValidity();
-    }
-
-    _applyCustomPassportValidity() {
-        let passwordCmp = this.template.querySelector('.passwordCmp');
-        let passwordValue = passwordCmp.value;
-
-        let confirmPasswordCmp = this.template.querySelector('.confirmPasswordCmp');
-        let confirmPasswordValue = confirmPasswordCmp.value;
-
-        if(passwordValue !== confirmPasswordValue){
-            passwordCmp.setCustomValidity(this.passwordMatchError);
-            confirmPasswordCmp.setCustomValidity(this.passwordMatchError);
+    comparePasswordValues(sourceInput, inputToCompare) {
+        if(sourceInput.target.value !== inputToCompare.value){
+            sourceInput.target.setCustomValidity(this.passwordMatchError);
+            inputToCompare.setCustomValidity(this.passwordMatchError);
         } else {
-            passwordCmp.setCustomValidity('');
-            confirmPasswordCmp.setCustomValidity('');
+            sourceInput.target.setCustomValidity('');
+            inputToCompare.setCustomValidity('');
         }
-
-        passwordCmp.reportValidity();
-        confirmPasswordCmp.reportValidity();
+        sourceInput.target.reportValidity();
+        inputToCompare.reportValidity('');
     }
 
     _areAllInputFieldsValid() {
@@ -187,6 +195,18 @@ export default class customSelfRegistration extends LightningElement {
         this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     }
 
+    handleOnBlur(event) {       
+       if(event.target.className.includes('passwordCmp')) {
+            let valueToCompare = this.template.querySelector('.confirmPasswordCmp');
+            this.comparePasswordValues(event, valueToCompare);
+       }
+
+       if(event.target.className.includes('confirmPasswordCmp')) {
+            let valueToCompare = this.template.querySelector('.passwordCmp');
+            this.comparePasswordValues(event, valueToCompare);
+       }
+    }
+
     handleSubmit(spinnerState, buttonText, buttonState) {
         this.showSpinner = spinnerState;
         this.buttonLabel = buttonText;
@@ -195,7 +215,7 @@ export default class customSelfRegistration extends LightningElement {
 
     handleSignUpClick(event) {
 
-        this._applyInputFormValidity();
+        this._resetServerError();
 
         //Set the Username to be the email address if not provided on the form.
         if(!this.formInputs['Username'] || this.formInputs['Username'] == '') {
@@ -210,6 +230,7 @@ export default class customSelfRegistration extends LightningElement {
         this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId;
         this.configurationOptions['sendEmailConfirmation'] = this.sendEmailConfirmation;
         this.configurationOptions['accessLevelMode'] = this.accessLevelMode;
+        this.configurationOptions['showPassword'] = this.showPassword;
         this.configurationOptions['registerButtonSignUpMessage'] = this.registerButtonSignUpMessage;
         this.configurationOptions['registerButtonWaitingMessage'] = this.registerButtonWaitingMessage;
         this.configurationOptions['passwordMatchError'] = this.passwordMatchError;

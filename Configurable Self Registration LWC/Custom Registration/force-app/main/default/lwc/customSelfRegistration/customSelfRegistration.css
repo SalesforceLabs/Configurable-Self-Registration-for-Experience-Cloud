@@ -1,0 +1,50 @@
+/*****************************************************************************************************
+ * AUTHOR         : Jamie Lowe (Salesforce)
+ * CREATE DATE    : 29/01/2024
+ * PURPOSE        : Self Registration LWC component for Experience Builder pages
+ * SPECIAL NOTES  : Overrides some of the out of the box configuration on the component such as font size, weight and icon position. Tweak as required.
+ * ===================================================================================================
+ * Change History :
+ *****************************************************************************************************/
+
+.input-icon-label-shown { /* Location of icon if being used when the form input uses the "standard" variant */
+	position: absolute;
+	top: 34px;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	width: 30px;
+}
+.right { /* Additional styling for icon when sitting on the right hand side of the input. */
+	top: 43px;
+	right:2px;
+}
+.input-icon-label-hidden { /* Location of icon if being used when the form input uses the "label-hidden" variant */
+	position: absolute;
+	top: 6px;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	width: 30px;
+}
+:host {
+	/* --lwc-formLabelFontSize: 16px; /* Override the Form Label Size */
+	/* --lwc-heightInput: 40px; /* Override the Input Height */
+	/*--lwc-fontSize2: 16px; /* Error message font-size override */
+}
+.slds-button {
+	/* font-size: 16px; /* Override font size on the Submit Button */
+	/*font-weight: bold; /* //Override font weight on the Submit Button */ 
+	/* padding-top: 4px; /* Override the button padding to make it bigger! */
+	/* padding-bottom: 4px; /* Override the button padding to make it bigger! */
+}
+.slds-input-has-icon .slds-input__icon:not(button) { /* Makes an icon clickable when putting the icon on the right and using standard classes as per the documentation */
+	pointer-events: all;
+	cursor: pointer;
+}

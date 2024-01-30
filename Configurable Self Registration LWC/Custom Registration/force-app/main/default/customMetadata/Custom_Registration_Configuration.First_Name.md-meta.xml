@@ -19,6 +19,18 @@
         <value xsi:nil="true"/>
     </values>
     <values>
+        <field>Field_Icon_Class__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Icon_Name__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Label_Variant__c</field>
+        <value xsi:type="xsd:string">standard</value>
+    </values>
+    <values>
         <field>Field_Label__c</field>
         <value xsi:type="xsd:string">First Name</value>
     </values>
@@ -47,6 +59,14 @@
         <value xsi:type="xsd:string">FirstName</value>
     </values>
     <values>
+        <field>Field_Over_Max_Range_Message__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Parent_Class__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
         <field>Field_Placeholder__c</field>
         <value xsi:nil="true"/>
     </values>
@@ -59,11 +79,31 @@
         <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
+        <field>Field_Show_Icon__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
+        <field>Field_Show_Password_Visibility__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
         <field>Field_Type__c</field>
         <value xsi:type="xsd:string">text</value>
     </values>
     <values>
+        <field>Field_Under_Minimum_Range_Message__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
         <field>Field_Validation_REGEX__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Maximum_Value__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Minimum_Value__c</field>
         <value xsi:nil="true"/>
     </values>
     <values>
