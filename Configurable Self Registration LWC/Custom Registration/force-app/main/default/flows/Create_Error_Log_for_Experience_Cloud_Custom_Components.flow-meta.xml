@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>57.0</apiVersion>
+    <apiVersion>60.0</apiVersion>
+    <description>Used for Custom Experience Cloud Components.
+        Subscribes to a Platform Event for Custom Logging and creates an Error Log record.</description>
     <environments>Default</environments>
-    <interviewLabel>Create Error Log for Self Registration {!$Flow.CurrentDateTime}</interviewLabel>
-    <label>Create Error Log for Self Registration</label>
+    <interviewLabel>Create Error Log for Experience Cloud {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Create Error Log for Experience Cloud Custom Components</label>
     <processMetadataValues>
         <name>BuilderType</name>
         <value>
@@ -29,6 +31,12 @@
         <locationX>176</locationX>
         <locationY>170</locationY>
         <inputAssignments>
+            <field>Component_Name__c</field>
+            <value>
+                <elementReference>$Record.Component_Name__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
             <field>Log_Type__c</field>
             <value>
                 <elementReference>$Record.Log_Type__c</elementReference>
@@ -40,7 +48,7 @@
                 <elementReference>$Record.Message__c</elementReference>
             </value>
         </inputAssignments>
-        <object>Self_Registration_Log__c</object>
+        <object>Experience_Cloud_Log__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordCreates>
     <start>
@@ -49,7 +57,7 @@
         <connector>
             <targetReference>Create_Error_Log</targetReference>
         </connector>
-        <object>Self_Registration_Event__e</object>
+        <object>Experience_Cloud_Event__e</object>
         <triggerType>PlatformEvent</triggerType>
     </start>
     <status>Active</status>

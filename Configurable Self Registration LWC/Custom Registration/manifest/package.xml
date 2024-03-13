@@ -23,7 +23,7 @@
         <name>CustomField</name>
     </types>
     <types>
-        <members>Self_Registration_Log__c</members>
+        <members>Experience_Cloud_Log__c</members>
         <name>CustomTab</name>
     </types>
     <version>59.0</version>

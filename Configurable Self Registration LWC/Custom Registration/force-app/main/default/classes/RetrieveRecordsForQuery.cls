@@ -15,10 +15,10 @@ public without sharing class RetrieveRecordsForQuery {
         List<sObject> recordList = new List<sObject>();
         
         if(configurationOptions.get('accessLevelMode') == 'System') { 
-            recordList = Database.queryWithBinds(SiteRegistrationController.convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
+            recordList = Database.queryWithBinds(SiteUtilities.convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
         }
         else {  
-            recordList = Database.queryWithBinds(SiteRegistrationController.convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+            recordList = Database.queryWithBinds(SiteUtilities.convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
         }
 
         return recordList;

@@ -10,12 +10,21 @@
     </classAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
+        <name>Custom_Experience_Cloud_Setting__mdt</name>
+    </customMetadataTypeAccesses>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
         <name>Custom_Registration_Configuration__mdt</name>
     </customMetadataTypeAccesses>
     <description>Assign to internal System Admin Users when using the Custom Self Registration managed package to grant access to relevant features.</description>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Self_Registration_Log__c.Message__c</field>
+        <field>Experience_Cloud_Log__c.Component_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Cloud_Log__c.Message__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -31,7 +40,7 @@
         <allowEdit>false</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
-        <object>Self_Registration_Event__e</object>
+        <object>Experience_Cloud_Event__e</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -40,11 +49,11 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>Self_Registration_Log__c</object>
+        <object>Experience_Cloud_Log__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <tabSettings>
-        <tab>Self_Registration_Log__c</tab>
+        <tab>Experience_Cloud_Log__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>

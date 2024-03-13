@@ -15,6 +15,10 @@
         <value xsi:nil="true"/>
     </values>
     <values>
+        <field>Field_Date_Style__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
         <field>Field_Help_Text__c</field>
         <value xsi:nil="true"/>
     </values>
@@ -28,7 +32,7 @@
     </values>
     <values>
         <field>Field_Label_Variant__c</field>
-        <value xsi:type="xsd:string">standard</value>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Field_Label__c</field>

@@ -8,8 +8,8 @@
  ****************************************************************************-->
 
  <template>
-    <div if:true={anyServerError} role="alert">
-        <span class="slds-text-color_destructive">{serverErrorMessage}</span>        
+    <div lwc:if={anyServerError} role="alert">
+        <span class="slds-text-color_destructive">{serverErrorMessage}</span>
     </div>
 
     <div if:true={showComponentError} class="slds-is-relative slds-text-color_error">
@@ -25,36 +25,36 @@
     <div if:false={showComponentError}>
         <!-- Fields created in custom metadata are displayed here when the component renders -->
         <div>
-            <template for:each={results} for:item="result">
-                <div key={result.fieldLabel}>
+            <template iterator:result={results}>
+                <div key={result.value.fieldLabel}> 
                    <div class="slds-is-relative">
                         <div class="slds-form-element">
-                            <div class={result.fieldParentClass}>
-                                <template lwc:if={result.fieldShowPasswordVisibility}> <!-- Password fields with Show/Hide functionality require special functionality-->
-                                    <lightning-icon size="x-small" icon-name={passwordIcon} title="" onclick={togglePassword} class={result.fieldIconClass}></lightning-icon>
-                                    <lightning-input type={passwordType} variant={result.fieldLabelVariant} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue}
-                                        class={result.fieldClass} required={result.fieldRequired} field-level-help={result.fieldHelpText}
-                                        placeholder={result.fieldPlaceholder} message-when-pattern-mismatch={result.fieldMessage}
-                                        pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} checked={result.fieldChecked}
-                                        message-when-too-short={result.fieldMinLengthMessage} min-length={result.fieldMinLength}
-                                        message-when-too-long={result.fieldMaxLengthMessage} maxlength={result.fieldMaxLength} onchange={handleOnChange} onblur={handleOnBlur}
-                                        min={result.fieldMinValue} message-when-range-underflow={result.fieldMessageUnder} max={result.fieldMaxValue}
-                                        message-when-range-overflow={result.fieldMessageOver}>
+                            <div class={result.value.fieldParentClass}>
+                                <template lwc:if={result.value.fieldShowPasswordVisibility}>
+                                    <lightning-icon size="x-small" icon-name={passwordIcon} title="" onclick={togglePassword} class={result.value.fieldIconClass}></lightning-icon>
+                                    <lightning-input type={passwordType} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} name={result.value.fieldName} value={result.value.fieldValue}
+                                        class={result.value.fieldClass} required={result.value.fieldRequired} field-level-help={result.value.fieldHelpText}
+                                        placeholder={result.value.fieldPlaceholder} message-when-pattern-mismatch={result.value.fieldMessage}
+                                        pattern={result.value.fieldRegex} message-when-value-missing={result.value.fieldRequiredMessage} checked={result.value.fieldChecked}
+                                        message-when-too-short={result.value.fieldMinLengthMessage} min-length={result.value.fieldMinLength}
+                                        message-when-too-long={result.value.fieldMaxLengthMessage} maxlength={result.value.fieldMaxLength} onchange={handleOnChange}
+                                        min={result.value.fieldMinValue} message-when-range-underflow={result.value.fieldMessageUnder} max={result.value.fieldMaxValue}
+                                        message-when-range-overflow={result.value.fieldMessageOver} data-last={result.last}>
                                     </lightning-input>
                                 </template>
 
-                                <template lwc:else> <!-- Default state -->
-                                    <template if:true={result.fieldShowIcon}>
-                                        <lightning-icon size="x-small" icon-name={result.fieldIconName} title="" class={result.fieldIconClass}></lightning-icon>
+                                <template lwc:else> 
+                                    <template if:true={result.value.fieldShowIcon}>
+                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" data-reveal={result.value.fieldShowPasswordVisibility} class={result.value.fieldIconClass}></lightning-icon>
                                     </template>
-                                    <lightning-input type={result.fieldType} variant={result.fieldLabelVariant} label={result.fieldLabel} name={result.fieldName} value={result.fieldValue}
-                                        class={result.fieldClass} required={result.fieldRequired} field-level-help={result.fieldHelpText}
-                                        placeholder={result.fieldPlaceholder} message-when-pattern-mismatch={result.fieldMessage}
-                                        pattern={result.fieldRegex} message-when-value-missing={result.fieldRequiredMessage} checked={result.fieldChecked}
-                                        message-when-too-short={result.fieldMinLengthMessage} min-length={result.fieldMinLength}
-                                        message-when-too-long={result.fieldMaxLengthMessage} maxlength={result.fieldMaxLength} onchange={handleOnChange} onblur={handleOnBlur}
-                                        min={result.fieldMinValue} message-when-range-underflow={result.fieldMessageUnder} max={result.fieldMaxValue}
-                                        message-when-range-overflow={result.fieldMessageOver}>
+                                    <lightning-input type={result.value.fieldType} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} name={result.value.fieldName} value={result.value.fieldValue}
+                                        class={result.value.fieldClass} required={result.value.fieldRequired} field-level-help={result.value.fieldHelpText}
+                                        placeholder={result.value.fieldPlaceholder} message-when-pattern-mismatch={result.value.fieldMessage}
+                                        pattern={result.value.fieldRegex} message-when-value-missing={result.value.fieldRequiredMessage} checked={result.value.fieldChecked}
+                                        message-when-too-short={result.value.fieldMinLengthMessage} min-length={result.value.fieldMinLength}
+                                        message-when-too-long={result.value.fieldMaxLengthMessage} maxlength={result.value.fieldMaxLength} onchange={handleOnChange}
+                                        min={result.value.fieldMinValue} message-when-range-underflow={result.value.fieldMessageUnder} max={result.value.fieldMaxValue}
+                                        message-when-range-overflow={result.value.fieldMessageOver} date-style={result.value.fieldDateStyle} data-last={result.last}>
                                     </lightning-input>
                                 </template>
                             </div>
@@ -67,7 +67,7 @@
 
     <div if:false={showComponentError} class="slds-col">
         <div class="slds-align_absolute-center slds-var-m-top_small">
-            <lightning-button variant="brand" class="slds-button slds-button_brand slds-size_full slds-align_absolute-center slds-truncate" onclick={handleSignUpClick} disabled={isButtonDisabled} label={buttonLabel}></lightning-button>
+            <button class="custom-slds-button slds-button slds-button_brand slds-button_stretch dpc-button-padding" onclick={handleSignUpClick} disabled={isButtonDisabled}>{buttonLabel}</button>
         </div>
     </div>
 </template>

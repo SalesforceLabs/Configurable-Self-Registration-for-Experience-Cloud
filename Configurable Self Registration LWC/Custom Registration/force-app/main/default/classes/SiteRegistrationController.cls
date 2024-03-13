@@ -1,5 +1,5 @@
 /***************************************************************************************************************
- * AUTHOR         : Jamie Lowe (Salesforce) & Ekaterina Coburn (Salesforce)
+ * AUTHOR         : Jamie Lowe (Salesforce)
  * CREATE DATE    : 15/05/2023
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
@@ -7,6 +7,7 @@
 public with sharing class SiteRegistrationController {
 
     public static List<String> messages = new List<String>();
+    static final String COMPONENT_NAME = 'Self Registration';
 
     @TestVisible
     public static Boolean testPersonAccountStatus;
@@ -54,32 +55,6 @@ public with sharing class SiteRegistrationController {
     }
     
     /**
-    * @description Simple method to wrap Object's Key > String conversion for easy re-use.
-    * @param valueToConvert - pass in an object and convert to a String value
-    * @return String of passed object value
-    */
-    @AuraEnabled
-    public static String convertToString(Object valueToConvert) {
-        if(valueToConvert != null) {
-            return String.valueOf(valueToConvert);
-        }
-        return '';
-    }
-
-    /**
-    * @description Simple method to wrap Object > Boolean conversion for easy re-use.
-    * @param valueToConvert - pass in an object and convert to a Boolean value
-    * @return Boolean of passed object value
-    */
-    @AuraEnabled
-    public static Boolean convertToBoolean(Object valueToConvert) {
-        if(valueToConvert != null) {
-            return Boolean.valueOf(valueToConvert);
-        }
-        return false;
-    }
-
-    /**
      * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
      * @return Returns a JSON string of retrieved records
      * @see customSelfRegistration.html
@@ -97,7 +72,7 @@ public with sharing class SiteRegistrationController {
                     Field_Min_Length__c, Field_Max_Length__c, Field_Required__c, Field_Placeholder__c, 
                     Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c, Field_Message_Too_Short__c, Field_Message_Too_Long__c,
                     Minimum_Value__c, Maximum_Value__c, Field_Under_Minimum_Range_Message__c, Field_Over_Max_Range_Message__c, Field_Show_Icon__c, Field_Icon_Name__c, 
-                    Field_Icon_Class__c, Field_Parent_Class__c, Field_Show_Password_Visibility__c, Field_Label_Variant__c 
+                    Field_Icon_Class__c, Field_Parent_Class__c, Field_Show_Password_Visibility__c, Field_Label_Variant__c, Field_Date_Style__c 
                                     FROM Custom_Registration_Configuration__mdt 
                                     WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
                                     OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
@@ -121,14 +96,15 @@ public with sharing class SiteRegistrationController {
                 jsonPart += '"fieldMinLengthMessage":"' + mapping.Field_Message_Too_Short__c + '",';
                 jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '",';
                 jsonPart += '"fieldLabelVariant":"' + mapping.Field_Label_Variant__c + '",';
+                jsonPart += '"fieldDateStyle":"' + mapping.Field_Date_Style__c + '",';
                 
                 //Settings to control icon visibility
-                jsonPart += '"fieldShowIcon":' + convertToBoolean(mapping.Field_Show_Icon__c) + ','; //Needs to be a boolean as it directly controls dynamic template
+                jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Icon__c) + ','; //Needs to be a boolean as it directly controls dynamic template
                 jsonPart += '"fieldIconName":"' + mapping.Field_Icon_Name__c + '",';
                 jsonPart += '"fieldIconClass":"' + mapping.Field_Icon_Class__c + '",';
                 jsonPart += '"fieldParentClass":"' + mapping.Field_Parent_Class__c + '",';
                 
-                jsonPart += '"fieldShowPasswordVisibility":' + convertToBoolean(mapping.Field_Show_Password_Visibility__c) + ',';
+                jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Password_Visibility__c) + ',';
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
@@ -137,7 +113,7 @@ public with sharing class SiteRegistrationController {
                 for(String key : urlParameters.keySet()) {
                     if(mapping.Field_Name__c == key) {
                         jsonPart += ',';
-                        if(convertToBoolean(urlParameters.get(key))) {
+                        if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
                             jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
                         }
                         else {
@@ -175,57 +151,7 @@ public with sharing class SiteRegistrationController {
         catch(Exception ex) {
             result += ex.getLineNumber() + ' : ' + ex.getMessage();
         }
-        System.debug('Result' + result);
         return '['+result+']';
-    }
-
-    /**
-     * @description Checks to see if the Logging setting is activated.
-     * @return true/false depending on setting value.
-     */
-    @AuraEnabled(cacheable=true)
-    public static Boolean isLoggingEnabled() {
-        
-        if(Test.isRunningTest()) { //Always return false if running Tests to prevent failure as the logging can be switched on/off by the user after installation.
-            return false;  
-        } 
-        
-        List<Custom_Registration_Settings__mdt> logSetting = new List<Custom_Registration_Settings__mdt>();
-        try {
-            logSetting = [SELECT Id, Activate_Setting__c, MasterLabel
-                       FROM Custom_Registration_Settings__mdt 
-                       WHERE (MasterLabel = 'Enable Logging' AND Activate_Setting__c = true)
-                       WITH SECURITY_ENFORCED
-                       LIMIT 1];
-        }
-        catch(Exception ex) {
-            return false;
-        }
-        
-        if(!logSetting.isEmpty() && logSetting.size() == 1) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Experience Cloud builder.
-     * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
-     * @param message - a list of messages to store on the Platform Event
-     * @param logType - the type of error to log, either 'Information' or 'Log'
-     */
-    @AuraEnabled
-    public static void createLogEntry(Boolean loggingEnabled, String message, String logType){
-       try {
-            if(loggingEnabled) {
-                Self_Registration_Event__e newLog = new Self_Registration_Event__e();
-                newLog.Message__c = message;
-                newLog.Log_Type__c = logType;
-                Eventbus.publish(newLog);
-            } 
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
     }
 
     /**
@@ -237,7 +163,7 @@ public with sharing class SiteRegistrationController {
     @AuraEnabled
     public static Boolean isValidUsername(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
         Boolean isUsernameValid = true;
-        String username = convertToString(formInputs.get('Username'));
+        String username = SiteUtilities.convertToString(formInputs.get('Username'));
 
         //Get the Network Id for the current Experience Cloud Site
         String networkId = Network.getNetworkId();
@@ -249,8 +175,8 @@ public with sharing class SiteRegistrationController {
         
         if(userList.size() >= 1) {
             messages.add('User with username ' + username + ' already exists on NetworkId ' + networkId + '. Username NOT valid.');
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');    
-            throw new AuraHandledException(convertToString(configurationOptions.get('usernameTakenMessage'))); 
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);    
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('usernameTakenMessage'))); 
         }
 
         messages.add('User with username ' + username + ' not found on NetworkId ' + networkId + '. Username valid.');
@@ -274,19 +200,19 @@ public with sharing class SiteRegistrationController {
                 }
             }
 
-            user.CommunityNickname = generateCommunityNickname(convertToString(formJson.get('Username'))); 
+            user.CommunityNickname = generateCommunityNickname(SiteUtilities.convertToString(formJson.get('Username'))); 
             if(!Test.isRunningTest()) { //NOTE: This method is buggy and always fails during Apex Tests so bypass it! See: https://help.salesforce.com/s/articleView?id=000391105&type=1
-                Site.validatePassword(user, convertToString(formJson.get('password')), convertToString(formJson.get('confirmPassword'))); 
+                Site.validatePassword(user, SiteUtilities.convertToString(formJson.get('password')), SiteUtilities.convertToString(formJson.get('confirmPassword'))); 
             } 
         }
         catch (SObjectException ex) {
            messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
-           createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
         catch (Exception ex) {
            messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
-           createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
            throw new AuraHandledException(ex.getMessage()); //This is deliberate as the Site.Validate function returns useful information about the password failure
         }
     }
@@ -312,13 +238,13 @@ public with sharing class SiteRegistrationController {
         isValidUsername(formJson, lwcSettings);
         validatePassword(formJson, lwcSettings);
   
-        if(String.isNotBlank(convertToString(lwcSettings.get('customQuery')))) {
+        if(String.isNotBlank(SiteUtilities.convertToString(lwcSettings.get('customQuery')))) {
             messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + sanitisedFormJson);
             recordId = getObject(sanitisedFormJson, lwcSettings);
             messages.add('Record Id found was: ' + recordId);
         }
     
-        if(convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
+        if(SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
             messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + sanitisedFormJson); 
             recordId = createObject(formJson, lwcSettings);
             messages.add('Created Record Id returned was: ' + recordId);   
@@ -332,10 +258,10 @@ public with sharing class SiteRegistrationController {
     
         if(String.isNotBlank(userId)) {
             messages.add('External User Id created was: ' + userId);
-            pageUrl = loginUser(convertToString(formJson.get('Username')), convertToString(formJson.get('password')), lwcSettings);
+            pageUrl = loginUser(SiteUtilities.convertToString(formJson.get('Username')), SiteUtilities.convertToString(formJson.get('password')), lwcSettings);
         }
 
-        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information');
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);
         return pageUrl;
     }
 
@@ -356,21 +282,21 @@ public with sharing class SiteRegistrationController {
         //Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
         //TODO: Don't call getGlobalDescribe in a loop for each field!
         for(String key : formInputs.keySet()) { 
-            if(checkFieldExists(convertToString(configurationOptions.get('objectToQuery')), key)) {
-                Schema.DisplayType dataType = Schema.getGlobalDescribe().get(convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
+            if(checkFieldExists(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')), key)) {
+                Schema.DisplayType dataType = Schema.getGlobalDescribe().get(SiteUtilities.convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
                 
                 //Now we have the data type of the field, convert as required.
-                if(convertToString(dataType) == 'DATE') {
-                    Date d = Date.valueOf(convertToString(formInputs.get(key)));
+                if(SiteUtilities.convertToString(dataType) == 'DATE') {
+                    Date d = Date.valueOf(SiteUtilities.convertToString(formInputs.get(key)));
                     formInputs.put(key,d);
                 }
-                if(convertToString(dataType) == 'TIME') {
-                    String[] strTimeSplit = convertToString(formInputs.get(key)).split(':');
+                if(SiteUtilities.convertToString(dataType) == 'TIME') {
+                    String[] strTimeSplit = SiteUtilities.convertToString(formInputs.get(key)).split(':');
                     Time t = Time.newInstance(Integer.valueOf(strTimeSplit[0]),  Integer.valueOf(strTimeSplit[1]), 0, 0);
                     formInputs.put(key,t);
                 }
-                if(convertToString(dataType) == 'DATETIME') {
-                    Datetime dt = (DateTime)JSON.deserialize('"' + convertToString(formInputs.get(key)) +'"', DateTime.class);
+                if(SiteUtilities.convertToString(dataType) == 'DATETIME') {
+                    Datetime dt = (DateTime)JSON.deserialize('"' + SiteUtilities.convertToString(formInputs.get(key)) +'"', DateTime.class);
                     formInputs.put(key,dt);
                 }
             }    
@@ -383,8 +309,8 @@ public with sharing class SiteRegistrationController {
             recordList = RetrieveRecordsForQuery.getRecords(formInputs, configurationOptions);
         }
         catch(Exception e) {
-            messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
         
@@ -401,16 +327,16 @@ public with sharing class SiteRegistrationController {
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
             messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('errorMultipleRecordsFound') + ' Form Values: ' + formInputs);
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
-            throw new AuraHandledException(convertToString(configurationOptions.get('errorMultipleRecordsFound'))); 
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);        
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorMultipleRecordsFound'))); 
         }
-        else if (convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
+        else if (SiteUtilities.convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
             return null;
         }
         else { //No record found on specified query and CreateIfNotFound = False 
             messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('errorNoRecordFound') + ' Form Values: ' + formInputs);
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information');        
-            throw new AuraHandledException(convertToString(configurationOptions.get('errorNoRecordFound'))); 
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);        
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorNoRecordFound'))); 
         }
     }
 
@@ -428,7 +354,7 @@ public with sharing class SiteRegistrationController {
             List<Contact> newContacts = new List<Contact>();
             
             Contact newContact = new Contact();
-            newContact.put('AccountId', convertToString(configurationOptions.get('accountId')));
+            newContact.put('AccountId', SiteUtilities.convertToString(configurationOptions.get('accountId')));
              
             for(String key : formInputs.keySet()) {
                 if(checkFieldExists('Contact', key)) {
@@ -441,13 +367,13 @@ public with sharing class SiteRegistrationController {
             srList = Database.insert(securityDecision.getRecords()[0], false);
 
             if(srList.isSuccess()) { //Return the AccountId if the Contact creation was successful, this is what is used during External User creation not the Contact Id!
-                return convertToString(configurationOptions.get('accountId'));
+                return SiteUtilities.convertToString(configurationOptions.get('accountId'));
             }
             return recordId; 
         } catch (Exception e) {
             messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
-            throw new AuraHandledException(convertToString(configurationOptions.get('errorOnCreate')));
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
 
@@ -464,7 +390,7 @@ public with sharing class SiteRegistrationController {
         try {
             List<Account> newPersonAccounts = new List<Account>();
             Account newPersonAccount = new Account();
-            newPersonAccount.put('RecordTypeId', Id.valueOf(convertToString(configurationOptions.get('personAccountRecordTypeId'))));
+            newPersonAccount.put('RecordTypeId', Id.valueOf(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             for(String key : formInputs.keySet()) {
                 if(checkFieldExists('Account', key)) {
                     newPersonAccount.put(key, formInputs.get(key));
@@ -484,8 +410,8 @@ public with sharing class SiteRegistrationController {
             return recordId;   
         } catch (Exception e) {
             messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
-            throw new AuraHandledException(convertToString(configurationOptions.get('errorOnCreate')));
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
 
@@ -496,15 +422,15 @@ public with sharing class SiteRegistrationController {
      * @return Id of the newly created record. Either Contact.AccountId if type is a Contact or Id if Person Account
      */
     public static Id createObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
-        if(convertToString(configurationOptions.get('objectCreateType'))  == 'Contact') {
+        if(SiteUtilities.convertToString(configurationOptions.get('objectCreateType'))  == 'Contact') {
            return createContact(formInputs, configurationOptions);
         }
-        else if(convertToString(configurationOptions.get('objectCreateType'))  == 'Person Account') {
+        else if(SiteUtilities.convertToString(configurationOptions.get('objectCreateType'))  == 'Person Account') {
             return createPersonAccount(formInputs, configurationOptions);
         }
         else { //Object to create was set to 'N/A' which is not valid 
             messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
     }
@@ -518,8 +444,9 @@ public with sharing class SiteRegistrationController {
         String communityNickname = null;
 
         Datetime currentTime = System.now();
-        Long timeInMls = currentTime.getTime()/1000;
-        communityNickname = username + timeInMls;
+        Long timeInMls = currentTime.getTime();
+
+        communityNickname = timeInMls + username;
 
         if(communityNickname.length() > 40) { //Nickname field is limited to 40 characters
             communityNickname = communityNickname.substring(0,40);
@@ -545,22 +472,22 @@ public with sharing class SiteRegistrationController {
             }                 
         }
 
-        user.CommunityNickname = generateCommunityNickname(convertToString(formInputs.get('Username')));
+        user.CommunityNickname = generateCommunityNickname(SiteUtilities.convertToString(formInputs.get('Username')));
 
         try {
-            userId = Site.createExternalUser(user, accountId, convertToString(formInputs.get('password')), convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
+            userId = Site.createExternalUser(user, accountId, SiteUtilities.convertToString(formInputs.get('password')), SiteUtilities.convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
         }
         catch (Site.ExternalUserCreateException e) { //The site class ony throws one type of exception so we have to manually handle error messages here.
             messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
             
             //Horrible error message. Show a configuration message instead from the property panel.
             //This means that the the matched contact (using the custom query) is already a portal user and therefore can't register again.
             if(e.getMessage().contains('portal user already exists for contact')) { 
-                throw new AuraHandledException(convertToString(configurationOptions.get('portalRegistrationUserExists')));
+                throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalRegistrationUserExists')));
             }
             else { //Anything else, show the generic message.
-                throw new AuraHandledException(convertToString(configurationOptions.get('portalRegistrationError')));
+                throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalRegistrationError')));
             }
         }
         return userId;
@@ -577,7 +504,7 @@ public with sharing class SiteRegistrationController {
         String pageUrl = null;
 
         try {
-            ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + convertToString(configurationOptions.get('portalRegistrationRedirect')));
+            ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalRegistrationRedirect')));
             String startUrl = homePageRef.getUrl();
             ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
 
@@ -589,10 +516,10 @@ public with sharing class SiteRegistrationController {
             }
         } catch (Exception e) {
             messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
-            createLogEntry(convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error');        
-            throw new AuraHandledException(convertToString(configurationOptions.get('portalLoginError')));
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);        
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalLoginError')));
         }
-        messages.add('User successfully logged into the portal.');
+        messages.add('User successfully registered and was logged in.');
         return pageUrl;
     }
 }

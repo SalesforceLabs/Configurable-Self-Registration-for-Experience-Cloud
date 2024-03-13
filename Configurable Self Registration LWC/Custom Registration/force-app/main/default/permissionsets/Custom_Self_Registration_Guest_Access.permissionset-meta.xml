@@ -1,21 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <classAccesses>
+        <apexClass>RetrieveNetworkMembers</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RetrieveRecordsForQuery</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>SiteRegistrationController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SiteUtilities</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
-        <name>Custom_Registration_Configuration__mdt</name>
+        <name>Custom_Experience_Cloud_Setting__mdt</name>
     </customMetadataTypeAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
-        <name>Custom_Registration_Settings__mdt</name>
+        <name>Custom_Registration_Configuration__mdt</name>
     </customMetadataTypeAccesses>
     <description>Assign to Experience Cloud Guest Users when using the Custom Self Registration managed package to grant access to relevant features.</description>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Self_Registration_Log__c.Message__c</field>
+        <field>Experience_Cloud_Log__c.Message__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -31,7 +43,7 @@
         <allowEdit>false</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
-        <object>Self_Registration_Log__c</object>
+        <object>Experience_Cloud_Log__c</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
 </PermissionSet>

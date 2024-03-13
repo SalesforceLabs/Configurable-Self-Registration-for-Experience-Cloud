@@ -75,6 +75,10 @@
                 <behavior>Edit</behavior>
                 <field>Field_Show_Password_Visibility__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Field_Date_Style__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>

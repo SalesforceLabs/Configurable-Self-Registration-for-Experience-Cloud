@@ -2,7 +2,7 @@
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <deploymentStatus>Deployed</deploymentStatus>
     <eventType>HighVolume</eventType>
-    <label>Self Registration Event</label>
-    <pluralLabel>Self Registration Events</pluralLabel>
-    <publishBehavior>PublishImmediately</publishBehavior>
+    <label>Experience Cloud Event</label>
+    <pluralLabel>Experience Cloud Events</pluralLabel>
+    <publishBehavior>PublishAfterCommit</publishBehavior>
 </CustomObject>

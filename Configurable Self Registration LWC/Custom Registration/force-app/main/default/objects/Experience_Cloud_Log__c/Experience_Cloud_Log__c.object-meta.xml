@@ -153,13 +153,13 @@
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
     <externalSharingModel>Private</externalSharingModel>
-    <label>Self Registration Log</label>
+    <label>Experience Cloud Log</label>
     <nameField>
-        <displayFormat>REG-{00000}</displayFormat>
-        <label>Self Registration Log Name</label>
+        <displayFormat>EXPCLOUD-{00000}</displayFormat>
+        <label>Experience Cloud Log Name</label>
         <type>AutoNumber</type>
     </nameField>
-    <pluralLabel>Self Registration Logs</pluralLabel>
+    <pluralLabel>Experience Cloud Logs</pluralLabel>
     <searchLayouts></searchLayouts>
     <sharingModel>ReadWrite</sharingModel>
     <visibility>Public</visibility>

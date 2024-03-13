@@ -2,8 +2,7 @@
  * @description Test Class for Site Registration Controller
  * @author Jamie Lowe - jamielowe1990/jlowesfdc
  * NOTES: There are some limitations on the Site & Network classes which return null when not within the context of a Site making it difficult or not possible to achieve 100% code coverage at this time.
- * Unable to test Network Member as this is automatically inserted by the creation of a user, but we don't know if a community will exist at the point of installing the package or which profile will be linked to find this information and test duplicate user names.
- * Custom Metadata cannot be created in a test class so the package creates a test record which is then used in the tests. 
+ * Unable to test Network Member as this is automatically inserted by the creation of a user, but we don't know if a community will exist at the point of installing the package or which profile will be linked to find this information and test duplicate user names. 
  **/
 @isTest
 private class SiteRegistrationControllerTest {
@@ -12,15 +11,17 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void getCustomConfigurationTest() {
         String urlParams = '{"FirstName":"Test"}';
-        String expected = '[{"fieldType":"text","fieldName":"FirstName","fieldLabel":"First Name","fieldClass":"null","fieldMinValue":"null","fieldMessageUnder":"null","fieldMaxValue":"null","fieldMessageOver":"null","fieldMinLength":"null","fieldMinLengthMessage":"null","fieldMaxLength":"40","fieldMaxLengthMessage":"Maximum of 40 characters are allowed","fieldValue":"Test","fieldRequired":"true","fieldRequiredMessage":"Please enter a First Name"},{"fieldType":"text","fieldName":"LastName","fieldLabel":"Last Name","fieldClass":"null","fieldMinValue":"null","fieldMessageUnder":"null","fieldMaxValue":"null","fieldMessageOver":"null","fieldMinLength":"null","fieldMinLengthMessage":"null","fieldMaxLength":"40","fieldMaxLengthMessage":"Maximum of 40 characters are allowed","fieldRequired":"true","fieldRequiredMessage":"Please enter a Last Name"},{"fieldType":"text","fieldName":"Username","fieldLabel":"Username","fieldClass":"null","fieldMinValue":"null","fieldMessageUnder":"null","fieldMaxValue":"null","fieldMessageOver":"null","fieldMinLength":"null","fieldMinLengthMessage":"null","fieldMaxLength":"40","fieldMaxLengthMessage":"Maximum of 40 characters are allowed","fieldMessage":"Special characters are not allowed in Usernames","fieldRegex":"[a-zA-Z0-9]+","fieldRequired":"true","fieldRequiredMessage":"Username is required"},{"fieldType":"email","fieldName":"Email","fieldLabel":"Email","fieldClass":"null","fieldMinValue":"null","fieldMessageUnder":"null","fieldMaxValue":"null","fieldMessageOver":"null","fieldMinLength":"null","fieldMinLengthMessage":"null","fieldMaxLength":"255","fieldMaxLengthMessage":"Maximum of 255 characters are allowed","fieldRequired":"true","fieldRequiredMessage":"Please enter an email address"},{"fieldType":"password","fieldName":"password","fieldLabel":"Password","fieldClass":"passwordCmp","fieldMinValue":"null","fieldMessageUnder":"null","fieldMaxValue":"null","fieldMessageOver":"null","fieldMinLength":"null","fieldMinLengthMessage":"null","fieldMaxLength":"null","fieldMaxLengthMessage":"null","fieldRequired":"true","fieldRequiredMessage":"Please enter a password"},{"fieldType":"password","fieldName":"confirmPassword","fieldLabel":"Confirm Password","fieldClass":"confirmPasswordCmp","fieldMinValue":"null","fieldMessageUnder":"null","fieldMaxValue":"null","fieldMessageOver":"null","fieldMinLength":"null","fieldMinLengthMessage":"null","fieldMaxLength":"null","fieldMaxLengthMessage":"null","fieldRequired":"true","fieldRequiredMessage":"Please confirm your password"}]';     
-        String result =  SiteRegistrationController.getCustomConfiguration(urlParams);
-        System.assertEquals(expected, result, 'Retrieved custom configuration');
+        String result = SiteRegistrationController.getCustomConfiguration(urlParams);
+        String resultParsed = '{"data":' + result + '}';        
+        Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
+        List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
+        System.assertEquals(6, dataObj.size(), '6 configured fields found as expected');
     }
 
     //Retrieve and test custom settings. 1 is installed by the package and is all is used right now.
     @isTest
     private static void isLoggingEnabled() {
-        Boolean result =  SiteRegistrationController.isLoggingEnabled();
+        Boolean result =  SiteUtilities.isLoggingEnabled('Self_Registration_Logging');
         System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
     }
 

@@ -12,7 +12,7 @@ import {CurrentPageReference} from 'lightning/navigation';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
-import isLoggingEnabled from '@salesforce/apex/SiteRegistrationController.isLoggingEnabled';
+import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
 
 export default class customSelfRegistration extends LightningElement {
     
@@ -57,7 +57,7 @@ export default class customSelfRegistration extends LightningElement {
     showPassword = false;
 
     get passwordIcon() {
-        return this.showPassword ? 'utility:preview' : 'utility:hide';
+        return this.showPassword ? 'utility:hide' : 'utility:preview';
     }
     
     get passwordType() {
@@ -73,6 +73,11 @@ export default class customSelfRegistration extends LightningElement {
         if (currentPageReference) {
             this.urlParameters = currentPageReference.state;
         }
+    }
+
+    renderedCallback() {
+        //Add keypress "enter" listener to the last element on the page to allow for submitting the form with the keyboard
+        this.template.querySelector('lightning-input[data-last=true]').addEventListener("keydown", (e) => {this.handleEnter(e)});
     }
 
     connectedCallback() {
@@ -130,7 +135,7 @@ export default class customSelfRegistration extends LightningElement {
         }
 
         //Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
-        isLoggingEnabled().then((enabled) => {
+        isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
             this.configurationOptions['loggingEnabled'] = enabled;
         }).catch(error=>{
             console.log(error); 
@@ -187,18 +192,23 @@ export default class customSelfRegistration extends LightningElement {
 
     handleOnChange(event) {
         this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    }
 
-    handleOnBlur(event) {       
-       if(event.target.className.includes('passwordCmp')) {
+        //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
+        if(event.target.className.includes('passwordCmp')) { 
             let valueToCompare = this.template.querySelector('.confirmPasswordCmp');
             this.comparePasswordValues(event, valueToCompare);
-       }
+        }
 
-       if(event.target.className.includes('confirmPasswordCmp')) {
+        if(event.target.className.includes('confirmPasswordCmp')) {
             let valueToCompare = this.template.querySelector('.passwordCmp');
             this.comparePasswordValues(event, valueToCompare);
-       }
+        }
+    }
+
+    handleEnter(event){
+        if(event.keyCode === 13){
+            this.handleSignUpClick(event);
+        }
     }
 
     handleSubmit(spinnerState, buttonText, buttonState) {
@@ -212,7 +222,7 @@ export default class customSelfRegistration extends LightningElement {
         this._resetServerError();
 
         //Set the Username to be the email address if not provided on the form.
-        if(!this.formInputs['Username'] || this.formInputs['Username'] == '') {
+        if(!this.formInputs['Username'] || this.formInputs['Username'] == '' || this.formInputs['Username'] != this.formInputs['Email']) {
             this.formInputs['Username'] = this.formInputs['Email'];
         }
 

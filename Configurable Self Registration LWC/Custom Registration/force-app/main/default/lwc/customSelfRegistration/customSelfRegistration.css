@@ -7,9 +7,11 @@
  * Change History :
  *****************************************************************************************************/
 
-.input-icon-label-shown { /* Location of icon if being used when the form input uses the "standard" variant */
+ /* Location of icon if being used when the form input uses the "standard" variant and icon on the left */
+.input-icon-label-shown-left { 
 	position: absolute;
-	top: 34px;
+	top: 37px;
+	left: 4px;
 	bottom: 0;
 	z-index: 1;
 	display: flex;
@@ -18,13 +20,12 @@
 	height: 30px;
 	width: 30px;
 }
-.right { /* Additional styling for icon when sitting on the right hand side of the input. */
-	top: 43px;
-	right:2px;
-}
-.input-icon-label-hidden { /* Location of icon if being used when the form input uses the "label-hidden" variant */
+
+/* Location of icon if being used when the form input uses the "standard" variant and icon on the right */
+.input-icon-label-shown-right {
 	position: absolute;
-	top: 6px;
+	top: 37px;
+	right: 4px;
 	bottom: 0;
 	z-index: 1;
 	display: flex;
@@ -33,16 +34,79 @@
 	height: 30px;
 	width: 30px;
 }
+
+/* Location of icon if being used when the form input uses the "label-hidden" variant and icon on the left */
+.input-icon-label-hidden-left {
+	position: absolute;
+	top: 37px;
+	left: 4px;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	width: 30px;
+}
+
+/* Location of icon if being used when the form input uses the "label-hidden" variant and icon on the right */
+.input-icon-label-hidden-right {
+	position: absolute;
+	top: 37px;
+	right: 4px;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	width: 30px;
+}
+
+/* Location of icon if being used when the form input uses the "label-inline" variant and icon on the left */
+.input-icon-label-inline-left {
+	position: absolute;
+	top: 20px;
+	left: 185px;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	width: 30px;
+}
+
+/* Location of icon if being used when the form input uses the "label-inline" variant and icon on the right */
+.input-icon-label-inline-right {
+	position: absolute;
+	top: 20px;
+	right: 4px;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	width: 30px;
+}
+
+.top { /* Additional styling for the field parent class field to add a gap between the inputs when the form input uses the "label-hidden" variant */
+	padding-top: 10px;
+}
+
 :host {
-	/* --lwc-formLabelFontSize: 16px; /* Override the Form Label Size */
-	/* --lwc-heightInput: 40px; /* Override the Input Height */
-	/*--lwc-fontSize2: 16px; /* Error message font-size override */
+	--lwc-formLabelFontSize: 16px; /* Override the Form Label Size */
+	--lwc-heightInput: 40px; /* Override the Input Height */
+	--lwc-fontSize2: 16px; /* Error message font-size override */
+	font-size:  16px;
+	/* --lwc-brandDisabled: rgb(24, 114, 139); When the button is submitted, the background colour is default grey. Override this colour here. */
 }
-.slds-button {
-	/* font-size: 16px; /* Override font size on the Submit Button */
-	/*font-weight: bold; /* //Override font weight on the Submit Button */ 
-	/* padding-top: 4px; /* Override the button padding to make it bigger! */
-	/* padding-bottom: 4px; /* Override the button padding to make it bigger! */
+.custom-slds-button {
+	font-size: 16px; /* Override font size on the Submit Button */
+	font-weight: bold; /* //Override font weight on the Submit Button */ 
+	padding-top: 4px; /* Override the button padding to make it bigger! */
+	padding-bottom: 4px; /* Override the button padding to make it bigger! */
 }
 .slds-input-has-icon .slds-input__icon:not(button) { /* Makes an icon clickable when putting the icon on the right and using standard classes as per the documentation */
 	pointer-events: all;
