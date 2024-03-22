@@ -2,7 +2,7 @@
 <ReportFolder xmlns="http://soap.sforce.com/2006/04/metadata">
     <folderShares>
         <accessLevel>Manage</accessLevel>
-        <sharedTo>jlowe@labs.ldo</sharedTo>
+        <sharedTo>jamie.lowe+appexchange@salesforce.com</sharedTo>
         <sharedToType>User</sharedToType>
     </folderShares>
     <name>Experience Cloud Logging</name>
