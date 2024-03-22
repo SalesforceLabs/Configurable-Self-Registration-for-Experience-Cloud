@@ -1,30 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <classAccesses>
-        <apexClass>RetrieveNetworkMembers</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>RetrieveRecordsForQuery</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
+    <applicationVisibilities>
+        <application>Experience_Cloud_Logging</application>
+        <visible>true</visible>
+    </applicationVisibilities>
     <classAccesses>
         <apexClass>SiteRegistrationController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>SiteUtilities</apexClass>
+        <apexClass>SiteRegistrationControllerTest</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
         <name>Custom_Experience_Cloud_Setting__mdt</name>
     </customMetadataTypeAccesses>
-    <customMetadataTypeAccesses>
-        <enabled>true</enabled>
-        <name>Custom_Registration_Configuration__mdt</name>
-    </customMetadataTypeAccesses>
-    <description>Assign to Experience Cloud Guest Users when using the Custom Self Registration &amp; Login managed package to grant access to relevant features. Used for the Self Registration component only.</description>
+    <description>Assign to internal System Admin Users when using the Custom Self Registration &amp; Login managed package to grant access to relevant features.</description>
     <fieldPermissions>
         <editable>true</editable>
         <field>Experience_Cloud_Log__c.Component_Name__c</field>
@@ -41,14 +33,27 @@
         <readable>true</readable>
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
-    <label>Custom Self Registration - Guest Access</label>
+    <label>Custom Login - Internal Access</label>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
         <allowEdit>false</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
-        <object>Experience_Cloud_Log__c</object>
+        <object>Experience_Cloud_Event__e</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Experience_Cloud_Log__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <tabSettings>
+        <tab>Experience_Cloud_Log__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
 </PermissionSet>
