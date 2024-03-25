@@ -77,7 +77,9 @@ export default class customSelfRegistration extends LightningElement {
 
     renderedCallback() {
         //Add keypress "enter" listener to the last element on the page to allow for submitting the form with the keyboard
-        this.template.querySelector('lightning-input[data-last=true]').addEventListener("keydown", (e) => {this.handleEnter(e)});
+        if(this.template.querySelector('lightning-input[data-last=true]')) {
+            this.template.querySelector('lightning-input[data-last=true]').addEventListener("keydown", (e) => {this.handleEnter(e)});
+        }   
     }
 
     connectedCallback() {
