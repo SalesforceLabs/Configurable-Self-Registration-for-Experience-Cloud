@@ -101,7 +101,7 @@
 	--lwc-heightInput: 40px; /* Override the Input Height */
 	--lwc-fontSize2: 16px; /* Error message font-size override */
 	font-size: 16px;
-	--lwc-brandDisabled: rgb(24, 114, 139) !important;
+	/* --lwc-brandDisabled: rgb(24, 114, 139); When the button is submitted, the background colour is default grey. Override this colour here. */
 }
 
 .slds-input-has-icon .slds-input__icon:not(button) { /* Makes an icon clickable when putting the icon on the right and using standard classes as per the documentation */

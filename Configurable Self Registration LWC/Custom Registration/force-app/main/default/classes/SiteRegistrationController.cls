@@ -318,7 +318,14 @@ public with sharing class SiteRegistrationController {
             String objectType = recordList.getSObjectType().getDescribe().getName();
             switch on objectType {
                 when 'Contact', 'Case' {
-                    return (Id)recordList[0].get('AccountId');
+                    try {
+                        return (Id)recordList[0].get('AccountId');
+                    }
+                    catch(SObjectException e) {
+                        messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+                        throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
+                    }
                 }
                 when else { //TODO: Intended to work for Accounts. Further support might be required here for other objects as and when they get added.
                     return (Id)recordList[0].get('Id');

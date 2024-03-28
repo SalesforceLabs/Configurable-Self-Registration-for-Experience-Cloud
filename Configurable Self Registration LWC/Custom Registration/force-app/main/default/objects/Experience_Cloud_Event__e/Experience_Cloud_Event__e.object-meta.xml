@@ -4,5 +4,5 @@
     <eventType>HighVolume</eventType>
     <label>Experience Cloud Event</label>
     <pluralLabel>Experience Cloud Events</pluralLabel>
-    <publishBehavior>PublishAfterCommit</publishBehavior>
+    <publishBehavior>PublishImmediately</publishBehavior>
 </CustomObject>
