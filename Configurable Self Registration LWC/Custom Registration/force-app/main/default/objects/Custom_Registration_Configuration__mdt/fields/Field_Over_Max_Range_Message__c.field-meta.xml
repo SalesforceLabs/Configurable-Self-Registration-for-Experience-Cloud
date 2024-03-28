@@ -3,7 +3,7 @@
     <fullName>Field_Over_Max_Range_Message__c</fullName>
     <description>Error message to be displayed when a date is after the max. date specified or number is higher than maximum specified.</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Error message to be displayed when a date is after the max. date specified or number is higher than maximum specified.</inlineHelpText>
     <label>Field Over Max Range Message</label>
     <length>255</length>

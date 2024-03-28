@@ -3,7 +3,7 @@
     <fullName>Field_Message_Too_Long__c</fullName>
     <description>Text is displayed if the field value entered is longer than the specified maximum.</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Text is displayed if the field value entered is longer than the specified maximum.</inlineHelpText>
     <label>Field Message Too Long</label>
     <length>255</length>

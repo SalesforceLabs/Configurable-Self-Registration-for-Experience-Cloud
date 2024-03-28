@@ -3,7 +3,7 @@
     <fullName>Field_Min_Length__c</fullName>
     <description>The minimum number of characters that must be entered in this field on the form</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>The minimum number of characters that must be entered in this field on the form</inlineHelpText>
     <label>Field Min Characters</label>
     <precision>18</precision>

@@ -3,7 +3,7 @@
     <fullName>Field_Show_Icon__c</fullName>
     <defaultValue>false</defaultValue>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Field Show Icon</label>
     <type>Checkbox</type>
 </CustomField>

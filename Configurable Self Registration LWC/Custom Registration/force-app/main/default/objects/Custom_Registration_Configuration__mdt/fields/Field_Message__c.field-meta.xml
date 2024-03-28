@@ -3,7 +3,7 @@
     <fullName>Field_Message__c</fullName>
     <description>Displayed if the REGEX pattern provided is not met.</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Displayed if the REGEX pattern provided is not met.</inlineHelpText>
     <label>Field REGEX Message</label>
     <length>255</length>

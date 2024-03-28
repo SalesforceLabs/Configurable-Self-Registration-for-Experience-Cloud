@@ -4,7 +4,7 @@
     <defaultValue>&quot;label-standard&quot;</defaultValue>
     <description>Displayed on the Self Registration form. The form does not display the field configuration&apos;s Field Label.</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Displayed on the Self Registration form. The form does not display the field configuration&apos;s Field Label.</inlineHelpText>
     <label>Field Label</label>
     <length>255</length>

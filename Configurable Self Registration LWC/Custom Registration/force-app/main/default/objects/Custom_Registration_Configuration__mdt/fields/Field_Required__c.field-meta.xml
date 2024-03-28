@@ -3,7 +3,7 @@
     <fullName>Field_Required__c</fullName>
     <defaultValue>false</defaultValue>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Field Required</label>
     <type>Checkbox</type>
 </CustomField>
