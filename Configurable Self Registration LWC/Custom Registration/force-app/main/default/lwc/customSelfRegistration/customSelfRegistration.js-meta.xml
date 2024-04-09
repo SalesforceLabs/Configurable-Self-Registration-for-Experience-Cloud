@@ -12,7 +12,7 @@
 
             <!-- Registration Functionality Properties -->
             <property label="Custom Query" name="customQuery" type="String" default=""
-                description="Write a SOQL query to find a singular Contact or Account record during registration. See docs for more information on using form values as bind variables."
+                description="Write a SOQL query to find a singular Contact, Account or Case record during registration. See docs for more information on using form values as bind variables. NOTE: You must include the AccountId field when querying Contacts."
                 required="true"></property>
             <property label="Access Level for SOQL Query" name="accessLevelMode" type="String"
                 datasource="System,User"
@@ -31,7 +31,7 @@
                 type="String" default="" datasource="apex://RetrievePersonAccountRecordTypes"
                 description="If creating a Person Account, set the Record Type that should be used. Setup Person Accounts via Setup before configuring this option. If using Contacts, leave this field blank as it is ignored."></property>
             <property label="Send Email Confirmation" name="sendEmailConfirmation" type="Boolean"
-                description="Send email confirmation on successful registration of a user. Consider switching off, if using another solution for sending email communications such as Marketing Cloud"
+                description="Send email confirmation on successful registration of a user. Consider switching off, if using another solution for sending email communications such as Marketing Cloud, or if Welcome Emails are switched on for your site."
                 default="true"></property>
             <property label="Sign Up Button Label" name="registerButtonSignUpMessage" type="String"
                 description="Text used on the submit button" default="Sign Up" required="true"></property>

@@ -57,16 +57,12 @@
                 label="Username Field: REGEX Pattern Match"
                 name="userNameField_fieldPatternMatch"
                 type="String"
-                required="true"
-                description="REGEX pattern used for checking user entry matches a specific pattern"
-                default="^[a-zA-Z0-9._+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,4}$"></property>
+                description="REGEX pattern used for checking user entry matches a specific pattern"></property>
             <property
                 label="Username Field: REGEX Pattern Match Message"
                 name="userNameField_fieldPatternMismatchMessage"
                 type="String"
-                required="true"
-                description="The message shown when the REGEX pattern used for checking user entry is not valid"
-                default="Please enter an email address in the correct format e.g. &quot;example@mail.com&quot;"></property>
+                description="The message shown when the REGEX pattern used for checking user entry is not valid"></property>
             <property label="Password Field: Label"
                 name="passwordField_fieldLabel"
                 type="String"

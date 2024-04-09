@@ -55,6 +55,7 @@ public with sharing class SiteUtilities {
 
     /**
     * @description Checks to see if the Logging setting is activated.
+    * @param settingName - pass in the settingName which is related to the component
     * @return true/false depending on setting value.
     */
     @AuraEnabled(cacheable=true)

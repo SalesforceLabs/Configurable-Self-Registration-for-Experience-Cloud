@@ -27,6 +27,11 @@
         <field>Experience_Cloud_Log__c.Message__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>User.Portal_Username__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>Custom Login - Guest Access</label>
     <objectPermissions>

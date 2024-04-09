@@ -7,6 +7,8 @@
 public with sharing class SiteRegistrationController {
 
     public static List<String> messages = new List<String>();
+    public static String siteName = Site.getName();
+    public static Map<String, Schema.SObjectField> userObjectMetadata = getMetadataForObject('User');
     static final String COMPONENT_NAME = 'Self Registration';
 
     @TestVisible
@@ -23,14 +25,13 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description pass in an object name and field name.
-     * @param objName the object name to check
-     * @param fieldName the field name to check
-     * @return return true if the object and field both exist. If the object has been removed it will also return false. If the object exists but the field doesn’t it will return false.
+     * @description pass in metadata for an object, and a field name.
+     * @param objectMetadata the object metadata to check against
+     * @param fieldName the field name to check for existance
+     * @return return true if the field exists, otherwise false.
      */
-    public static boolean checkFieldExists(String objName, string fieldName) {
-        SObject so = Schema.getGlobalDescribe().get(objName).newSObject();
-        return so.getSobjectType().getDescribe().fields.getMap().containsKey(fieldName);
+    public static Boolean checkFieldExists(Map<String, Schema.SObjectField> objectMetadata, string fieldName) {
+        return objectMetadata.containsKey(fieldName);
     }
 
     /**
@@ -56,6 +57,7 @@ public with sharing class SiteRegistrationController {
     
     /**
      * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
+     * @param urlParams a JSON string of URL params that were appended to the page.
      * @return Returns a JSON string of retrieved records
      * @see customSelfRegistration.html
      */
@@ -65,9 +67,6 @@ public with sharing class SiteRegistrationController {
         Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
 
         try {
-
-            String siteName = Site.getName();
-            
             for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, 
                     Field_Min_Length__c, Field_Max_Length__c, Field_Required__c, Field_Placeholder__c, 
                     Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c, Field_Message_Too_Short__c, Field_Message_Too_Long__c,
@@ -171,15 +170,15 @@ public with sharing class SiteRegistrationController {
         //This class runs without sharing as access cannot be granted to the Guest User and the SiteRegisterController runs as a Guest.
         List<NetworkMember> userList = RetrieveNetworkMembers.validateUsername(username, networkId);
 
-        messages.add('Looking for registered user with username ' + username + ' on NetworkId ' + networkId);    
+        messages.add('Looking for registered user with username ' + username + ' on Site: ' + siteName + ' with NetworkId: ' + networkId);    
         
         if(userList.size() >= 1) {
-            messages.add('User with username ' + username + ' already exists on NetworkId ' + networkId + '. Username NOT valid.');
+            messages.add('User with username ' + username + ' already exists on Site: ' + siteName + ' with NetworkId: ' + networkId + '. Username NOT valid.');
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);    
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('usernameTakenMessage'))); 
         }
 
-        messages.add('User with username ' + username + ' not found on NetworkId ' + networkId + '. Username valid.');
+        messages.add('User with username ' + username + ' not found on Site: ' + siteName + ' with NetworkId ' + networkId + '. Username valid.');
         return isUsernameValid;
     }
 
@@ -193,9 +192,8 @@ public with sharing class SiteRegistrationController {
 
         try {
             User user = new User();
-    
             for(String key : formJson.keySet()){
-                if(checkFieldExists('User', key)) {
+                if(checkFieldExists(userObjectMetadata, key)) {
                     user.put(key, formJson.get(key));
                 }
             }
@@ -266,6 +264,15 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
+     * @description getMetadataForObject pass in the object type to retrieve the metadata for. Returns a map of fields for the specified object.
+     * @param  objectType as a string e.g. Account
+     * @return field map from the specified object
+     */
+    private static Map<String, Schema.SObjectField> getMetadataForObject(String objectType) {
+        return Schema.getGlobalDescribe().get(objectType).getDescribe().fields.getMap();
+    } 
+
+    /**
      * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
      * @param formInputs - Map of the submitted form values 
      * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
@@ -280,11 +287,12 @@ public with sharing class SiteRegistrationController {
         //Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
         //Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
         //Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
-        //TODO: Don't call getGlobalDescribe in a loop for each field!
+        Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
+
         for(String key : formInputs.keySet()) { 
-            if(checkFieldExists(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')), key)) {
-                Schema.DisplayType dataType = Schema.getGlobalDescribe().get(SiteUtilities.convertToString(configurationOptions.get('objectToQuery'))).getDescribe().fields.getMap().get(key).getDescribe().getType();
-                
+            if(checkFieldExists(objectMetadata, key)) {
+                Schema.DisplayType dataType = objectMetadata.get(key).getDescribe().getType();
+            
                 //Now we have the data type of the field, convert as required.
                 if(SiteUtilities.convertToString(dataType) == 'DATE') {
                     Date d = Date.valueOf(SiteUtilities.convertToString(formInputs.get(key)));
@@ -362,9 +370,10 @@ public with sharing class SiteRegistrationController {
             
             Contact newContact = new Contact();
             newContact.put('AccountId', SiteUtilities.convertToString(configurationOptions.get('accountId')));
+            Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Contact');
              
             for(String key : formInputs.keySet()) {
-                if(checkFieldExists('Contact', key)) {
+                if(checkFieldExists(objectMetadata, key)) {
                     newContact.put(key, formInputs.get(key));
                 }
                 newContacts.add(newContact);
@@ -398,8 +407,9 @@ public with sharing class SiteRegistrationController {
             List<Account> newPersonAccounts = new List<Account>();
             Account newPersonAccount = new Account();
             newPersonAccount.put('RecordTypeId', Id.valueOf(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
+            Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
             for(String key : formInputs.keySet()) {
-                if(checkFieldExists('Account', key)) {
+                if(checkFieldExists(objectMetadata, key)) {
                     newPersonAccount.put(key, formInputs.get(key));
                 }
                 if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
@@ -472,9 +482,9 @@ public with sharing class SiteRegistrationController {
     public static String createExternalUser(Map<String, Object> formInputs, Id accountId, Map<String, Object> configurationOptions) {
         String userId = null; 
         User user = new User();
-
+                
         for(String key : formInputs.keySet()) {
-            if(checkFieldExists('User', key)) {
+            if(checkFieldExists(userObjectMetadata, key)) {
                 user.put(key, formInputs.get(key));
             }                 
         }

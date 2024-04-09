@@ -96,12 +96,14 @@
 }
 
 :host {
-	--lwc-formLabelFontSize: 16px; /* Override the Form Label Size */
+	--lwc-formLabelFontSize: 16px; /* Override the Form Label Size */	
 	--lwc-heightInput: 40px; /* Override the Input Height */
 	--lwc-fontSize2: 16px; /* Error message font-size override */
+	--lwc-fontSize3: 16px;
 	font-size:  16px;
 	/* --lwc-brandDisabled: rgb(24, 114, 139); When the button is submitted, the background colour is default grey. Override this colour here. */
 }
+
 .custom-slds-button {
 	font-size: 16px; /* Override font size on the Submit Button */
 	font-weight: bold; /* //Override font weight on the Submit Button */ 

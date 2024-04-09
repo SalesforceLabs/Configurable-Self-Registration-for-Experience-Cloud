@@ -224,7 +224,7 @@ export default class customSelfRegistration extends LightningElement {
         this._resetServerError();
 
         //Set the Username to be the email address if not provided on the form.
-        if(!this.formInputs['Username'] || this.formInputs['Username'] == '' || this.formInputs['Username'] != this.formInputs['Email']) {
+        if(!this.formInputs['Username'] || this.formInputs['Username'] == '') { // || this.formInputs['Username'] != this.formInputs['Email']) {
             this.formInputs['Username'] = this.formInputs['Email'];
         }
 

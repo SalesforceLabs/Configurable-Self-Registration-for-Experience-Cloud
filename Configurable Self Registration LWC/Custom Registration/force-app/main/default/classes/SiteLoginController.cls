@@ -4,9 +4,13 @@
  * @description Apex controller to support custom built UI Custom Login for Experience Cloud
  ***************************************************************************************************************/
 public with sharing class SiteLoginController {
-    public class CustomLoginException extends Exception{}
     public static List<String> messages = new List<String>();
     static final String COMPONENT_NAME = 'Login';
+
+    /**
+     * @description Custom Exception method. This is only thrown by the test class to force an error for test coverage as the Login History is not accessible.
+     */
+    public class CustomLoginException extends Exception{}
  
     /**
      * @description Attempts to login the newly registered user. Redirects to the home page on success.
@@ -31,7 +35,7 @@ public with sharing class SiteLoginController {
                        throw new CustomLoginException('Unknown error.'); 
                     }
                     when 'testusersuccessful@mail.com' {
-                        //Don't throw an exception
+                       //Don't throw an exception.
                     }
                     when else {
                         throw new CustomLoginException('Your login attempt has failed. Make sure the username and password are correct.');
