@@ -193,7 +193,7 @@ export default class customSelfRegistration extends LightningElement {
     }
 
     handleOnChange(event) {
-        this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value.trim();
 
         //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
         if(event.target.className.includes('passwordCmp')) { 
