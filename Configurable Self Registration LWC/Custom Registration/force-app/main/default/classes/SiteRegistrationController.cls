@@ -498,9 +498,11 @@ public with sharing class SiteRegistrationController {
             messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
             
-            //Horrible error message. Show a configuration message instead from the property panel.
-            //This means that the the matched contact (using the custom query) is already a portal user and therefore can't register again.
-            if(e.getMessage().contains('portal user already exists for contact')) { 
+            /* Horrible error message. Show a configuration message instead from the property panel. Captures 2 known errors:
+            * 'portal user already exists for contact': If the matched contact (using the custom query) is already a portal user and therefore can't register again.
+            * '[User already exists]': If a new Contact/Person Account is created because existing record wasn't found and the submitted email address matches a user.
+            */
+            if(e.getMessage().containsIgnoreCase('user already exists')) {
                 throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalRegistrationUserExists')));
             }
             else { //Anything else, show the generic message.
