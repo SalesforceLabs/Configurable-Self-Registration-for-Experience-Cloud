@@ -107,8 +107,12 @@ public with sharing class SiteRegistrationController {
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                jsonPart += '"fieldMaxLengthMessage":"' + mapping.Field_Message_Too_Long__c + '"'; 
+                jsonPart += '"fieldMaxLengthMessage":"' + mapping.Field_Message_Too_Long__c + '",'; 
                 
+                //TODO: We could add fields to control the default values from custom metadata if needed.
+                jsonPart += '"fieldChecked":' + false + ',';
+                jsonPart += '"fieldValue":""';
+
                 for(String key : urlParameters.keySet()) {
                     if(mapping.Field_Name__c == key) {
                         jsonPart += ',';
@@ -408,20 +412,23 @@ public with sharing class SiteRegistrationController {
             Account newPersonAccount = new Account();
             newPersonAccount.put('RecordTypeId', Id.valueOf(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
+           
             for(String key : formInputs.keySet()) {
                 if(checkFieldExists(objectMetadata, key)) {
                     newPersonAccount.put(key, formInputs.get(key));
                 }
+
                 if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
                     newPersonAccount.put('PersonEmail', formInputs.get(key)); 
                 }
-                newPersonAccounts.add(newPersonAccount);
             }
+
+            newPersonAccounts.add(newPersonAccount);
 
             SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newPersonAccounts);
             srList = Database.insert(securityDecision.getRecords()[0], false);
 
-            if(srList.isSuccess()) { 
+            if(srList.isSuccess()) {
                 return srList.getId();
             }
             return recordId;   
