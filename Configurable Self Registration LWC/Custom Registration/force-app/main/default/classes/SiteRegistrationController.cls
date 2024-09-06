@@ -274,25 +274,20 @@ public with sharing class SiteRegistrationController {
      */
     private static Map<String, Schema.SObjectField> getMetadataForObject(String objectType) {
         return Schema.getGlobalDescribe().get(objectType).getDescribe().fields.getMap();
-    } 
-
-    /**
-     * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
-     * @param formInputs - Map of the submitted form values 
-     * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
-     * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
-     * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
+    }
+    
+     /**
+     * @description Process the form inputs to convert strings to relevant data types to prevent SOQL/Create record errors
+     *  Dates: https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
+     *  Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
+     *  Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
+     *  Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
+     * @param  formInputs a map of the form fields submitted from the registration form.
+     * @param configurationOptions a map of the configuration options from the LWC property panel
+     * @param objectMetadata a map of the metadata for a specified object 
      */
-    private static Id getObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
-        List<sObject> recordList = new List<sObject>();
-
-        //Process the inputs to convert strings to relevant data types to prevent SOQL errors
-        //Dates: https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
-        //Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
-        //Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
-        //Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
-        Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
-
+    private static Map<String, Object> convertFormDataToCorrectDataType(Map<String, Object> formInputs, Map<String, Object> configurationOptions, Map<String, Schema.SObjectField> objectMetadata) {
+        
         for(String key : formInputs.keySet()) { 
             if(checkFieldExists(objectMetadata, key)) {
                 Schema.DisplayType dataType = objectMetadata.get(key).getDescribe().getType();
@@ -311,8 +306,28 @@ public with sharing class SiteRegistrationController {
                     Datetime dt = (DateTime)JSON.deserialize('"' + SiteUtilities.convertToString(formInputs.get(key)) +'"', DateTime.class);
                     formInputs.put(key,dt);
                 }
+                if(SiteUtilities.convertToString(dataType) == 'BOOLEAN') {
+                    Boolean b = SiteUtilities.convertToBoolean(formInputs.get(key));
+                    formInputs.put(key,b);
+                }
             }    
         }
+
+        return formInputs;
+    }
+
+    /**
+     * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
+     * @param formInputs - Map of the submitted form values 
+     * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
+     * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
+     * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
+     */
+    private static Id getObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
+        List<sObject> recordList = new List<sObject>();
+
+        Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
+        formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);        
 
         //Configurable via the component config panel. May affect what record is found based on org settings.
         //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
@@ -375,6 +390,7 @@ public with sharing class SiteRegistrationController {
             Contact newContact = new Contact();
             newContact.put('AccountId', SiteUtilities.convertToString(configurationOptions.get('accountId')));
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Contact');
+            formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
              
             for(String key : formInputs.keySet()) {
                 if(checkFieldExists(objectMetadata, key)) {
@@ -412,6 +428,7 @@ public with sharing class SiteRegistrationController {
             Account newPersonAccount = new Account();
             newPersonAccount.put('RecordTypeId', Id.valueOf(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
+            formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
            
             for(String key : formInputs.keySet()) {
                 if(checkFieldExists(objectMetadata, key)) {
