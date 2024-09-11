@@ -3,7 +3,7 @@
     <fullName>Enable__c</fullName>
     <defaultValue>false</defaultValue>
     <externalId>false</externalId>
-    <fieldManageability>SubscriberControlled</fieldManageability>
+    <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Enable</label>
     <type>Checkbox</type>
 </CustomField>

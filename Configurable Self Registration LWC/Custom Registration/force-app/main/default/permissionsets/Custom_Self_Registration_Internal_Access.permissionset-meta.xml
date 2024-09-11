@@ -23,12 +23,37 @@
     <description>Assign to internal System Admin Users when using the Custom Self Registration &amp; Login managed package to grant access to relevant features.</description>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Contact.Marketing_Opt_Out__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Cloud_Log__c.Account__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience_Cloud_Log__c.Component_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience_Cloud_Log__c.Contact__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience_Cloud_Log__c.Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Cloud_Log__c.User_Created__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>User.Checkbox_Test__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

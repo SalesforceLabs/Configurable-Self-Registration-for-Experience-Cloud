@@ -19,7 +19,7 @@
                 <componentType>Metric</componentType>
                 <decimalPrecision>-1</decimalPrecision>
                 <displayUnits>Auto</displayUnits>
-                <groupingSortProperties />
+                <groupingSortProperties/>
                 <header>Error Logs - Login (Last 7 Days)</header>
                 <indicatorBreakpoint1>33.0</indicatorBreakpoint1>
                 <indicatorBreakpoint2>67.0</indicatorBreakpoint2>
@@ -43,7 +43,7 @@
                 <componentType>Metric</componentType>
                 <decimalPrecision>-1</decimalPrecision>
                 <displayUnits>Auto</displayUnits>
-                <groupingSortProperties />
+                <groupingSortProperties/>
                 <header>Error Logs - Login (Last 30 Days)</header>
                 <indicatorBreakpoint1>33.0</indicatorBreakpoint1>
                 <indicatorBreakpoint2>67.0</indicatorBreakpoint2>
@@ -68,7 +68,7 @@
                 <componentType>Metric</componentType>
                 <decimalPrecision>-1</decimalPrecision>
                 <displayUnits>Auto</displayUnits>
-                <groupingSortProperties />
+                <groupingSortProperties/>
                 <header>Errors - Self Registration (Last 7 Days)</header>
                 <indicatorBreakpoint1>33.0</indicatorBreakpoint1>
                 <indicatorBreakpoint2>67.0</indicatorBreakpoint2>
@@ -93,7 +93,7 @@
                 <componentType>Metric</componentType>
                 <decimalPrecision>-1</decimalPrecision>
                 <displayUnits>Auto</displayUnits>
-                <groupingSortProperties />
+                <groupingSortProperties/>
                 <header>Errors - Self Reg (Last 30 Days)</header>
                 <indicatorBreakpoint1>33.0</indicatorBreakpoint1>
                 <indicatorBreakpoint2>67.0</indicatorBreakpoint2>
@@ -182,8 +182,8 @@
     <dashboardType>LoggedInUser</dashboardType>
     <description>Shows &apos;Error&apos; logs for the self registration and login custom LWCs</description>
     <isGridLayout>true</isGridLayout>
-    <owner>jamie.lowe+appexchange@salesforce.com</owner>
-    <runningUser>jamie.lowe+appexchange@salesforce.com</runningUser>
+    <owner>jlowe@labs.ldo</owner>
+    <runningUser>jlowe@labs.ldo</runningUser>
     <textColor>#000000</textColor>
     <title>Experience Cloud Logging</title>
     <titleColor>#000000</titleColor>

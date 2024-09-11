@@ -9,117 +9,6 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
-            <property label="Username Field: Field Label" name="userNameField_fieldLabel"
-                type="String"
-                description="Control the field label for the username field"
-                default="Username"
-                required="true"></property>
-            <property label="Username Field: Label Variant"
-                name="userNameField_fieldLabelVariant"
-                type="String"
-                description="Control whether the field label shows above the field, to the left or is hidden entirely"
-                datasource="standard,label-hidden,label-inline"
-                default="standard"
-                required="true"></property>
-            <property label="Username Field: Help Text"
-                name="userNameField_fieldHelpText"
-                type="String"
-                description="Control the help text that appears in an information bubble. NOTE: Not supported when Label Variant is set to label-hidden"
-                default=""></property>
-            <property label="Username Field: Placeholder"
-                name="userNameField_fieldPlaceholder"
-                type="String"
-                description="Control the placeholder text that appears in the Username field"
-                default=""></property>
-            <property label="Username Field: Parent Container Field Class"
-                name="userNameField_fieldClass"
-                type="String"
-                description="Add a CSS styling class to the username field's container class."
-                default="slds-input-has-icon_right"></property>
-            <property label="Username Field: Icon"
-                name="userNameField_fieldIconName"
-                type="String"
-                description="Control the Icon shown in the Username field. Use SLDS Icon values e.g. utility:user"
-                default="utility:email"></property>
-            <property label="Username Field: Icon Class"
-                name="userNameField_fieldIconClass"
-                type="String"
-                description="Add a CSS styling class to the Username field's icon if one is shown"
-                default="input-icon-label-shown-right"></property>
-            <property
-                label="Username Required: Field Validation Message"
-                name="userNameField_fieldRequiredMessage"
-                type="String"
-                required="true"
-                description="Field Validation message shown if the username field is not populated"
-                default="Please enter a username"></property>
-            <property
-                label="Username Field: REGEX Pattern Match"
-                name="userNameField_fieldPatternMatch"
-                type="String"
-                description="REGEX pattern used for checking user entry matches a specific pattern"></property>
-            <property
-                label="Username Field: REGEX Pattern Match Message"
-                name="userNameField_fieldPatternMismatchMessage"
-                type="String"
-                description="The message shown when the REGEX pattern used for checking user entry is not valid"></property>
-            <property label="Password Field: Label"
-                name="passwordField_fieldLabel"
-                type="String"
-                description="Control the field label for the Password field"
-                default="Password"
-                required="true"></property>
-            <property label="Password Field: Label Variant"
-                name="passwordField_fieldLabelVariant"
-                type="String"
-                description="Control whether the field label shows above the field, to the left or is hidden entirely"
-                datasource="standard,label-hidden,label-inline"
-                default="standard"
-                required="true"></property>
-            <property label="Password Field: Help Text"
-                name="passwordField_fieldHelpText"
-                type="String"
-                description="Control the help text that appears in an information bubble. NOTE: Not supported when Label Variant is set to label-hidden"
-                default=""></property>
-            <property label="Password Field: Placeholder"
-                name="passwordField_fieldPlaceholder"
-                type="String"
-                description="Control the placeholder text that appears in the password field"
-                default=""></property>
-            <property label="Password Field: Parent Container Field Class"
-                name="passwordField_fieldClass"
-                type="String"
-                description="Add a CSS styling class to the password field's container class."
-                default="slds-input-has-icon_right"></property>
-            <property label="Password Field: Icon Class"
-                name="passwordField_fieldIconClass"
-                type="String"
-                description="Add a CSS styling class to the password field's icon if one is shown. For example, use this to position the Show/Hide icon to the left or right of the field."
-                default="input-icon-label-shown-right"></property>
-            <property label="Password Field: Show Icon Name"
-                name="passwordFieldShowIcon"
-                type="String"
-                description="Uses SLDS Icons. The icon that is displayed when the password value is hidden. Clicking the icon shows the password."
-                default="utility:preview"
-                required="true"></property>
-            <property label="Password Field: Hide Icon Name"
-                name="passwordFieldHideIcon"
-                type="String"
-                description="Uses SLDS Icons. The icon that is displayed when the password value is shown. Clicking the icon hides the password."
-                default="utility:hide"
-                required="true"></property>
-            <property
-                label="Password Required: Field Validation Message"
-                name="passwordField_fieldRequiredMessage"
-                type="String"
-                required="true"
-                description="Field Validation message shown if the password field is not populated"
-                default="Please enter your password"></property>
-
-            <property label="Enable Show Password Function?" name="fieldShowPasswordVisibility"
-                type="Boolean"
-                default="true"
-                description="Allow the user to show/hide the password they have typed before clicking the Login button"></property>
             <property label="Login Button Label"
                 name="loginButtonLoginMessage"
                 type="String"
@@ -133,7 +22,8 @@
                 default="Logging in... Please Wait."
                 required="true"></property>
 
-            <property label="Redirect URL After Login" name="portalLoginRedirect"
+            <property label="Redirect URL After Login"
+                name="portalLoginRedirect"
                 type="String"
                 description="Set the URL that the user will be redirected to once they successfully login"
                 default="/"
@@ -156,6 +46,37 @@
                 name="userLockedOutErrorMessage" type="String"
                 description="Error message shown if the user has entered their credentials incorrectly too many times in quick succession and they are not temporarily locked out."
                 default="Your account has been temporarily locked. Please try again later."
+                required="true"></property>
+
+            <property label="Enable Passwordless Login?"
+                name="enablePasswordlessLogin"
+                type="Boolean" default="false"
+                description="Allow the user to login with a previously verified email address or phone number"></property>
+
+            <property
+                label="Verification Method"
+                name="passwordlessMethod" type="String"
+                editor="c/customPropertyEditorVerificationMethods" default="Email"></property>
+
+            <property
+                label="Submit Verification Code Button Label"
+                name="loginButtonAwaitingCodeMessage" type="String"
+                description="Button label when the component is awaiting a verification code input from the user to login."
+                default="Submit Verification Code"
+                required="true"></property>
+
+            <property
+                label="Verification Code Validation Error"
+                name="failedCodeVerificationMessage" type="String"
+                description="Error message shown if there is a problem verifying the specified verification code entered by the user."
+                default="There was a problem verifying the code provided. Please check and try again."
+                required="true"></property>
+
+            <property
+                label="Verification Code Send Error"
+                name="portalErrorSendVerificationCode" type="String"
+                description="Error message shown if there is a problem sending a verification code to the user based on the method chosen."
+                default="There was a problem sending a verification code. Please try again later or contact us for further assistance."
                 required="true"></property>
 
         </targetConfig>

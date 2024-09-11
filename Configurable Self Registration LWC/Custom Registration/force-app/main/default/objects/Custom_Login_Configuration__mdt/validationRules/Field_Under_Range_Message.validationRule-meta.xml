@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Field_Under_Range_Message</fullName>
+    <active>true</active>
+    <description>Shows an error if the Minimum Length is set and Field Under Minimum Range Message is blank.</description>
+    <errorConditionFormula>AND(
+
+OR(
+ISPICKVAL(Field_Type__c, &quot;number&quot;),
+ISPICKVAL(Field_Type__c, &quot;date&quot;),
+ISPICKVAL(Field_Type__c, &quot;datetime&quot;),
+ISPICKVAL(Field_Type__c, &quot;time&quot;)
+),
+
+ISBLANK(Field_Under_Minimum_Range_Message__c), 
+NOT(ISBLANK(Minimum_Value__c))
+
+)</errorConditionFormula>
+    <errorDisplayField>Field_Under_Minimum_Range_Message__c</errorDisplayField>
+    <errorMessage>Field Under Minimum Range Message must be set if Minimum Value is provided.</errorMessage>
+</ValidationRule>

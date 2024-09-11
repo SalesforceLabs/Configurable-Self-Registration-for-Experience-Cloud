@@ -7,6 +7,17 @@
 @isTest
 private class SiteLoginControllerTest {
     
+     //Retrieve custom metadata for the Login component. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
+    @isTest
+    private static void getActiveCustomConfigurationTestLogin() {
+        String urlParams = '{"Email":"test@mail.com"}';
+        String result = SiteLoginController.getCustomConfiguration(urlParams);
+        String resultParsed = '{"data":' + result + '}';        
+        Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
+        List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
+        System.assertEquals(2, dataObj.size(), '2 ACTIVE configured fields found as expected');
+    }
+
     //Retrieve and test custom settings. 1 is installed by the Self Registration package and its re-used for this component
     @isTest
     private static void isLoggingEnabled() {
@@ -56,12 +67,7 @@ private class SiteLoginControllerTest {
         }
         insert a;
     
-        //Select an admin user that is active in the system.
-        User adminUser = [
-            SELECT Id FROM User
-            WHERE Profile.Name = 'System Administrator' AND IsActive = true
-            LIMIT 1
-        ];
+        
 
         //Run the user create as the admin above. Forces a new transaction in the test class.
         //This prevents the 'MIXED_DML' SOQL exception caused by other actions that might run outside of the user creation such as assigning permission sets automatically.
@@ -99,7 +105,9 @@ private class SiteLoginControllerTest {
         
         for (String user : usernameList) { //Loop over the test users. See SiteLoginController.loginUser for hacks/workarounds as Site.Login() doesn't actually work in Test classes.
             try {
-                SiteLoginController.loginUser(user, 'test', lwcSettings); //Passing a real password for the test user created above has no effect in a test class! 
+                String formJSON = '{"Email":"'+ user +'","Password":"test"}';  //Passing a real password for the test user created above has no effect in a test class! 
+                //Map<String, Object> formInputs = (Map<String, Object>) JSON.deserializeUntyped(formJSON); 
+                SiteLoginController.loginUser(formJSON, lwcSettings);
             }
             catch (Exception e) {
                 System.assertEquals(null, null, 'Site.login() always returns null in tests.');

@@ -9,11 +9,118 @@ public with sharing class SiteRegistrationController {
     public static List<String> messages = new List<String>();
     public static String siteName = Site.getName();
     public static Map<String, Schema.SObjectField> userObjectMetadata = getMetadataForObject('User');
-    static final String COMPONENT_NAME = 'Self Registration';
+    public static final String COMPONENT_NAME = 'Self Registration';
+    public static Map<String, Auth.VerificationMethod> methods = new Map<String, Auth.VerificationMethod>{'Email' => Auth.VerificationMethod.EMAIL, 'SMS' => Auth.VerificationMethod.SMS};
 
     @TestVisible
     public static Boolean testPersonAccountStatus;
     private static Boolean orgPersonAccountStatus = Schema.sObjectType.Account.fields.getMap().containsKey('isPersonAccount');
+    
+    /**
+     * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
+     * @param urlParams a JSON string of URL params that were appended to the page.
+     * @return Returns a JSON string of retrieved records
+     * @see customSelfRegistration.html
+     */
+    @AuraEnabled(cacheable=true)
+    public static String getCustomConfiguration(String urlParams) {
+        String result = '';
+        Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
+
+        try {
+            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, 
+                    Field_Min_Length__c, Field_Max_Length__c, Field_Required__c, Field_Placeholder__c, 
+                    Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c, Field_Message_Too_Short__c, Field_Message_Too_Long__c,
+                    Minimum_Value__c, Maximum_Value__c, Field_Under_Minimum_Range_Message__c, Field_Over_Max_Range_Message__c, Field_Show_Icon__c, Field_Icon_Name__c, 
+                    Field_Icon_Class__c, Field_Parent_Class__c, Field_Show_Password_Visibility__c, Field_Label_Variant__c, Field_Date_Style__c, Field_Picklist_Options__c 
+                                    FROM Custom_Registration_Configuration__mdt 
+                                    WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
+                                    OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
+                                    WITH SECURITY_ENFORCED 
+                                    ORDER BY Display_Order__c]
+                ) {
+
+                if(String.isNotBlank(result)){
+                    result += ',';
+                } 
+
+                String jsonPart = '{';
+                jsonPart += '"fieldType":"' + mapping.Field_Type__c + '",'; 
+                jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
+                jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
+                jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
+                jsonPart += '"fieldMinValue":"' + mapping.Minimum_Value__c + '",';
+                jsonPart += '"fieldMessageUnder":"' + mapping.Field_Under_Minimum_Range_Message__c + '",';
+                jsonPart += '"fieldMaxValue":"' + mapping.Maximum_Value__c + '",';
+                jsonPart += '"fieldMessageOver":"' + mapping.Field_Over_Max_Range_Message__c + '",';
+                jsonPart += '"fieldMinLength":"' + mapping.Field_Min_Length__c + '",';
+                jsonPart += '"fieldMinLengthMessage":"' + mapping.Field_Message_Too_Short__c + '",';
+                jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '",';
+                jsonPart += '"fieldLabelVariant":"' + mapping.Field_Label_Variant__c + '",';
+                jsonPart += '"fieldDateStyle":"' + mapping.Field_Date_Style__c + '",';
+                
+                //Settings to control icon visibility
+                jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Icon__c) + ','; //Needs to be a boolean as it directly controls dynamic template
+                jsonPart += '"fieldIconName":"' + mapping.Field_Icon_Name__c + '",';
+                jsonPart += '"fieldIconClass":"' + mapping.Field_Icon_Class__c + '",';
+                jsonPart += '"fieldParentClass":"' + mapping.Field_Parent_Class__c + '",';
+                
+                jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Password_Visibility__c) + ',';
+
+                //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
+                //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
+                jsonPart += '"fieldMaxLengthMessage":"' + mapping.Field_Message_Too_Long__c + '"'; 
+
+                for(String key : urlParameters.keySet()) {
+                    if(mapping.Field_Name__c == key) {
+                        jsonPart += ',';
+                        if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
+                            jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
+                        }
+                        else {
+                            jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
+                        }
+                    }
+                }
+
+                if(mapping.Field_Type__c == 'picklist') {
+                    jsonPart += ',';
+                    jsonPart += '"showAsPicklist":' + true + ',';
+                    jsonPart += '"picklistOptions":' + mapping.Field_Picklist_Options__c  + ''; 
+                }
+
+                if(String.isNotBlank(mapping.Field_Placeholder__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldPlaceholder":"' + mapping.Field_Placeholder__c + '"';
+                }
+
+                if(String.isNotBlank(mapping.Field_Message__c) && String.isNotBlank(mapping.Field_Validation_REGEX__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '",';
+                    jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
+                }
+
+                if(mapping.Field_Required__c && String.isNotBlank(mapping.Field_Required_Message__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '",';
+                    jsonPart += '"fieldRequiredMessage":"' + mapping.Field_Required_Message__c + '"';
+                }
+
+                if(String.isNotBlank(mapping.Field_Help_Text__c)) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '"';
+                }
+             
+                jsonPart += '}';
+                result += jsonPart;
+            }
+        }
+        catch(Exception ex) {
+            result += ex.getLineNumber() + ' : ' + ex.getMessage();
+            throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
+        }
+        return '['+result+']';
+    }
 
     /**
      * @description isPersonAccountEnabled tests whether the org currently has Person Accounts enabled. Checks for existence of the isPersonAccount field.
@@ -54,108 +161,6 @@ public with sharing class SiteRegistrationController {
 
         return newFormJson;
     }
-    
-    /**
-     * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
-     * @param urlParams a JSON string of URL params that were appended to the page.
-     * @return Returns a JSON string of retrieved records
-     * @see customSelfRegistration.html
-     */
-    @AuraEnabled(cacheable=true)
-    public static String getCustomConfiguration(String urlParams) {
-        String result = '';
-        Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
-
-        try {
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, 
-                    Field_Min_Length__c, Field_Max_Length__c, Field_Required__c, Field_Placeholder__c, 
-                    Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c, Field_Message_Too_Short__c, Field_Message_Too_Long__c,
-                    Minimum_Value__c, Maximum_Value__c, Field_Under_Minimum_Range_Message__c, Field_Over_Max_Range_Message__c, Field_Show_Icon__c, Field_Icon_Name__c, 
-                    Field_Icon_Class__c, Field_Parent_Class__c, Field_Show_Password_Visibility__c, Field_Label_Variant__c, Field_Date_Style__c 
-                                    FROM Custom_Registration_Configuration__mdt 
-                                    WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
-                                    OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
-                                    WITH SECURITY_ENFORCED 
-                                    ORDER BY Display_Order__c]
-                ) {
-                if(String.isNotBlank(result)){
-                    result += ',';
-                } 
-
-                String jsonPart = '{';
-                jsonPart += '"fieldType":"' + mapping.Field_Type__c + '",'; 
-                jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
-                jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
-                jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
-                jsonPart += '"fieldMinValue":"' + mapping.Minimum_Value__c + '",';
-                jsonPart += '"fieldMessageUnder":"' + mapping.Field_Under_Minimum_Range_Message__c + '",';
-                jsonPart += '"fieldMaxValue":"' + mapping.Maximum_Value__c + '",';
-                jsonPart += '"fieldMessageOver":"' + mapping.Field_Over_Max_Range_Message__c + '",';
-                jsonPart += '"fieldMinLength":"' + mapping.Field_Min_Length__c + '",';
-                jsonPart += '"fieldMinLengthMessage":"' + mapping.Field_Message_Too_Short__c + '",';
-                jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '",';
-                jsonPart += '"fieldLabelVariant":"' + mapping.Field_Label_Variant__c + '",';
-                jsonPart += '"fieldDateStyle":"' + mapping.Field_Date_Style__c + '",';
-                
-                //Settings to control icon visibility
-                jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Icon__c) + ','; //Needs to be a boolean as it directly controls dynamic template
-                jsonPart += '"fieldIconName":"' + mapping.Field_Icon_Name__c + '",';
-                jsonPart += '"fieldIconClass":"' + mapping.Field_Icon_Class__c + '",';
-                jsonPart += '"fieldParentClass":"' + mapping.Field_Parent_Class__c + '",';
-                
-                jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Password_Visibility__c) + ',';
-
-                //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
-                //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                jsonPart += '"fieldMaxLengthMessage":"' + mapping.Field_Message_Too_Long__c + '",'; 
-                
-                //TODO: We could add fields to control the default values from custom metadata if needed.
-                jsonPart += '"fieldChecked":' + false + ',';
-                jsonPart += '"fieldValue":""';
-
-                for(String key : urlParameters.keySet()) {
-                    if(mapping.Field_Name__c == key) {
-                        jsonPart += ',';
-                        if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
-                            jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
-                        }
-                        else {
-                            jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
-                        }
-                    }
-                }
-
-                if(String.isNotBlank(mapping.Field_Placeholder__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldPlaceholder":"' + mapping.Field_Placeholder__c + '"';
-                }
-
-                if(String.isNotBlank(mapping.Field_Message__c) && String.isNotBlank(mapping.Field_Validation_REGEX__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '",';
-                    jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
-                }
-
-                if(mapping.Field_Required__c && String.isNotBlank(mapping.Field_Required_Message__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '",';
-                    jsonPart += '"fieldRequiredMessage":"' + mapping.Field_Required_Message__c + '"';
-                }
-
-                if(String.isNotBlank(mapping.Field_Help_Text__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '"';
-                }
-             
-                jsonPart += '}';
-                result += jsonPart;
-            }
-        }
-        catch(Exception ex) {
-            result += ex.getLineNumber() + ' : ' + ex.getMessage();
-        }
-        return '['+result+']';
-    }
 
     /**
      * @description isValidUsername Checks to see if the username supplied by the user on the registration form is available
@@ -172,7 +177,7 @@ public with sharing class SiteRegistrationController {
         String networkId = Network.getNetworkId();
 
         //This class runs without sharing as access cannot be granted to the Guest User and the SiteRegisterController runs as a Guest.
-        List<NetworkMember> userList = RetrieveNetworkMembers.validateUsername(username, networkId);
+        List<NetworkMember> userList = SiteUtilities.validateUsername(username, networkId);
 
         messages.add('Looking for registered user with username ' + username + ' on Site: ' + siteName + ' with NetworkId: ' + networkId);    
         
@@ -192,17 +197,9 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
     @AuraEnabled
-    public static void validatePassword(Map<String, Object> formJson, Map<String, Object> configurationOptions) {
+    public static void validatePassword(Map<String, Object> formJson, Map<String, Object> configurationOptions, User user) {
 
-        try {
-            User user = new User();
-            for(String key : formJson.keySet()){
-                if(checkFieldExists(userObjectMetadata, key)) {
-                    user.put(key, formJson.get(key));
-                }
-            }
-
-            user.CommunityNickname = generateCommunityNickname(SiteUtilities.convertToString(formJson.get('Username'))); 
+        try { 
             if(!Test.isRunningTest()) { //NOTE: This method is buggy and always fails during Apex Tests so bypass it! See: https://help.salesforce.com/s/articleView?id=000391105&type=1
                 Site.validatePassword(user, SiteUtilities.convertToString(formJson.get('password')), SiteUtilities.convertToString(formJson.get('confirmPassword'))); 
             } 
@@ -229,7 +226,12 @@ public with sharing class SiteRegistrationController {
     public static String registerUser(String formInputs, String configurationOptions) { 
 
         String pageUrl = null;
+        String result = '';
         Id recordId = null;
+        String userId;
+        String identifier;
+        Boolean showVerificationCode = false; 
+        String jsonPart = '{"registerResult":[';
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         
@@ -238,33 +240,78 @@ public with sharing class SiteRegistrationController {
         sanitisedFormJson = sanitiseJson(formJson);
 
         isValidUsername(formJson, lwcSettings);
-        validatePassword(formJson, lwcSettings);
+        User user = createUnsavedUser(formJson, lwcSettings);
+
+        //No password is required for Passwordless, so don't try to validate it!
+        if(!SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin'))) {
+            validatePassword(formJson, lwcSettings, user);
+        }
   
         if(String.isNotBlank(SiteUtilities.convertToString(lwcSettings.get('customQuery')))) {
-            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + ' Form Values: ' + sanitisedFormJson);
+            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + '. Submitted Values: ' + sanitisedFormJson);
             recordId = getObject(sanitisedFormJson, lwcSettings);
             messages.add('Record Id found was: ' + recordId);
         }
     
         if(SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
-            messages.add('Creating object with type: ' + lwcSettings.get('objectCreateType') + ' Form Values: ' + sanitisedFormJson); 
+            messages.add('About to create new ' + lwcSettings.get('objectCreateType'));
             recordId = createObject(formJson, lwcSettings);
             messages.add('Created Record Id returned was: ' + recordId);   
         }
 
-        String userId = createExternalUser(formJson, recordId, lwcSettings);
-    
-        if(Test.isRunningTest()) {
-            userId = '123'; 
-        }
-    
-        if(String.isNotBlank(userId)) {
-            messages.add('External User Id created was: ' + userId);
-            pageUrl = loginUser(SiteUtilities.convertToString(formJson.get('Username')), SiteUtilities.convertToString(formJson.get('password')), lwcSettings);
-        }
+        if(SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin'))) {
 
+            //Set the resulting contactId on the yet to be saved user
+            String type = SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && (SiteUtilities.convertToString(lwcSettings.get('objectCreateType')) == 'Account' || SiteUtilities.convertToString(lwcSettings.get('objectToQuery')) == 'Account') ? 'Account' : 'Contact';
+            new SiteUtilities().setContactId(user, type, recordId);
+
+            messages.add('Sending verification code via ' + SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod'))  + ' to User: ' + user);            
+            try {
+                Auth.VerificationMethod method = methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));
+                identifier = SiteUtilities.sendVerificationCode(method, user, COMPONENT_NAME);
+                showVerificationCode = true;
+            }
+            catch (NoAccessException e) {
+                //TODO: Delete the contact if one is created?
+                messages.add('Error sending a verification code. Please try again later.' + ' Error: ' + e.getMessage());
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+                throw new AuraHandledException(SiteUtilities.convertToString(lwcSettings.get('portalErrorSendVerificationCode'))); 
+            }
+        }
+        else {
+            userId = createExternalUser(formJson, recordId, user, lwcSettings);
+
+            if(Test.isRunningTest()) {
+                userId = '123'; 
+            }
+
+            if(String.isNotBlank(userId)) {
+                messages.add('External User Id created was: ' + userId);
+                pageUrl = loginUser(user.Username, SiteUtilities.convertToString(formJson.get('password')), lwcSettings);
+            }
+        }
         SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);
-        return pageUrl;
+        jsonPart += '{';
+        jsonPart += '"pageUrl":"' + pageUrl + '",';
+        jsonPart += '"showVerificationCode":' + showVerificationCode + ',';
+        jsonPart += '"verificationId":"' + identifier + '"}]}';
+        result += jsonPart;
+        return result;
+    }
+
+    /**
+     * @description verifyUser description
+     * @param  formInputs           formInputs description
+     * @param  configurationOptions configurationOptions description
+     * @return                      return description
+     */
+    @AuraEnabled
+    public static String verifyUser(String formInputs, String configurationOptions) {
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+        String startUrl = Site.getBaseSecureUrl() + SiteUtilities.convertToString(formJson.get('portalRegistrationRedirect'));
+        Auth.VerificationMethod method = methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));        
+        return SiteUtilities.verifyCode(method, SiteUtilities.convertToString(formJson.get('identifier')), SiteUtilities.convertToString(formJson.get('verificationCode')), startUrl, lwcSettings, formJson, COMPONENT_NAME, new User());  
     }
 
     /**
@@ -276,7 +323,7 @@ public with sharing class SiteRegistrationController {
         return Schema.getGlobalDescribe().get(objectType).getDescribe().fields.getMap();
     }
     
-     /**
+    /**
      * @description Process the form inputs to convert strings to relevant data types to prevent SOQL/Create record errors
      *  Dates: https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
      *  Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
@@ -333,7 +380,7 @@ public with sharing class SiteRegistrationController {
         //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
         //See: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_AccessLevel.htm
         try {
-            recordList = RetrieveRecordsForQuery.getRecords(formInputs, configurationOptions);
+            recordList = SiteUtilities.getRecords(formInputs, configurationOptions);
         }
         catch(Exception e) {
             messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
@@ -343,7 +390,7 @@ public with sharing class SiteRegistrationController {
         
         if(!recordList.isEmpty() && recordList.size() == 1) {
             String objectType = recordList.getSObjectType().getDescribe().getName();
-            switch on objectType {
+            switch on objectType { //TODO: Need to return the contactId for passwordless!
                 when 'Contact', 'Case' {
                     try {
                         return (Id)recordList[0].get('AccountId');
@@ -354,23 +401,23 @@ public with sharing class SiteRegistrationController {
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
                     }
                 }
-                when else { //TODO: Intended to work for Accounts. Further support might be required here for other objects as and when they get added.
+                when else {
                     return (Id)recordList[0].get('Id');
                 }
             }
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
-            messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('errorMultipleRecordsFound') + ' Form Values: ' + formInputs);
+            messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('multipleRecordsFoundError') + ' Form Values: ' + formInputs);
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);        
-            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorMultipleRecordsFound'))); 
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('multipleRecordsFoundError'))); 
         }
         else if (SiteUtilities.convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
             return null;
         }
         else { //No record found on specified query and CreateIfNotFound = False 
-            messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('errorNoRecordFound') + ' Form Values: ' + formInputs);
+            messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('noRecordFoundError') + ' Form Values: ' + formInputs);
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);        
-            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorNoRecordFound'))); 
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('noRecordFoundError'))); 
         }
     }
 
@@ -429,7 +476,7 @@ public with sharing class SiteRegistrationController {
             newPersonAccount.put('RecordTypeId', Id.valueOf(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
             formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
-           
+            
             for(String key : formInputs.keySet()) {
                 if(checkFieldExists(objectMetadata, key)) {
                     newPersonAccount.put(key, formInputs.get(key));
@@ -438,17 +485,35 @@ public with sharing class SiteRegistrationController {
                 if(key == 'Email') { //Form field is called Email, map this to the PersonEmail field.
                     newPersonAccount.put('PersonEmail', formInputs.get(key)); 
                 }
+
+                if(key == 'Mobile') { //Form field is called Mobile, map this to the PersonMobilePhone field.
+                    newPersonAccount.put('PersonMobilePhone', formInputs.get(key)); 
+                }
+            }
+
+            //Fake up First/Last Name as its a required field when creating a Person Account... These aren't typically present if using Passwordless.
+            //NOTE: Recommended to capture if using standard Self Registration or use a Login Flow to capture after login.
+            if(!newPersonAccount.isSet('FirstName')) {
+               newPersonAccount.put('FirstName', 'Site'); 
+            }
+
+            if(!newPersonAccount.isSet('LastName')) {
+               newPersonAccount.put('LastName', 'User'); 
             }
 
             newPersonAccounts.add(newPersonAccount);
-
+            messages.add('Person Account to create: ' + newPersonAccounts);
             SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newPersonAccounts);
             srList = Database.insert(securityDecision.getRecords()[0], false);
 
             if(srList.isSuccess()) {
                 return srList.getId();
             }
-            return recordId;   
+            else {
+               messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + srList.getErrors());
+               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+               throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate'))); 
+            }
         } catch (Exception e) {
             messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
@@ -477,23 +542,46 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description Generate a unique nickname for the user trying to register
-     * @param username - Passes in the submitted username field from the self registration form.
-     * @return String of the generated Nickname to use for the user.
+     * @description Creates a non-persisted User object for an external user which is linked to a Contact/Person Account that is found/created in other methods. Committed when the user verifies via a code.
+     * @param formInputs - JSON String of the submitted form values 
+     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
+     * @return User object
      */
-    public static String generateCommunityNickname(String username) {
-        String communityNickname = null;
+    public static User createUnsavedUser(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
 
-        Datetime currentTime = System.now();
-        Long timeInMls = currentTime.getTime();
+        User user = new User();
 
-        communityNickname = timeInMls + username;
-
-        if(communityNickname.length() > 40) { //Nickname field is limited to 40 characters
-            communityNickname = communityNickname.substring(0,40);
+        for(String key : formInputs.keySet()) {
+            if(checkFieldExists(userObjectMetadata, key)) {
+                user.put(key, formInputs.get(key));
+            }                 
         }
 
-        return communityNickname;
+        user.CommunityNickname = 'SiteUser' + System.now().getTime();
+        user.FirstName = String.isBlank(user.FirstName) ? 'Site' : user.FirstName;
+        user.LastName = String.isBlank(user.LastName) ? 'User' + System.now().getTime() : user.LastName;
+        
+        //TODO: This needs testing.
+        String personPhone = SiteUtilities.convertToString(formInputs.get('PersonMobilePhone')); //Map the PersonMobilePhone field to the Mobile field.
+        user.MobilePhone = String.isBlank(user.MobilePhone) && String.isNotBlank(personPhone) ? personPhone : user.MobilePhone;
+
+        String personEmail = SiteUtilities.convertToString(formInputs.get('PersonEmail')); //Map the PersonEmail field to the Email field.
+        user.Email = String.isBlank(user.Email) && String.isNotBlank(personEmail) ? personEmail : user.Email;
+        
+        if(SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin'))) {
+            user.Email = String.isBlank(user.Email) ? user.MobilePhone + '@passwordlessexternaluser.com' : user.Email; 
+            user.MobilePhone = String.isNotBlank(user.MobilePhone) ? UserManagement.formatPhoneNumber(SiteUtilities.convertToString(formInputs.get('countryCode')), user.MobilePhone) : '';
+            user.TimeZoneSidKey = UserInfo.getTimezone().getID();
+            user.LocaleSidKey = UserInfo.getLocale();
+            user.EmailEncodingKey = 'UTF-8';
+            user.LanguageLocaleKey = UserInfo.getlanguage(); 
+            user.Alias = 'SUser' + String.valueOf(Crypto.getRandomInteger()).substring(0,3);
+            new SiteUtilities().setProfileId(user, SiteUtilities.convertToString(configurationOptions.get('passwordlessProfileId'))); //Profile selected must be a site member otherwise the user creation fails.
+        }
+
+        //Set the Username to be the email address if not provided on the form. If passwordless and using SMS verification, email is also not present but required so it is set to a fake value.
+        user.Username = String.isBlank(user.Username) ? user.Email : user.Username;
+        return user;
     }
 
     /**
@@ -503,17 +591,8 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
      * @return String of External User Id created
      */
-    public static String createExternalUser(Map<String, Object> formInputs, Id accountId, Map<String, Object> configurationOptions) {
+    public static String createExternalUser(Map<String, Object> formInputs, Id accountId, User user, Map<String, Object> configurationOptions) {
         String userId = null; 
-        User user = new User();
-                
-        for(String key : formInputs.keySet()) {
-            if(checkFieldExists(userObjectMetadata, key)) {
-                user.put(key, formInputs.get(key));
-            }                 
-        }
-
-        user.CommunityNickname = generateCommunityNickname(SiteUtilities.convertToString(formInputs.get('Username')));
 
         try {
             userId = Site.createExternalUser(user, accountId, SiteUtilities.convertToString(formInputs.get('password')), SiteUtilities.convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
@@ -546,15 +625,16 @@ public with sharing class SiteRegistrationController {
     public static String loginUser(String username, String password, Map<String, Object> configurationOptions) {
         String pageUrl = null;
 
+        //TODO: Get the Site.ExperienceId and add to query params on startURL to retain the value?
         try {
             ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalRegistrationRedirect')));
             String startUrl = homePageRef.getUrl();
             ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
-
+            
             if(startPageRef != null) {
                 pageUrl = startPageRef.getUrl();
             } else {
-                ApexPages.PageReference pageRef = new PageReference(Site.getBaseSecureUrl());
+                ApexPages.PageReference pageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalRegistrationRedirect')));
                 pageUrl = pageRef.getUrl();
             }
         } catch (Exception e) {

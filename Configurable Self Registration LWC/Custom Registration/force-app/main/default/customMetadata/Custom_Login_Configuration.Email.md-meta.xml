@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Email</label>
+    <protected>true</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Display_Order__c</field>
+        <value xsi:type="xsd:double">1.0</value>
+    </values>
+    <values>
+        <field>Field_Class__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Date_Style__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Help_Text__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Icon_Class__c</field>
+        <value xsi:type="xsd:string">input-icon-label-shown-right</value>
+    </values>
+    <values>
+        <field>Field_Icon_Name__c</field>
+        <value xsi:type="xsd:string">utility:email</value>
+    </values>
+    <values>
+        <field>Field_Label_Variant__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Label__c</field>
+        <value xsi:type="xsd:string">Email</value>
+    </values>
+    <values>
+        <field>Field_Max_Length__c</field>
+        <value xsi:type="xsd:double">255.0</value>
+    </values>
+    <values>
+        <field>Field_Message_Too_Long__c</field>
+        <value xsi:type="xsd:string">Maximum of 255 characters are allowed</value>
+    </values>
+    <values>
+        <field>Field_Message_Too_Short__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Message__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Min_Length__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Name__c</field>
+        <value xsi:type="xsd:string">Email</value>
+    </values>
+    <values>
+        <field>Field_Over_Max_Range_Message__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Parent_Class__c</field>
+        <value xsi:type="xsd:string">slds-input-has-icon_right</value>
+    </values>
+    <values>
+        <field>Field_Picklist_Options__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Placeholder__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Required_Message__c</field>
+        <value xsi:type="xsd:string">Please enter an Email Address</value>
+    </values>
+    <values>
+        <field>Field_Required__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Field_Show_Icon__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Field_Show_Password_Visibility__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
+        <field>Field_Type__c</field>
+        <value xsi:type="xsd:string">email</value>
+    </values>
+    <values>
+        <field>Field_Under_Minimum_Range_Message__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Validation_REGEX__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Maximum_Value__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Minimum_Value__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Portal_API_Name__c</field>
+        <value xsi:type="xsd:string">ALL</value>
+    </values>
+</CustomMetadata>

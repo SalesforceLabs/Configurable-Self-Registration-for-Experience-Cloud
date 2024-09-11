@@ -10,40 +10,23 @@
 import {LightningElement, api, track, wire} from 'lwc';
 import {CurrentPageReference} from 'lightning/navigation';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
+import verifyUser from '@salesforce/apex/SiteRegistrationController.verifyUser';
 import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
 
+//TODO: Setting the experience Id is required for Dynamic Branding. However, the Site.setExperienceId method doesn't appear to be working properly. 
+//The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
+//import setExperienceId from '@salesforce/apex/SiteUtilities.setExperienceId';
+
 export default class customSelfRegistration extends LightningElement {
+    @api propertyPanelSettings;
+    parsedSettings;
     
-    @api buttonLabel;
-    
-    //These are custom properties in the component configuration within Experience Cloud.
-    @api customQuery;
-    @api accessLevelMode;
-    @api createNotFound;
-    @api objectCreateType;
-    @api accountId;
-    @api personAccountRecordTypeId;
-    @api sendEmailConfirmation;
-    
-    //As above, but these are message configuration properties.
-    @api registerButtonSignUpMessage;
-    @api registerButtonWaitingMessage;
-    @api passwordMatchError;
-    @api usernameTakenMessage;
-    @api noRecordFoundError;
-    @api multipleRecordsFoundError;
-    @api errorOnCreate;
-    @api portalLoginError;
-    @api portalRegistrationError;
-    @api portalRegistrationUserExists;
-    @api portalRegistrationRedirect;
-
     @api results = null; //Results for custom configuration search
-    @track formInputs = {}; //Form values submitted. 
-    configurationOptions = {};  //LWC Setting values - add to object to pass as one parameter to Apex 
+    @track formInputs = {}; //Form values submitted.  
 
+    @api buttonLabel;
     @api isButtonDisabled = false; 
     @api showSpinner = false;
     @api anyServerError = false;
@@ -55,6 +38,9 @@ export default class customSelfRegistration extends LightningElement {
     currentPageReference = null; 
     urlParameters = null;
     showPassword = false;
+    @api showVerificationCode = false;
+    registerResults = null;
+    pageUrl;
 
     get passwordIcon() {
         return this.showPassword ? 'utility:hide' : 'utility:preview';
@@ -72,6 +58,14 @@ export default class customSelfRegistration extends LightningElement {
     getStateParameters(currentPageReference) {
         if (currentPageReference) {
             this.urlParameters = currentPageReference.state;
+            
+            //TODO: Set the Experience Id for driving dynamic branding.
+            /*if(currentPageReference.state.expid) {
+                setExperienceId({expId: currentPageReference.state.expid}).catch(error=>{
+                    console.log('There was a problem setting the site experience id: ' , error);
+                    this._setServerError('Unable to set the Site Experience Id. Please try again later.'); 
+                })
+            }*/
         }
     }
 
@@ -79,90 +73,104 @@ export default class customSelfRegistration extends LightningElement {
         //Add keypress "enter" listener to the last element on the page to allow for submitting the form with the keyboard
         if(this.template.querySelector('lightning-input[data-last=true]')) {
             this.template.querySelector('lightning-input[data-last=true]').addEventListener("keydown", (e) => {this.handleEnter(e)});
-        }   
+        }
+
+        //Dispatch a change event on the Id field so it is submitted back to Salesforce.
+        if(this.template.querySelector('lightning-input[data-id=identifier')) {
+            this.template.querySelector('lightning-input[data-id=identifier]').dispatchEvent(new Event("change"));
+        }
     }
 
     connectedCallback() {
+        if(this.propertyPanelSettings) {
+            this.parsedSettings = JSON.parse(this.propertyPanelSettings);
+            this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);
+            
+            //Tries to remove spaces from the field list in the SOQL query to prevent errors with parsing.
+            let queryParts = this.parsedSettings.customQuery.split("SELECT ");
+            let queryPartsFields = queryParts[1].split(" FROM");
+            let queryPartsRemoveSpacesFromFields = queryPartsFields[0].replace(" ", "");
+            this.parsedSettings['customQuery'] = 'SELECT ' + queryPartsRemoveSpacesFromFields + ' FROM' + queryPartsFields[1];
 
-        this.handleSubmit(false, this.registerButtonSignUpMessage, false);
+            let newQueryParts = this.parsedSettings.customQuery.split(" ");
 
-        //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
-        let queryParts = this.customQuery.split(" ");
-        if(this.customQuery == null || (queryParts[3] != 'Contact' &&  queryParts[3] != 'Account' &&  queryParts[3] != 'Case')) {
-           this._setComponentError(true, 'Only Contact, Account or Case objects are supported with the Custom SOQL Query on this component.');
-        }
-
-        this.configurationOptions['objectToQuery'] = queryParts[3]; //Pass this through to Apex so we can check data types of fields in the query.
-
-        //Check the custom query for Account, and if the Person Accounts are not enabled then error.
-        if(queryParts[3] == 'Account') {
-            checkPersonAccount().then((enabled) => {
-                if(!enabled) {
-                   this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
-                } 
-            }).catch(error=>{
-               console.log(error); 
-            })
-        }
-
-        //Checks Object Type to Create is set correctly when the component is set to create a new record, otherwise displays an error.        
-        if(this.createNotFound && this.objectCreateType == 'N/A') {
-            this._setComponentError(true, 'Object Type to Create cannot be "N/A" when the Create Record function is set to TRUE.');
-        }
-
-        //Enforces an Account Id to be entered if creating a Contact
-        if(this.createNotFound && this.objectCreateType == 'Contact' && this.accountId == '') {
-            this._setComponentError(true, 'Please specify an Account Id parameter when creating a Contact.');
-        }
-
-        //Enforces an Account Id of 15 or 18 length. 
-        if(this.createNotFound && this.objectCreateType == 'Contact' && this.accountId != '' && this.accountId.length != 15 && this.accountId.length != 18) {
-            this._setComponentError(true, 'Account Id parameter must be a Salesforce 15 or 18 character reference');
-        }
-
-        //Enforces an Account Id which starts with 001. 
-        if(this.createNotFound && this.objectCreateType == 'Contact' && this.accountId.substring(0,3) != '001' && (this.accountId.length == 15 || this.accountId.length == 18)) {
-            this._setComponentError(true, 'Account Id parameter must start with 001 (Account Object Type).');
-        }
-        
-        //Checks if Person Accounts are enabled on the org if Object Create Type is 'Person Account' and Create If Not Found = TRUE
-        if(this.createNotFound && this.objectCreateType == 'Person Account') {
-            checkPersonAccount().then((enabled) => {
-                if(!enabled) {
-                   this._setComponentError(true, 'Person Accounts are not enabled on this org.'); 
-                } 
-            }).catch(error=>{
-               console.log(error); 
-            })
-        }
-
-        //Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
-        isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
-            this.configurationOptions['loggingEnabled'] = enabled;
-        }).catch(error=>{
-            console.log(error); 
-        })
-        
-        //Check if the Person Account Record Type is set if the Object Create Type is 'Person Account' and Create If Not Found = TRUE
-        if(this.createNotFound && this.objectCreateType == 'Person Account' && this.personAccountRecordTypeId == '') {
-           this._setComponentError(true, 'Please select a Person Account Record Type from the list to create a Person Account during registration.');  
-        } 
-
-        //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
-        getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
-            this.results = JSON.parse(result);
-            for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
-                this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
+            //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
+            if(this.parsedSettings.customQuery == null || (newQueryParts[3] != 'Contact' &&  newQueryParts[3] != 'Account' &&  newQueryParts[3] != 'Case')) {
+                this._setComponentError(true, 'Only Contact, Account or Case objects are supported with a Custom Query on this component.');
             }
-        }).catch(error=>{
-            console.log(error);
-        })
+
+            this.parsedSettings['objectToQuery'] = newQueryParts[3]; //Pass this through to Apex so we can check data types of fields in the query.
+
+            //Check the custom query for Account, and if the Person Accounts are not enabled then error.
+            if(newQueryParts[3] == 'Account') {
+                checkPersonAccount().then((enabled) => {
+                    if(!enabled) {
+                        this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
+                    } 
+                }).catch(error=>{
+                    console.log(error); 
+                })
+            }
+
+            //Checks Object Type to Create is set correctly when the component is set to create a new record, otherwise displays an error.        
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'N/A') {
+                this._setComponentError(true, 'Object Type to Create cannot be "N/A" when the Create Record function is set to TRUE.');
+            }
+
+            //Enforces an Account Id to be entered if creating a Contact
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact' && this.parsedSettings.accountId == '') {
+                this._setComponentError(true, 'Please specify an Account Id parameter when creating a Contact.');
+            }
+
+            //Enforces an Account Id of 15 or 18 length. 
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact' && this.parsedSettings.accountId != '' && this.parsedSettings.accountId.length != 15 && this.parsedSettings.accountId.length != 18) {
+                this._setComponentError(true, 'Account Id parameter must be a Salesforce 15 or 18 character reference');
+            }
+
+            //Enforces an Account Id which starts with 001. 
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact' && this.parsedSettings.accountId.substring(0,3) != '001' && (this.parsedSettings.accountId.length == 15 || this.parsedSettings.accountId.length == 18)) {
+                this._setComponentError(true, 'Account Id parameter must start with 001 (Account Object Type).');
+            }
+            
+            //Checks if Person Accounts are enabled on the org if Object Create Type is 'Person Account' and Create If Not Found = TRUE
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Person Account') {
+                checkPersonAccount().then((enabled) => {
+                    if(!enabled) {
+                        this._setComponentError(true, 'Person Accounts are not enabled on this org.'); 
+                    } 
+                }).catch(error=>{
+                    console.log(error); 
+                })
+            }
+
+            //Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
+            isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
+                this.parsedSettings['loggingEnabled'] = enabled;
+            }).catch(error=>{
+                console.log(error); 
+            })
+            
+            //Check if the Person Account Record Type is set if the Object Create Type is 'Person Account' and Create If Not Found = TRUE
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Person Account' && this.parsedSettings.personAccountRecordTypeId == '') {
+                this._setComponentError(true, 'Please select a Person Account Record Type from the list to create a Person Account during registration.');  
+            }
+            
+            //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
+            getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
+                this.results = JSON.parse(result);
+                for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
+                    this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
+                }
+            }).catch(error=>{
+                console.log(error);
+            })
+        }
     }
 
     comparePasswordValues(sourceInput, inputToCompare) {
         if(sourceInput.target.value !== inputToCompare.value){
-            sourceInput.target.setCustomValidity(this.passwordMatchError);
-            inputToCompare.setCustomValidity(this.passwordMatchError);
+            sourceInput.target.setCustomValidity(this.parsedSettings.passwordMatchError);
+            inputToCompare.setCustomValidity(this.parsedSettings.passwordMatchError);
         } else {
             sourceInput.target.setCustomValidity('');
             inputToCompare.setCustomValidity('');
@@ -171,9 +179,11 @@ export default class customSelfRegistration extends LightningElement {
         inputToCompare.reportValidity('');
     }
 
+    //NOTE: Validate the form inputs to make sure all validation requirements are met.
+    //Excludes hidden fields from this to prevent an issue with form submission.
     _areAllInputFieldsValid() {
         return [
-            ...this.template.querySelectorAll('lightning-input'),
+            ...this.template.querySelectorAll('lightning-input:not(.slds-hide)'),
         ].reduce((validSoFar, inputCmp) => {
             inputCmp.reportValidity();
             return validSoFar && inputCmp.checkValidity();
@@ -195,9 +205,8 @@ export default class customSelfRegistration extends LightningElement {
         this.componentErrorMessage = message;
     }
 
-    handleOnChange(event) {
-        this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value.trim();
-
+    handleOnChange(event) {        
+        this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value.trim();        
         //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
         if(event.target.className.includes('passwordCmp')) { 
             let valueToCompare = this.template.querySelector('.confirmPasswordCmp');
@@ -224,47 +233,46 @@ export default class customSelfRegistration extends LightningElement {
 
     handleSignUpClick(event) {
 
-        this._resetServerError();
-
-        //Set the Username to be the email address if not provided on the form.
-        if(!this.formInputs['Username'] || this.formInputs['Username'] == '') { // || this.formInputs['Username'] != this.formInputs['Email']) {
-            this.formInputs['Username'] = this.formInputs['Email'];
-        }
-
-        //Add LWC configuration to the ConfigurationOptions object to pass to Apex as one parameter.
-        this.configurationOptions['customQuery'] = this.customQuery;
-        this.configurationOptions['createNotFound'] = this.createNotFound;
-        this.configurationOptions['objectCreateType'] = this.objectCreateType;
-        this.configurationOptions['accountId'] = this.accountId;
-        this.configurationOptions['personAccountRecordTypeId'] = this.personAccountRecordTypeId;
-        this.configurationOptions['sendEmailConfirmation'] = this.sendEmailConfirmation;
-        this.configurationOptions['accessLevelMode'] = this.accessLevelMode;
-        this.configurationOptions['showPassword'] = this.showPassword;
-        this.configurationOptions['registerButtonSignUpMessage'] = this.registerButtonSignUpMessage;
-        this.configurationOptions['registerButtonWaitingMessage'] = this.registerButtonWaitingMessage;
-        this.configurationOptions['passwordMatchError'] = this.passwordMatchError;
-        this.configurationOptions['usernameTakenMessage'] = this.usernameTakenMessage;
-        this.configurationOptions['errorNoRecordFound'] = this.noRecordFoundError;
-        this.configurationOptions['errorMultipleRecordsFound'] = this.multipleRecordsFoundError;
-        this.configurationOptions['errorOnCreate'] = this.errorOnCreate;
-        this.configurationOptions['portalLoginError'] = this.portalLoginError;
-        this.configurationOptions['portalRegistrationError'] = this.portalRegistrationError;
-        this.configurationOptions['portalRegistrationUserExists'] = this.portalRegistrationUserExists;
-        this.configurationOptions['portalRegistrationRedirect'] = this.portalRegistrationRedirect;
+        this._resetServerError();       
 
         if(this._areAllInputFieldsValid()) {
-            this.handleSubmit(true, this.registerButtonWaitingMessage, true);
-            registerUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.configurationOptions)}).then((pageUrl) => {
-                if(pageUrl){
-                    window.location.href = pageUrl;
-                }
-            }).catch((error) => {
-                this.handleSubmit(false, this.registerButtonSignUpMessage, false);                            
-                this._setServerError(error.body.message);
-                event.preventDefault();
-            });
+            this.handleSubmit(true, this.parsedSettings.registerButtonWaitingMessage, true);
+            
+            //Different behaviour for Passwordless vs Password registration.
+            //Initial page load, user requests a verification code which shows an input to enter the code and then login.
+            if(this.parsedSettings.enablePasswordlessLogin && this.showVerificationCode) { //Verify the code received and login.
+                verifyUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.parsedSettings)}).then((result) => {
+                    this.registerResults = JSON.parse(result);
+                    this.pageUrl = this.registerResults.registerResult[0].pageUrl;
+                    window.location.href = this.pageUrl; 
+                }).catch((error) => {
+                    this.handleSubmit(false, this.parsedSettings.registerButtonAwaitingCodeMessage, false);                            
+                    this._setServerError(error.body.message);
+                    event.preventDefault();
+                });
+            }
+            else { 
+                registerUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.parsedSettings)}).then((result) => {
+                    this.registerResults = JSON.parse(result);
+                    this.showVerificationCode = this.registerResults.registerResult[0].showVerificationCode;
+                    this.pageUrl = this.registerResults.registerResult[0].pageUrl;
+                    
+                    if(this.showVerificationCode) { //Verification code should have been sent by the configured method - Email or SMS.                      
+                        this.template.querySelector('lightning-input[data-id=identifier').value = this.registerResults.registerResult[0].verificationId; //Dynamically set the value of the Verification Id field.
+                        this.template.querySelector('.verificationCode').classList.remove('slds-hide'); //Dynamically show the input to the user by removing the slds-hide class.
+                        this.handleSubmit(false, this.parsedSettings.registerButtonAwaitingCodeMessage, false);
+                    }
+                    else { //Standard username/password registration.
+                        window.location.href = this.pageUrl;
+                    }                  
+                }).catch((error) => {
+                    this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);                            
+                    this._setServerError(error.body.message);
+                    event.preventDefault();
+                });
+            }  
         } else {
-            this.handleSubmit(false, this.registerButtonSignUpMessage, false);
+            this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);
             event.preventDefault();
         }
     }
