@@ -11,7 +11,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void getActiveCustomConfigurationTestSelfRegistration() {
         String urlParams = '{"FirstName":"Test"}';
-        String result = SiteRegistrationController.getCustomConfiguration(urlParams);
+        String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
         String resultParsed = '{"data":' + result + '}';        
         Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
         List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');

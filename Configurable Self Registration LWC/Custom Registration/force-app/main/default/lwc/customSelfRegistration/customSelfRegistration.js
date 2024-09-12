@@ -11,7 +11,7 @@ import {LightningElement, api, track, wire} from 'lwc';
 import {CurrentPageReference} from 'lightning/navigation';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
 import verifyUser from '@salesforce/apex/SiteRegistrationController.verifyUser';
-import getCustomConfiguration from '@salesforce/apex/SiteRegistrationController.getCustomConfiguration';
+import getCustomConfiguration from '@salesforce/apex/SiteUtilities.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
 
@@ -156,7 +156,7 @@ export default class customSelfRegistration extends LightningElement {
             }
             
             //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
-            getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
+            getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: 'Self Registration'}).then(result=>{
                 this.results = JSON.parse(result);
                 for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
                     this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;

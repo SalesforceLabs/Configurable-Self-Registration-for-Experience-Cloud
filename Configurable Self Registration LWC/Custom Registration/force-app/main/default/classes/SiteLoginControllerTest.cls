@@ -11,7 +11,7 @@ private class SiteLoginControllerTest {
     @isTest
     private static void getActiveCustomConfigurationTestLogin() {
         String urlParams = '{"Email":"test@mail.com"}';
-        String result = SiteLoginController.getCustomConfiguration(urlParams);
+        String result = SiteUtilities.getCustomConfiguration(urlParams, 'Login');
         String resultParsed = '{"data":' + result + '}';        
         Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
         List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
@@ -66,9 +66,14 @@ private class SiteLoginControllerTest {
             a.add(acc);
         }
         insert a;
-    
-        
 
+        //Select an admin user that is active in the system.
+        User adminUser = [
+            SELECT Id FROM User
+            WHERE Profile.Name = 'System Administrator' AND IsActive = true
+            LIMIT 1
+        ];
+    
         //Run the user create as the admin above. Forces a new transaction in the test class.
         //This prevents the 'MIXED_DML' SOQL exception caused by other actions that might run outside of the user creation such as assigning permission sets automatically.
         System.runAs(adminUser) {

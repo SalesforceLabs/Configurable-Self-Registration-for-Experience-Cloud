@@ -2,7 +2,7 @@ import {LightningElement, api, track, wire} from 'lwc';
 import {CurrentPageReference} from 'lightning/navigation';
 import loginUser from '@salesforce/apex/SiteLoginController.loginUser';
 import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
-import getCustomConfiguration from '@salesforce/apex/SiteLoginController.getCustomConfiguration';
+import getCustomConfiguration from '@salesforce/apex/SiteUtilities.getCustomConfiguration';
 import verifyUser from '@salesforce/apex/SiteLoginController.verifyUser';
 
 //TODO: Setting the experience Id is required for Dynamic Branding. However, the Site.setExperienceId method doesn't appear to be working properly. 
@@ -98,7 +98,7 @@ export default class CustomLogin extends LightningElement {
         })
 
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
-        getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
+        getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: 'Login'}).then(result=>{
             this.results = JSON.parse(result);
             for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;

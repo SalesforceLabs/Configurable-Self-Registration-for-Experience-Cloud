@@ -6,122 +6,12 @@
 
 public with sharing class SiteRegistrationController {
 
-    public static List<String> messages = new List<String>();
-    public static String siteName = Site.getName();
     public static Map<String, Schema.SObjectField> userObjectMetadata = getMetadataForObject('User');
-    public static final String COMPONENT_NAME = 'Self Registration';
-    public static Map<String, Auth.VerificationMethod> methods = new Map<String, Auth.VerificationMethod>{'Email' => Auth.VerificationMethod.EMAIL, 'SMS' => Auth.VerificationMethod.SMS};
 
     @TestVisible
     public static Boolean testPersonAccountStatus;
     private static Boolean orgPersonAccountStatus = Schema.sObjectType.Account.fields.getMap().containsKey('isPersonAccount');
     
-    /**
-     * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
-     * @param urlParams a JSON string of URL params that were appended to the page.
-     * @return Returns a JSON string of retrieved records
-     * @see customSelfRegistration.html
-     */
-    @AuraEnabled(cacheable=true)
-    public static String getCustomConfiguration(String urlParams) {
-        String result = '';
-        Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
-
-        try {
-            for (Custom_Registration_Configuration__mdt mapping : [SELECT Id, Field_Name__c, Field_Type__c, Field_Label__c, Field_Message__c, Field_Help_Text__c, Field_Validation_REGEX__c, 
-                    Field_Min_Length__c, Field_Max_Length__c, Field_Required__c, Field_Placeholder__c, 
-                    Field_Required_Message__c, Portal_API_Name__c, Display_Order__c, Field_Class__c, Field_Message_Too_Short__c, Field_Message_Too_Long__c,
-                    Minimum_Value__c, Maximum_Value__c, Field_Under_Minimum_Range_Message__c, Field_Over_Max_Range_Message__c, Field_Show_Icon__c, Field_Icon_Name__c, 
-                    Field_Icon_Class__c, Field_Parent_Class__c, Field_Show_Password_Visibility__c, Field_Label_Variant__c, Field_Date_Style__c, Field_Picklist_Options__c 
-                                    FROM Custom_Registration_Configuration__mdt 
-                                    WHERE (Portal_API_Name__c = :siteName AND Active__c = true) 
-                                    OR (Portal_API_Name__c = 'ALL' AND Active__c = true) 
-                                    WITH SECURITY_ENFORCED 
-                                    ORDER BY Display_Order__c]
-                ) {
-
-                if(String.isNotBlank(result)){
-                    result += ',';
-                } 
-
-                String jsonPart = '{';
-                jsonPart += '"fieldType":"' + mapping.Field_Type__c + '",'; 
-                jsonPart += '"fieldName":"' + mapping.Field_Name__c + '",';
-                jsonPart += '"fieldLabel":"' + mapping.Field_Label__c + '",';
-                jsonPart += '"fieldClass":"' + mapping.Field_Class__c + '",';
-                jsonPart += '"fieldMinValue":"' + mapping.Minimum_Value__c + '",';
-                jsonPart += '"fieldMessageUnder":"' + mapping.Field_Under_Minimum_Range_Message__c + '",';
-                jsonPart += '"fieldMaxValue":"' + mapping.Maximum_Value__c + '",';
-                jsonPart += '"fieldMessageOver":"' + mapping.Field_Over_Max_Range_Message__c + '",';
-                jsonPart += '"fieldMinLength":"' + mapping.Field_Min_Length__c + '",';
-                jsonPart += '"fieldMinLengthMessage":"' + mapping.Field_Message_Too_Short__c + '",';
-                jsonPart += '"fieldMaxLength":"' + mapping.Field_Max_Length__c + '",';
-                jsonPart += '"fieldLabelVariant":"' + mapping.Field_Label_Variant__c + '",';
-                jsonPart += '"fieldDateStyle":"' + mapping.Field_Date_Style__c + '",';
-                
-                //Settings to control icon visibility
-                jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Icon__c) + ','; //Needs to be a boolean as it directly controls dynamic template
-                jsonPart += '"fieldIconName":"' + mapping.Field_Icon_Name__c + '",';
-                jsonPart += '"fieldIconClass":"' + mapping.Field_Icon_Class__c + '",';
-                jsonPart += '"fieldParentClass":"' + mapping.Field_Parent_Class__c + '",';
-                
-                jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.Field_Show_Password_Visibility__c) + ',';
-
-                //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
-                //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                jsonPart += '"fieldMaxLengthMessage":"' + mapping.Field_Message_Too_Long__c + '"'; 
-
-                for(String key : urlParameters.keySet()) {
-                    if(mapping.Field_Name__c == key) {
-                        jsonPart += ',';
-                        if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
-                            jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
-                        }
-                        else {
-                            jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
-                        }
-                    }
-                }
-
-                if(mapping.Field_Type__c == 'picklist') {
-                    jsonPart += ',';
-                    jsonPart += '"showAsPicklist":' + true + ',';
-                    jsonPart += '"picklistOptions":' + mapping.Field_Picklist_Options__c  + ''; 
-                }
-
-                if(String.isNotBlank(mapping.Field_Placeholder__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldPlaceholder":"' + mapping.Field_Placeholder__c + '"';
-                }
-
-                if(String.isNotBlank(mapping.Field_Message__c) && String.isNotBlank(mapping.Field_Validation_REGEX__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldMessage":"' + mapping.Field_Message__c + '",';
-                    jsonPart += '"fieldRegex":"' + mapping.Field_Validation_REGEX__c + '"';
-                }
-
-                if(mapping.Field_Required__c && String.isNotBlank(mapping.Field_Required_Message__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldRequired":"' + mapping.Field_Required__c + '",';
-                    jsonPart += '"fieldRequiredMessage":"' + mapping.Field_Required_Message__c + '"';
-                }
-
-                if(String.isNotBlank(mapping.Field_Help_Text__c)) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldHelpText":"' + mapping.Field_Help_Text__c + '"';
-                }
-             
-                jsonPart += '}';
-                result += jsonPart;
-            }
-        }
-        catch(Exception ex) {
-            result += ex.getLineNumber() + ' : ' + ex.getMessage();
-            throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
-        }
-        return '['+result+']';
-    }
-
     /**
      * @description isPersonAccountEnabled tests whether the org currently has Person Accounts enabled. Checks for existence of the isPersonAccount field.
      * @return returns true/false depending on setup of the org.
@@ -146,7 +36,6 @@ public with sharing class SiteRegistrationController {
      * @param formJson - pass in a map of JSON to sanitise
      * @return return the sanitised version of the map by removing information
      */
-    @AuraEnabled
     public static Map<String, Object> sanitiseJson(Map<String, Object> formJson) {
         Map<String,Object> newFormJSON = new Map<String,Object>();
         
@@ -168,7 +57,6 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      * @return Boolean true if username is taken, otherwise false.
      */ 
-    @AuraEnabled
     public static Boolean isValidUsername(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
         Boolean isUsernameValid = true;
         String username = SiteUtilities.convertToString(formInputs.get('Username'));
@@ -179,15 +67,15 @@ public with sharing class SiteRegistrationController {
         //This class runs without sharing as access cannot be granted to the Guest User and the SiteRegisterController runs as a Guest.
         List<NetworkMember> userList = SiteUtilities.validateUsername(username, networkId);
 
-        messages.add('Looking for registered user with username ' + username + ' on Site: ' + siteName + ' with NetworkId: ' + networkId);    
+        SiteUtilities.messages.add('Looking for registered user with username ' + username + ' on Site: ' + SiteUtilities.siteName + ' with NetworkId: ' + networkId);    
         
         if(userList.size() >= 1) {
-            messages.add('User with username ' + username + ' already exists on Site: ' + siteName + ' with NetworkId: ' + networkId + '. Username NOT valid.');
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);    
+            SiteUtilities.messages.add('User with username ' + username + ' already exists on Site: ' + SiteUtilities.siteName + ' with NetworkId: ' + networkId + '. Username NOT valid.');
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);    
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('usernameTakenMessage'))); 
         }
 
-        messages.add('User with username ' + username + ' not found on Site: ' + siteName + ' with NetworkId ' + networkId + '. Username valid.');
+        SiteUtilities.messages.add('User with username ' + username + ' not found on Site: ' + SiteUtilities.siteName + ' with NetworkId ' + networkId + '. Username valid.');
         return isUsernameValid;
     }
 
@@ -196,7 +84,6 @@ public with sharing class SiteRegistrationController {
      * @param formJson - JSON String of the submitted form values
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
      */
-    @AuraEnabled
     public static void validatePassword(Map<String, Object> formJson, Map<String, Object> configurationOptions, User user) {
 
         try { 
@@ -205,13 +92,13 @@ public with sharing class SiteRegistrationController {
             } 
         }
         catch (SObjectException ex) {
-           messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
-           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+           SiteUtilities.messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
+           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
         catch (Exception ex) {
-           messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
-           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+           SiteUtilities.messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
+           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
            throw new AuraHandledException(ex.getMessage()); //This is deliberate as the Site.Validate function returns useful information about the password failure
         }
     }
@@ -248,15 +135,15 @@ public with sharing class SiteRegistrationController {
         }
   
         if(String.isNotBlank(SiteUtilities.convertToString(lwcSettings.get('customQuery')))) {
-            messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + '. Submitted Values: ' + sanitisedFormJson);
+            SiteUtilities.messages.add('Searching for record with query:' + lwcSettings.get('customQuery') + '. Submitted Values: ' + sanitisedFormJson);
             recordId = getObject(sanitisedFormJson, lwcSettings);
-            messages.add('Record Id found was: ' + recordId);
+            SiteUtilities.messages.add('Record Id found was: ' + recordId);
         }
     
         if(SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
-            messages.add('About to create new ' + lwcSettings.get('objectCreateType'));
+            SiteUtilities.messages.add('About to create new ' + lwcSettings.get('objectCreateType'));
             recordId = createObject(formJson, lwcSettings);
-            messages.add('Created Record Id returned was: ' + recordId);   
+            SiteUtilities.messages.add('Created Record Id returned was: ' + recordId);   
         }
 
         if(SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin'))) {
@@ -265,16 +152,16 @@ public with sharing class SiteRegistrationController {
             String type = SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && (SiteUtilities.convertToString(lwcSettings.get('objectCreateType')) == 'Account' || SiteUtilities.convertToString(lwcSettings.get('objectToQuery')) == 'Account') ? 'Account' : 'Contact';
             new SiteUtilities().setContactId(user, type, recordId);
 
-            messages.add('Sending verification code via ' + SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod'))  + ' to User: ' + user);            
+            SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod'))  + ' to User: ' + user);            
             try {
-                Auth.VerificationMethod method = methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));
-                identifier = SiteUtilities.sendVerificationCode(method, user, COMPONENT_NAME);
+                Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));
+                identifier = SiteUtilities.sendVerificationCode(method, user, SiteUtilities.SELF_REG_COMPONENT_NAME);
                 showVerificationCode = true;
             }
             catch (NoAccessException e) {
                 //TODO: Delete the contact if one is created?
-                messages.add('Error sending a verification code. Please try again later.' + ' Error: ' + e.getMessage());
-                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+                SiteUtilities.messages.add('Error sending a verification code. Please try again later.' + ' Error: ' + e.getMessage());
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
                 throw new AuraHandledException(SiteUtilities.convertToString(lwcSettings.get('portalErrorSendVerificationCode'))); 
             }
         }
@@ -286,11 +173,11 @@ public with sharing class SiteRegistrationController {
             }
 
             if(String.isNotBlank(userId)) {
-                messages.add('External User Id created was: ' + userId);
+                SiteUtilities.messages.add('External User Id created was: ' + userId);
                 pageUrl = loginUser(user.Username, SiteUtilities.convertToString(formJson.get('password')), lwcSettings);
             }
         }
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);
         jsonPart += '{';
         jsonPart += '"pageUrl":"' + pageUrl + '",';
         jsonPart += '"showVerificationCode":' + showVerificationCode + ',';
@@ -310,8 +197,8 @@ public with sharing class SiteRegistrationController {
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         String startUrl = Site.getBaseSecureUrl() + SiteUtilities.convertToString(formJson.get('portalRegistrationRedirect'));
-        Auth.VerificationMethod method = methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));        
-        return SiteUtilities.verifyCode(method, SiteUtilities.convertToString(formJson.get('identifier')), SiteUtilities.convertToString(formJson.get('verificationCode')), startUrl, lwcSettings, formJson, COMPONENT_NAME, new User());  
+        Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));        
+        return SiteUtilities.verifyCode(method, SiteUtilities.convertToString(formJson.get('identifier')), SiteUtilities.convertToString(formJson.get('verificationCode')), startUrl, lwcSettings, formJson, SiteUtilities.SELF_REG_COMPONENT_NAME, new User());  
     }
 
     /**
@@ -383,8 +270,8 @@ public with sharing class SiteRegistrationController {
             recordList = SiteUtilities.getRecords(formInputs, configurationOptions);
         }
         catch(Exception e) {
-            messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            SiteUtilities.messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
         
@@ -396,8 +283,8 @@ public with sharing class SiteRegistrationController {
                         return (Id)recordList[0].get('AccountId');
                     }
                     catch(SObjectException e) {
-                        messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+                        SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
                     }
                 }
@@ -407,16 +294,16 @@ public with sharing class SiteRegistrationController {
             }
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
-            messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('multipleRecordsFoundError') + ' Form Values: ' + formInputs);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);        
+            SiteUtilities.messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('multipleRecordsFoundError') + ' Form Values: ' + formInputs);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);        
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('multipleRecordsFoundError'))); 
         }
         else if (SiteUtilities.convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
             return null;
         }
         else { //No record found on specified query and CreateIfNotFound = False 
-            messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('noRecordFoundError') + ' Form Values: ' + formInputs);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Information', COMPONENT_NAME);        
+            SiteUtilities.messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('noRecordFoundError') + ' Form Values: ' + formInputs);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);        
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('noRecordFoundError'))); 
         }
     }
@@ -427,7 +314,6 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
      * @return returns a new ContactId on successful creation
      */
-    @AuraEnabled
     public static Id createContact(Map<String, Object> formInputs, Map<String, Object> configurationOptions){
         Database.SaveResult srList = null;
         Id recordId = null;
@@ -454,8 +340,8 @@ public with sharing class SiteRegistrationController {
             }
             return recordId; 
         } catch (Exception e) {
-            messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            SiteUtilities.messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
@@ -466,7 +352,6 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
      * @return returns the Account Id (PersonAccount Id) on successful creation
      */
-    @AuraEnabled
     public static Id createPersonAccount(Map<String, Object> formInputs, Map<String, Object> configurationOptions){
         Database.SaveResult srList = null;
         Id recordId = null;
@@ -502,7 +387,7 @@ public with sharing class SiteRegistrationController {
             }
 
             newPersonAccounts.add(newPersonAccount);
-            messages.add('Person Account to create: ' + newPersonAccounts);
+            SiteUtilities.messages.add('Person Account to create: ' + newPersonAccounts);
             SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newPersonAccounts);
             srList = Database.insert(securityDecision.getRecords()[0], false);
 
@@ -510,13 +395,13 @@ public with sharing class SiteRegistrationController {
                 return srList.getId();
             }
             else {
-               messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + srList.getErrors());
-               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+               SiteUtilities.messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + srList.getErrors());
+               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
                throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate'))); 
             }
         } catch (Exception e) {
-            messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            SiteUtilities.messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
@@ -535,8 +420,8 @@ public with sharing class SiteRegistrationController {
             return createPersonAccount(formInputs, configurationOptions);
         }
         else { //Object to create was set to 'N/A' which is not valid 
-            messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            SiteUtilities.messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
     }
@@ -598,8 +483,8 @@ public with sharing class SiteRegistrationController {
             userId = Site.createExternalUser(user, accountId, SiteUtilities.convertToString(formInputs.get('password')), SiteUtilities.convertToBoolean(configurationOptions.get('sendEmailConfirmation')));
         }
         catch (Site.ExternalUserCreateException e) { //The site class ony throws one type of exception so we have to manually handle error messages here.
-            messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);
+            SiteUtilities.messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             
             /* Horrible error message. Show a configuration message instead from the property panel. Captures 2 known errors:
             * 'portal user already exists for contact': If the matched contact (using the custom query) is already a portal user and therefore can't register again.
@@ -638,11 +523,11 @@ public with sharing class SiteRegistrationController {
                 pageUrl = pageRef.getUrl();
             }
         } catch (Exception e) {
-            messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(messages,'\n'), 'Error', COMPONENT_NAME);        
+            SiteUtilities.messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);        
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalLoginError')));
         }
-        messages.add('User successfully registered and was logged in.');
+        SiteUtilities.messages.add('User successfully registered and was logged in.');
         return pageUrl;
     }
 }

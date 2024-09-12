@@ -5,6 +5,14 @@
  ***************************************************************************************************************/
 public without sharing class SiteUtilities {
 
+    public static final String SELF_REG_COMPONENT_NAME = 'Self Registration';
+    public static final String LOGIN_COMPONENT_NAME = 'Login';
+    public static final String SMS_LICENCE_NAME = 'setting/force.com/orgValue.IdentityVerificationCredits';
+
+    public static Map<String, Auth.VerificationMethod> methods = new Map<String, Auth.VerificationMethod>{'Email' => Auth.VerificationMethod.EMAIL, 'SMS' => Auth.VerificationMethod.SMS};
+    public static List<String> messages = new List<String>();
+    public static String siteName = Site.getName();
+
     //TODO: Setting the experience Id is required for Dynamic Branding. However, this doesn't appear to be working properly. 
     //The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
     /*@AuraEnabled
@@ -18,12 +26,118 @@ public without sharing class SiteUtilities {
     }*/ 
 
     /**
+     * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
+     * @param urlParams a JSON string of URL params that were appended to the page.
+     * @return Returns a JSON string of retrieved records
+     * @see customSelfRegistration.html
+     */
+    @AuraEnabled(cacheable=true)
+    public static String getCustomConfiguration(String urlParams, String componentName) {
+        String result = '';
+        Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
+
+        try {
+            List<SObject> metadata = new List<SObject>(); 
+            if(componentName == SiteUtilities.LOGIN_COMPONENT_NAME) {
+                metadata = Custom_Login_Configuration__mdt.getAll().values();
+            }
+            else {
+                metadata = Custom_Registration_Configuration__mdt.getAll().values();
+            }
+
+            for (SObject mapping : metadata) {
+                if(mapping.get('Active__c') == true && (mapping.get('Portal_API_Name__c') == siteName || mapping.get('Portal_API_Name__c') == 'ALL')) {
+
+                    if(String.isNotBlank(result)){
+                        result += ',';
+                    }
+
+                    String jsonPart = '{';
+                    jsonPart += '"fieldType":"' + mapping.get('Field_Type__c') + '",'; 
+                    jsonPart += '"fieldName":"' + mapping.get('Field_Name__c') + '",';
+                    jsonPart += '"fieldLabel":"' + mapping.get('Field_Label__c') + '",';
+                    jsonPart += '"fieldClass":"' + mapping.get('Field_Class__c') + '",';
+                    jsonPart += '"fieldMinValue":"' + mapping.get('Minimum_Value__c') + '",';
+                    jsonPart += '"fieldMessageUnder":"' + mapping.get('Field_Under_Minimum_Range_Message__c') + '",';
+                    jsonPart += '"fieldMaxValue":"' + mapping.get('Maximum_Value__c') + '",';
+                    jsonPart += '"fieldMessageOver":"' + mapping.get('Field_Over_Max_Range_Message__c') + '",';
+                    jsonPart += '"fieldMinLength":"' + mapping.get('Field_Min_Length__c') + '",';
+                    jsonPart += '"fieldMinLengthMessage":"' + mapping.get('Field_Message_Too_Short__c') + '",';
+                    jsonPart += '"fieldMaxLength":"' + mapping.get('Field_Max_Length__c') + '",';
+                    jsonPart += '"fieldLabelVariant":"' + mapping.get('Field_Label_Variant__c') + '",';
+                    jsonPart += '"fieldDateStyle":"' + mapping.get('Field_Date_Style__c') + '",';
+                    
+                    //Settings to control icon visibility
+                    jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Icon__c')) + ','; //Needs to be a boolean as it directly controls dynamic template
+                    jsonPart += '"fieldIconName":"' + mapping.get('Field_Icon_Name__c') + '",';
+                    jsonPart += '"fieldIconClass":"' + mapping.get('Field_Icon_Class__c') + '",';
+                    jsonPart += '"fieldParentClass":"' + mapping.get('Field_Parent_Class__c') + '",';
+                    
+                    jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Password_Visibility__c')) + ',';
+
+                    //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
+                    //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
+                    jsonPart += '"fieldMaxLengthMessage":"' + mapping.get('Field_Message_Too_Long__c') + '"'; 
+                    
+                    for(String key : urlParameters.keySet()) {
+                        if(mapping.get('Field_Name__c') == key) {
+                            jsonPart += ',';
+                            if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
+                                jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
+                            }
+                            else {
+                                jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
+                            }
+                        }
+                    }
+
+                    if(mapping.get('Field_Type__c') == 'picklist') {
+                        jsonPart += ',';
+                        jsonPart += '"showAsPicklist":' + true + ',';
+                        jsonPart += '"picklistOptions":' + mapping.get('Field_Picklist_Options__c')  + ''; 
+                    }
+
+                    if(String.isNotBlank(convertToString(mapping.get('Field_Placeholder__c')))) {
+                        jsonPart += ',';
+                        jsonPart += '"fieldPlaceholder":"' + mapping.get('Field_Placeholder__c') + '"';
+                    }
+
+                    if(String.isNotBlank(convertToString(mapping.get('Field_Message__c'))) && String.isNotBlank(convertToString(mapping.get('Field_Validation_REGEX__c')))) {
+                        jsonPart += ',';
+                        jsonPart += '"fieldMessage":"' + mapping.get('Field_Message__c') + '",';
+                        jsonPart += '"fieldRegex":"' + mapping.get('Field_Validation_REGEX__c') + '"';
+                    }
+
+                    if(convertToBoolean(mapping.get('Field_Required__c')) && String.isNotBlank(convertToString(mapping.get('Field_Required_Message__c')))) {
+                        jsonPart += ',';
+                        jsonPart += '"fieldRequired":"' + mapping.get('Field_Required__c') + '",';
+                        jsonPart += '"fieldRequiredMessage":"' + mapping.get('Field_Required_Message__c') + '"';
+                    }
+
+                    if(String.isNotBlank(convertToString(mapping.get('Field_Help_Text__c')))) {
+                        jsonPart += ',';
+                        jsonPart += '"fieldHelpText":"' + mapping.get('Field_Help_Text__c') + '"';
+                    }
+                
+                    jsonPart += '}';
+                    result += jsonPart;
+                }
+            }
+        }
+        catch(Exception ex) {
+            result += ex.getLineNumber() + ' : ' + ex.getMessage();
+            throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
+        }
+        return '['+result+']';
+    }
+
+    /**
     * @description Simple method to check for the existance of the Identity Verification Credits licence needed to send SMS code for passwordless login.
     * @return count of the Identity Verification Credits licence. 1 will enable the ability to use SMS codes for PasswordLess login.
     */
     @AuraEnabled(cacheable=true)
     public static Integer checkSMSLicence(){
-        return [SELECT count() FROM TenantUsageEntitlement WHERE Setting = 'setting/force.com/orgValue.IdentityVerificationCredits'];
+        return [SELECT count() FROM TenantUsageEntitlement WHERE Setting = :SMS_LICENCE_NAME];
     }
 
     /**
@@ -86,7 +200,6 @@ public without sharing class SiteUtilities {
     * @param valueToConvert - pass in an object and convert to a String value
     * @return String of passed object value
     */
-    @AuraEnabled
     public static String convertToString(Object valueToConvert) {
         if(valueToConvert != null) {
             return String.valueOf(valueToConvert);
@@ -99,7 +212,6 @@ public without sharing class SiteUtilities {
     * @param valueToConvert - pass in an object and convert to a Boolean value
     * @return Boolean of passed object value
     */
-    @AuraEnabled
     public static Boolean convertToBoolean(Object valueToConvert) {
         if(valueToConvert != null) {
             return Boolean.valueOf(valueToConvert);
@@ -114,7 +226,6 @@ public without sharing class SiteUtilities {
      * @param logType - the type of error to log, either 'Information' or 'Log'
      * @param componentName - the name of the component that is calling this function
      */
-    @AuraEnabled
     public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName){
        try {
             if(loggingEnabled) {
@@ -191,7 +302,6 @@ public without sharing class SiteUtilities {
      * @param username specify the username string to locate an existing user to login.
      * @return returns a User object if found.
      */
-    @AuraEnabled(cacheable=true)
     public static User getUser(String username, String mobilePhone){
         try {
             if(String.isNotBlank(username)) {
@@ -215,10 +325,10 @@ public without sharing class SiteUtilities {
         List<sObject> recordList = new List<sObject>();
         
         if(configurationOptions.get('accessLevelMode') == 'System') { 
-            recordList = Database.queryWithBinds(SiteUtilities.convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
+            recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.SYSTEM_MODE);
         }
-        else {  
-            recordList = Database.queryWithBinds(SiteUtilities.convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
+        else { 
+            recordList = Database.queryWithBinds(convertToString(configurationOptions.get('customQuery')), formInputs, AccessLevel.USER_MODE);
         }
 
         return recordList;
@@ -282,8 +392,8 @@ public without sharing class SiteUtilities {
      * NOTE: In Apex tests, there is no Network context, so a hardcoded value is returned.
      * @return returns the verification code identifier value to be passed to the verify function later.
      */
-    public static String sendVerificationCode(Auth.VerificationMethod method, User user, String mode) { 
-        if(mode == SiteRegistrationController.COMPONENT_NAME) {
+    public static String sendVerificationCode(Auth.VerificationMethod method, User user, String componentName) { 
+        if(componentName == SELF_REG_COMPONENT_NAME) {
             return Test.isRunningTest() ? '123456' : UserManagement.initSelfRegistration(method, user);
         }   
         return Test.isRunningTest() ? '123456' : UserManagement.initPasswordlessLogin(user.Id, method);
@@ -298,12 +408,12 @@ public without sharing class SiteUtilities {
      * @param lwcSettings the property panel settings configured in Exp builder.
      * @param formJson the submitted form values
      */
-    public static String verifyCode(Auth.VerificationMethod method, String identifier, String code, String startUrl, Map<String, Object> lwcSettings, Map<String, Object> formJson, String mode, User user) {
+    public static String verifyCode(Auth.VerificationMethod method, String identifier, String code, String startUrl, Map<String, Object> lwcSettings, Map<String, Object> formJson, String componentName, User user) {
         
         String url;
         Auth.VerificationResult res;
 
-        if(mode == SiteRegistrationController.COMPONENT_NAME) {
+        if(componentName == SELF_REG_COMPONENT_NAME) {
             res = UserManagement.verifySelfRegistration(method, identifier, code, startUrl);
         }
         else {
@@ -313,12 +423,12 @@ public without sharing class SiteUtilities {
         System.PageReference page = res.redirect;
         url = page.getUrl();
         
-        SiteRegistrationController.messages.add('Validating verification code for user. Submitted data: ' + formJson);
+        messages.add('Validating verification code for user. Submitted data: ' + formJson);
         
         if(res.success == false) { 
-            SiteRegistrationController.messages.add('Unable to validate the verification code. Error was: ' + res.message);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteRegistrationController.messages,'\n'), 'Error', SiteRegistrationController.COMPONENT_NAME);    
-            throw new AuraHandledException(SiteUtilities.convertToString(lwcSettings.get('failedCodeVerificationMessage')));
+            messages.add('Unable to validate the verification code. Error was: ' + res.message);
+            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', componentName);    
+            throw new AuraHandledException(convertToString(lwcSettings.get('failedCodeVerificationMessage')));
         }
 
         String jsonPart = '{"registerResult":[';
@@ -327,8 +437,8 @@ public without sharing class SiteUtilities {
         jsonPart += '"pageUrl":"' + url + '",';
         jsonPart += '"verificationSuccess":"' + res.success + '"}]}';
         
-        SiteRegistrationController.messages.add('Verification was successful. Redirecting user to: ' + url);
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteRegistrationController.messages,'\n'), 'Information', SiteRegistrationController.COMPONENT_NAME); 
+        messages.add('Verification was successful. Redirecting user to: ' + url);
+        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information', componentName); 
         return jsonPart;   
     }
 }
