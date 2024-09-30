@@ -6,29 +6,10 @@
 public with sharing class SiteLoginController {
    
     /**
-     * @description Custom Exception method. This is only thrown by the test class to force an error for test coverage as the Login History is not accessible.
+     * @description Custom Exception method. Thrown to force an error when user is not found, and get the Login History. Also called in a test class.
      */
     public class CustomLoginException extends Exception{}
-
-    /**
-     * @description verifyUser description
-     * @param  formInputs           formInputs description
-     * @param  configurationOptions configurationOptions description
-     * @return                      return description
-     */
-    @AuraEnabled
-    public static String verifyUser(String formInputs, String configurationOptions) {
-        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-        Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        String startURL = Site.getBaseSecureUrl() + SiteUtilities.convertToString(formJson.get('portalRegistrationRedirect'));
-        Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));
-        String username = String.isNotBlank(SiteUtilities.convertToString(formJson.get('Username'))) ? SiteUtilities.convertToString(formJson.get('Username')) : SiteUtilities.convertToString(formJson.get('Email'));
-        String password = SiteUtilities.convertToString(formJson.get('password'));
-        String mobilePhone = SiteUtilities.convertToString(formJson.get('MobilePhone'));
-        User user = SiteUtilities.getUser(username, mobilePhone);
-        return SiteUtilities.verifyCode(method, SiteUtilities.convertToString(formJson.get('identifier')), SiteUtilities.convertToString(formJson.get('verificationCode')), startUrl, lwcSettings, formJson, SiteUtilities.LOGIN_COMPONENT_NAME, user);  
-    }
-
+    
     /**
      * @description Attempts to login the newly registered user. Redirects to the home page on success.
      * @param username - Passes in the submitted username field from the self registration form.
@@ -42,8 +23,8 @@ public with sharing class SiteLoginController {
 
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         String username = String.isNotBlank(SiteUtilities.convertToString(formJson.get('Username'))) ? SiteUtilities.convertToString(formJson.get('Username')) : SiteUtilities.convertToString(formJson.get('Email'));
-        String password = SiteUtilities.convertToString(formJson.get('password'));
-        String mobilePhone = SiteUtilities.convertToString(formJson.get('MobilePhone'));
+        String password = String.isNotBlank(SiteUtilities.convertToString(formJson.get('password'))) ? SiteUtilities.convertToString(formJson.get('password')) : '';
+        String mobilePhone = String.isNotBlank(SiteUtilities.convertToString(formJson.get('MobilePhone'))) && String.isNotBlank(SiteUtilities.convertToString(formJson.get('countryCode'))) ? UserManagement.formatPhoneNumber(SiteUtilities.convertToString(formJson.get('countryCode')), SiteUtilities.convertToString(formJson.get('MobilePhone'))) : ''; //Format the phone number with the user management class otherwise user isn't found!!;
         String identifier;
         Boolean showVerificationCode = false;
         String result = '';
@@ -54,10 +35,18 @@ public with sharing class SiteLoginController {
             if(SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ) {
                 Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod')));
                 SiteUtilities.messages.add('Looking for existing user: ' + formJson);
-                User user = SiteUtilities.getUser(username, mobilePhone); //TODO: Needs error handling.
-                SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: ' + user);
-                identifier = SiteUtilities.sendVerificationCode(method, user, SiteUtilities.LOGIN_COMPONENT_NAME);                
-                showVerificationCode = true;
+                List<User> user = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
+                
+                //Only send a code if the user is NOT found!
+                if(user.size() == 0) {
+                    SiteUtilities.messages.add('Error sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: '+ formJson +' . User not found.');
+                    throw new CustomLoginException('Your login attempt has failed. Make sure the username and password are correct.');
+                }
+                else {
+                    SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: ' + formJson);
+                    identifier = SiteUtilities.sendVerificationCode(method, user[0], SiteUtilities.LOGIN_COMPONENT_NAME);                
+                    showVerificationCode = true;
+                }
             }
             else {
                 ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalLoginRedirect')));
@@ -94,11 +83,17 @@ public with sharing class SiteLoginController {
             result += jsonPart;
         } catch (Exception e) {
 
+            String status = 'Username Not Found';
+
             //Login failed throws back a generic error. Go to the login history to get the full story to present back to the user.
             if(e.getMessage() == 'Your login attempt has failed. Make sure the username and password are correct.') {
                
                //Run in elevated permissions without sharing in a separate class to protect from the guest user as much as possible.
-               String status = SiteUtilities.getUserIdWithUsername(username);
+               List<User> u = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
+
+               if(u.size() == 1) {
+                    status = SiteUtilities.getLoginHistory(u[0].Id);
+               }
 
                //If we are running in a Test, check the test user and return a hardcoded status to mimic login history as Site.login() doesn't actually login.
                if(Test.isRunningTest()) {

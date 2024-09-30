@@ -13,7 +13,7 @@ public without sharing class SiteUtilities {
     public static List<String> messages = new List<String>();
     public static String siteName = Site.getName();
 
-    //TODO: Setting the experience Id is required for Dynamic Branding. However, this doesn't appear to be working properly. 
+    //TODO: Setting the experience Id is required for Dynamic Branding. However, the Site.setExperienceId method doesn't appear to be working properly. 
     //The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
     /*@AuraEnabled
     public static void setExperienceId(String expId){ 
@@ -23,11 +23,12 @@ public without sharing class SiteUtilities {
         else {
            Site.setExperienceId(''); 
         }
-    }*/ 
-
+    }*/
+    
     /**
-     * @description Retrieve Custom Metadata Types which contain custom field configuration for the Self Registration form. 
+     * @description Retrieve Custom Metadata Types which contain custom field configuration for the Login & Self Registration forms. 
      * @param urlParams a JSON string of URL params that were appended to the page.
+     * @param componentName a string of the component that is calling this function to filter the Metadata i.e. Login or Self Registration
      * @return Returns a JSON string of retrieved records
      * @see customSelfRegistration.html
      */
@@ -35,6 +36,7 @@ public without sharing class SiteUtilities {
     public static String getCustomConfiguration(String urlParams, String componentName) {
         String result = '';
         Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
+        //Map<String, String> itemsToAdd = new Map<String, String>();
 
         try {
             List<SObject> metadata = new List<SObject>(); 
@@ -45,89 +47,96 @@ public without sharing class SiteUtilities {
                 metadata = Custom_Registration_Configuration__mdt.getAll().values();
             }
 
-            for (SObject mapping : metadata) {
-                if(mapping.get('Active__c') == true && (mapping.get('Portal_API_Name__c') == siteName || mapping.get('Portal_API_Name__c') == 'ALL')) {
+            List<SObject> sortedMetadata = new List<SObject>();
+            for (SObject rec : metadata) {
+                if(rec.get('Active__c') == true && (rec.get('Portal_API_Name__c') == siteName || rec.get('Portal_API_Name__c') == 'ALL')) {
+                    sortedMetadata.add(rec); 
+                }
+            }
 
-                    if(String.isNotBlank(result)){
-                        result += ',';
-                    }
+            //Custom Sort order by the Display Order field.
+            sortedMetadata.sort(new CustomSort());
 
-                    String jsonPart = '{';
-                    jsonPart += '"fieldType":"' + mapping.get('Field_Type__c') + '",'; 
-                    jsonPart += '"fieldName":"' + mapping.get('Field_Name__c') + '",';
-                    jsonPart += '"fieldLabel":"' + mapping.get('Field_Label__c') + '",';
-                    jsonPart += '"fieldClass":"' + mapping.get('Field_Class__c') + '",';
-                    jsonPart += '"fieldMinValue":"' + mapping.get('Minimum_Value__c') + '",';
-                    jsonPart += '"fieldMessageUnder":"' + mapping.get('Field_Under_Minimum_Range_Message__c') + '",';
-                    jsonPart += '"fieldMaxValue":"' + mapping.get('Maximum_Value__c') + '",';
-                    jsonPart += '"fieldMessageOver":"' + mapping.get('Field_Over_Max_Range_Message__c') + '",';
-                    jsonPart += '"fieldMinLength":"' + mapping.get('Field_Min_Length__c') + '",';
-                    jsonPart += '"fieldMinLengthMessage":"' + mapping.get('Field_Message_Too_Short__c') + '",';
-                    jsonPart += '"fieldMaxLength":"' + mapping.get('Field_Max_Length__c') + '",';
-                    jsonPart += '"fieldLabelVariant":"' + mapping.get('Field_Label_Variant__c') + '",';
-                    jsonPart += '"fieldDateStyle":"' + mapping.get('Field_Date_Style__c') + '",';
-                    
-                    //Settings to control icon visibility
-                    jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Icon__c')) + ','; //Needs to be a boolean as it directly controls dynamic template
-                    jsonPart += '"fieldIconName":"' + mapping.get('Field_Icon_Name__c') + '",';
-                    jsonPart += '"fieldIconClass":"' + mapping.get('Field_Icon_Class__c') + '",';
-                    jsonPart += '"fieldParentClass":"' + mapping.get('Field_Parent_Class__c') + '",';
-                    
-                    jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Password_Visibility__c')) + ',';
+            for (SObject mapping : sortedMetadata) {
+                if(String.isNotBlank(result)){
+                    result += ',';
+                }
+                
+                String jsonPart = '{';
+                jsonPart += '"fieldType":"' + mapping.get('Field_Type__c') + '",'; 
+                jsonPart += '"fieldName":"' + mapping.get('Field_Name__c') + '",';
+                jsonPart += '"fieldLabel":"' + mapping.get('Field_Label__c') + '",';
+                jsonPart += '"fieldClass":"' + mapping.get('Field_Class__c') + '",';
+                jsonPart += '"fieldMinValue":"' + mapping.get('Minimum_Value__c') + '",';
+                jsonPart += '"fieldMessageUnder":"' + mapping.get('Field_Under_Minimum_Range_Message__c') + '",';
+                jsonPart += '"fieldMaxValue":"' + mapping.get('Maximum_Value__c') + '",';
+                jsonPart += '"fieldMessageOver":"' + mapping.get('Field_Over_Max_Range_Message__c') + '",';
+                jsonPart += '"fieldMinLength":"' + mapping.get('Field_Min_Length__c') + '",';
+                jsonPart += '"fieldMinLengthMessage":"' + mapping.get('Field_Message_Too_Short__c') + '",';
+                jsonPart += '"fieldMaxLength":"' + mapping.get('Field_Max_Length__c') + '",';
+                jsonPart += '"fieldLabelVariant":"' + mapping.get('Field_Label_Variant__c') + '",';
+                jsonPart += '"fieldDateStyle":"' + mapping.get('Field_Date_Style__c') + '",';
+                
+                //Settings to control icon visibility
+                jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Icon__c')) + ','; //Needs to be a boolean as it directly controls dynamic template
+                jsonPart += '"fieldIconName":"' + mapping.get('Field_Icon_Name__c') + '",';
+                jsonPart += '"fieldIconClass":"' + mapping.get('Field_Icon_Class__c') + '",';
+                jsonPart += '"fieldParentClass":"' + mapping.get('Field_Parent_Class__c') + '",';
+                
+                jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Password_Visibility__c')) + ',';
 
-                    //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
-                    //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                    jsonPart += '"fieldMaxLengthMessage":"' + mapping.get('Field_Message_Too_Long__c') + '"'; 
-                    
-                    for(String key : urlParameters.keySet()) {
-                        if(mapping.get('Field_Name__c') == key) {
-                            jsonPart += ',';
-                            if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
-                                jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
-                            }
-                            else {
-                                jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
-                            }
+                //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
+                //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
+                jsonPart += '"fieldMaxLengthMessage":"' + mapping.get('Field_Message_Too_Long__c') + '"'; 
+                
+                for(String key : urlParameters.keySet()) {
+                    if(mapping.get('Field_Name__c') == key) {
+                        jsonPart += ',';
+                        if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
+                            jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
+                        }
+                        else {
+                            jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
                         }
                     }
-
-                    if(mapping.get('Field_Type__c') == 'picklist') {
-                        jsonPart += ',';
-                        jsonPart += '"showAsPicklist":' + true + ',';
-                        jsonPart += '"picklistOptions":' + mapping.get('Field_Picklist_Options__c')  + ''; 
-                    }
-
-                    if(String.isNotBlank(convertToString(mapping.get('Field_Placeholder__c')))) {
-                        jsonPart += ',';
-                        jsonPart += '"fieldPlaceholder":"' + mapping.get('Field_Placeholder__c') + '"';
-                    }
-
-                    if(String.isNotBlank(convertToString(mapping.get('Field_Message__c'))) && String.isNotBlank(convertToString(mapping.get('Field_Validation_REGEX__c')))) {
-                        jsonPart += ',';
-                        jsonPart += '"fieldMessage":"' + mapping.get('Field_Message__c') + '",';
-                        jsonPart += '"fieldRegex":"' + mapping.get('Field_Validation_REGEX__c') + '"';
-                    }
-
-                    if(convertToBoolean(mapping.get('Field_Required__c')) && String.isNotBlank(convertToString(mapping.get('Field_Required_Message__c')))) {
-                        jsonPart += ',';
-                        jsonPart += '"fieldRequired":"' + mapping.get('Field_Required__c') + '",';
-                        jsonPart += '"fieldRequiredMessage":"' + mapping.get('Field_Required_Message__c') + '"';
-                    }
-
-                    if(String.isNotBlank(convertToString(mapping.get('Field_Help_Text__c')))) {
-                        jsonPart += ',';
-                        jsonPart += '"fieldHelpText":"' + mapping.get('Field_Help_Text__c') + '"';
-                    }
-                
-                    jsonPart += '}';
-                    result += jsonPart;
                 }
+
+                if(mapping.get('Field_Type__c') == 'picklist') {
+                    jsonPart += ',';
+                    jsonPart += '"showAsPicklist":' + true + ',';
+                    jsonPart += '"picklistOptions":' + mapping.get('Field_Picklist_Options__c')  + ''; 
+                }
+
+                if(String.isNotBlank(convertToString(mapping.get('Field_Placeholder__c')))) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldPlaceholder":"' + mapping.get('Field_Placeholder__c') + '"';
+                }
+
+                if(String.isNotBlank(convertToString(mapping.get('Field_Message__c'))) && String.isNotBlank(convertToString(mapping.get('Field_Validation_REGEX__c')))) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldMessage":"' + mapping.get('Field_Message__c') + '",';
+                    jsonPart += '"fieldRegex":"' + mapping.get('Field_Validation_REGEX__c') + '"';
+                }
+
+                if(convertToBoolean(mapping.get('Field_Required__c')) && String.isNotBlank(convertToString(mapping.get('Field_Required_Message__c')))) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldRequired":"' + mapping.get('Field_Required__c') + '",';
+                    jsonPart += '"fieldRequiredMessage":"' + mapping.get('Field_Required_Message__c') + '"';
+                }
+
+                if(String.isNotBlank(convertToString(mapping.get('Field_Help_Text__c')))) {
+                    jsonPart += ',';
+                    jsonPart += '"fieldHelpText":"' + mapping.get('Field_Help_Text__c') + '"';
+                }
+                jsonPart += '}';
+                result += jsonPart;
             }
         }
         catch(Exception ex) {
             result += ex.getLineNumber() + ' : ' + ex.getMessage();
             throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
         }
+        //return jsonBuilder(key, itemsToAdd);
         return '['+result+']';
     }
 
@@ -146,23 +155,13 @@ public without sharing class SiteUtilities {
      * @return returns a JSON string of record type Ids & names for display in a picklist.
      */
     @AuraEnabled(cacheable=true)
-    public static String getPersonAccountRecordTypes(String objectType){
-        String result = '{"recordTypes":[';
-        String jsonPart = '';
-                
+    public static String getPersonAccountRecordTypes(String objectType){        
         List<RecordType> rt = new List<RecordType>([SELECT Id,Name,SobjectType,IsActive FROM RecordType WHERE SobjectType = :objectType AND IsActive = true]);
-
+        Map<String, String> itemsToAdd = new Map<String,String>();
         for (RecordType r : rt) {
-            if(String.isNotBlank(jsonPart)){
-                jsonPart += ',';
-            } 
-
-            jsonPart += '{';
-            jsonPart += '"label":"' + r.Name + '",';
-            jsonPart += '"value":"' + r.Id + '"}';
+            itemsToAdd.put(r.Id, '{"label":"' +  r.Name + '","value":"'+  r.Id + '"}');
         }
-    
-        return result + jsonPart + ']}';
+        return jsonBuilder('recordTypes', itemsToAdd);
     }
 
     /**
@@ -172,8 +171,7 @@ public without sharing class SiteUtilities {
      */
     @AuraEnabled(cacheable=true)
     public static String getProfileMembers(String networkId){
-        String result = '{"memberProfiles":[';
-        String jsonPart = '';
+        Map<String, String> itemsToAdd = new Map<String, String>();
         List<Id> profIds = new List<Id>();
         List<NetworkMemberGroup> nmg = [SELECT Id,ParentId FROM NetworkMemberGroup WHERE AssignmentStatus = 'Added'];
 
@@ -182,17 +180,22 @@ public without sharing class SiteUtilities {
         }
 
         List<Profile> profs = [SELECT Id,Name FROM Profile WHERE Id IN :profIds];
-        
         for (Profile p : profs) {
-            if(String.isNotBlank(jsonPart)){
-                jsonPart += ',';
-            } 
-
-            jsonPart += '{';
-            jsonPart += '"label":"' + p.Name + '",';
-            jsonPart += '"value":"' + p.Id + '"}'; 
+            itemsToAdd.put(p.Id, '{"label":"' +  p.Name + '","value":"'+  p.Id + '"}');
         }
-        return result + jsonPart + ']}';
+        return jsonBuilder('memberProfiles', itemsToAdd);
+    }
+
+    /**
+    * @description Simple method to pass string and convert to Integer.
+    * @param valueToConvert - pass in String
+    * @return Integer of passed String value
+    */
+    public static Integer convertToInteger(String valueToConvert) {
+        if(valueToConvert != null) {
+            return Integer.valueOf(valueToConvert);
+        }
+        return null;
     }
     
     /**
@@ -217,7 +220,27 @@ public without sharing class SiteUtilities {
             return Boolean.valueOf(valueToConvert);
         }
         return false;
-    }    
+    }
+    
+    /**
+     * @description pass in attributes to build up a simple JSON String to return to the LWC to parse
+     * @param  key is a key for the top level JSON structure
+     * @param  itemsToAdd map of string, string to pass the key and value of each JSON element
+     * @return returns a parseable JSON string.
+     */
+    public static String jsonBuilder(String key, Map<String, String> itemsToAdd) {        
+        String jsonStart = '{"' + key + '":[';
+        String jsonString = '';
+        for(String jsonKey : itemsToAdd.keySet()) {
+            if(String.isNotBlank(jsonString)){
+                jsonString += ',';
+            } 
+            //jsonString += '"' + jsonKey + '":' + itemsToAdd.get(jsonKey) + '';
+            jsonString += itemsToAdd.get(jsonKey); 
+        }
+        jsonString +=  ']}';
+        return jsonStart + jsonString;
+    }
 
     /** 
      * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Custom Metadata Types.
@@ -246,19 +269,10 @@ public without sharing class SiteUtilities {
     * @return true/false depending on setting value.
     */
     @AuraEnabled(cacheable=true)
-    public static Boolean isLoggingEnabled(String settingName) {
-        
-        if(Test.isRunningTest()) { //Always return false if running Tests to prevent failure as the logging can be switched on/off by the user after installation.
-            return false;  
-        } 
-        
+    public static Boolean isLoggingEnabled(String settingName) {        
         List<Custom_Experience_Cloud_Setting__mdt> logSetting = new List<Custom_Experience_Cloud_Setting__mdt>();
         try {
-            logSetting = [SELECT Id, Enable__c, DeveloperName
-                        FROM Custom_Experience_Cloud_Setting__mdt 
-                        WHERE (DeveloperName = :settingName AND Enable__c = true)
-                        WITH SECURITY_ENFORCED
-                        LIMIT 1];
+            logSetting = [SELECT Id, Enable__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
         }
         catch(Exception ex) {
             return false;
@@ -294,24 +308,6 @@ public without sharing class SiteUtilities {
         }
         else {
             user.ContactId = recordId;
-        }
-    }
-
-    /**
-     * @description find a user based on the specified string.
-     * @param username specify the username string to locate an existing user to login.
-     * @return returns a User object if found.
-     */
-    public static User getUser(String username, String mobilePhone){
-        try {
-            if(String.isNotBlank(username)) {
-                return [SELECT Id, Username, IsActive FROM User WHERE Username = :username AND IsActive = true];
-            }
-            else {
-                return [SELECT Id, MobilePhone, IsActive FROM User WHERE MobilePhone = :MobilePhone AND IsActive = true];
-            }
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage()); //TODO Parameter?
         }
     }
 
@@ -358,16 +354,21 @@ public without sharing class SiteUtilities {
     /**
      * @description getUserIdWithUsername retrieve the user id for a given username (this would be email address if not using Usernames!) or Portal_Username__c (which is the unique username without randomly assigned SF email domain), allowing a filter on login History to understand if there were issues logging in.
      * NOTE: Does not use WITH SECURITY_ENFORCED as issues are encountered accessing some fields with the Guest User.
-     * @param  username pass the username from the from as a string
-     * @return either the Login History Status or "Username not found" as a String if user doesn't exist
+     * @param  username pass the username from the form as a string
+     * @param mobilePhone pass the mobile phone from the form as a string
+     * @return returns the user if one if found, otherwise null.
      */
-    public static String getUserIdWithUsername(String username) {
-        List<User> userId = [SELECT Id,Name,Email,Portal_Username__c FROM User WHERE (Username = :username OR Portal_Username__c = :username)];
+    public static List<User> getUserIdWithUsername(String username, String mobilePhone) {
+        List<User> u;
         
-        if(!userId.isEmpty()) {
-            return getLoginHistory(userId[0].Id);
-        }        
-        return 'Username Not Found'; //Custom to handle the username not found.
+        if(String.isNotBlank(username)) {
+            u = [SELECT Id,Name,Email,Username,Portal_Username__c FROM User WHERE (Username = :username OR Portal_Username__c = :username)];
+        }
+
+        if(String.isNotBlank(mobilePhone)) {
+            u = [SELECT Id, MobilePhone, IsActive FROM User WHERE MobilePhone = :MobilePhone AND IsActive = true];
+        }
+        return u;        
     }
 
      /**
@@ -407,21 +408,31 @@ public without sharing class SiteUtilities {
      * @param startUrl this is the URL that a user is redirected to upon successful verification. Configured via the property panel in Exp. builder.
      * @param lwcSettings the property panel settings configured in Exp builder.
      * @param formJson the submitted form values
+     * NOTE: Not covered in Apex tests due to limitation on User Management class in test context. This method is mocked instead.
      */
-    public static String verifyCode(Auth.VerificationMethod method, String identifier, String code, String startUrl, Map<String, Object> lwcSettings, Map<String, Object> formJson, String componentName, User user) {
+    @AuraEnabled
+    public static String verifyUser(String configurationOptions, String formInputs, String componentName) {
         
         String url;
         Auth.VerificationResult res;
-
+        
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
+        Auth.VerificationMethod method = methods.get(convertToString(lwcSettings.get('passwordlessMethod')));
+        String startUrl = convertToString(formJson.get('portalRegistrationRedirect'));
+        String identifier = convertToString(formJson.get('identifier'));
+        String code = convertToString(formJson.get('verificationCode'));
+        
         if(componentName == SELF_REG_COMPONENT_NAME) {
             res = UserManagement.verifySelfRegistration(method, identifier, code, startUrl);
         }
         else {
-            res = UserManagement.verifyPasswordlessLogin(user.Id, method, identifier, code, startUrl);
+            String username = String.isNotBlank(SiteUtilities.convertToString(formJson.get('Username'))) ? SiteUtilities.convertToString(formJson.get('Username')) : SiteUtilities.convertToString(formJson.get('Email'));
+            String password = SiteUtilities.convertToString(formJson.get('password'));
+            String mobilePhone = UserManagement.formatPhoneNumber(SiteUtilities.convertToString(formJson.get('countryCode')), SiteUtilities.convertToString(formJson.get('MobilePhone'))); //Format the phone number with the user management class otherwise user isn't found!!
+            List<User> user = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
+            res = UserManagement.verifyPasswordlessLogin(user[0].Id, method, identifier, code, startUrl);
         }
-        
-        System.PageReference page = res.redirect;
-        url = page.getUrl();
         
         messages.add('Validating verification code for user. Submitted data: ' + formJson);
         
@@ -431,14 +442,14 @@ public without sharing class SiteUtilities {
             throw new AuraHandledException(convertToString(lwcSettings.get('failedCodeVerificationMessage')));
         }
 
-        String jsonPart = '{"registerResult":[';
-        
-        jsonPart += '{';
-        jsonPart += '"pageUrl":"' + url + '",';
-        jsonPart += '"verificationSuccess":"' + res.success + '"}]}';
-        
+        System.PageReference page = res.redirect;
+        url = page.getUrl();
+
+        Map<String, String> itemsToAdd = new Map<String, String>();
+        itemsToAdd.put(identifier, '{"pageUrl":"' +  url + '","verificationSuccess":'+  res.success + '}');
+
         messages.add('Verification was successful. Redirecting user to: ' + url);
         createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information', componentName); 
-        return jsonPart;   
+        return jsonBuilder('registerResult', itemsToAdd);    
     }
 }

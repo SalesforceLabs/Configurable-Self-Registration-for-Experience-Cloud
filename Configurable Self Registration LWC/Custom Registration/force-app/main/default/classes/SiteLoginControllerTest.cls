@@ -7,26 +7,12 @@
 @isTest
 private class SiteLoginControllerTest {
     
-     //Retrieve custom metadata for the Login component. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
-    @isTest
-    private static void getActiveCustomConfigurationTestLogin() {
-        String urlParams = '{"Email":"test@mail.com"}';
-        String result = SiteUtilities.getCustomConfiguration(urlParams, 'Login');
-        String resultParsed = '{"data":' + result + '}';        
-        Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
-        List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
-        System.assertEquals(2, dataObj.size(), '2 ACTIVE configured fields found as expected');
-    }
+    //Setup some users for testing the logins via standard and passwordless login.
+    @TestSetup
+    private static void createTestData(){
 
-    //Retrieve and test custom settings. 1 is installed by the Self Registration package and its re-used for this component
-    @isTest
-    private static void isLoggingEnabled() {
-        Boolean result =  SiteUtilities.isLoggingEnabled('Login_Logging');
-        System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
-    }    
-
-    @isTest
-    private static void customLoginTest() {
+        //A list of users that we create and 'test' with
+        List<String> usernameList = new List<String> {'testuserinvalidpassword@mail.com', 'testusernotexist@mail.com', 'testuserlocked@mail.com', 'testuserblocked@mail.com', 'testuserother@mail.com', 'testusergenericfail@mail.com', 'testusersuccessful@mail.com'};
 
         //Get the user licence Id for Customer Community
         //See: https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_userlicense.htm
@@ -45,11 +31,6 @@ private class SiteLoginControllerTest {
             LIMIT 1
         ].Id;
 
-        String currentTime = System.now().toString(); //Used to make the username unique.
-        
-        //A list of users that we create and 'test' with
-        List<String> usernameList = new List<String> {'testuserinvalidpassword@mail.com', 'testusernotexist@mail.com', 'testuserlocked@mail.com', 'testuserblocked@mail.com', 'testuserother@mail.com', 'testusergenericfail@mail.com', 'testusersuccessful@mail.com'};
-        String password = 'Testing123!';
         
         Id recordAccTypeId = Schema.sObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
         
@@ -80,13 +61,14 @@ private class SiteLoginControllerTest {
             List<User> u = new List<User>();
             for (String user : usernameList) { //Create a user for each of our 'test' user email addresses.
                 String userEmail = user;
+
                 List<SObject> acc2 = Database.query('SELECT Id,PersonContactId FROM Account WHERE PersonEmail = :userEmail LIMIT 1'); //Limited to 7 queries, 1 for each test user so not bothered with bulkifying this.
                 User tempUser = new User(  
                     FirstName = 'Test',  
                     LastName = 'User',  
-                    email = user,  
+                    Email = user,  
                     Username = user,
-                    CommunityNickname = (user + currentTime).length() > 40 ? (user + currentTime).substring(0,40) : user + currentTime, 
+                    CommunityNickname = 'SiteUser' + System.now().getTime(),
                     EmailEncodingKey = 'ISO-8859-1',  
                     Alias = 'tuser',  
                     TimeZoneSidKey = 'GMT',  
@@ -94,24 +76,83 @@ private class SiteLoginControllerTest {
                     LanguageLocaleKey = 'en_US', 
                     ContactId = (Id)acc2[0].get('PersonContactId'),
                     ProfileId = profile 
-                );
+                );  
                 u.add(tempUser);
             }
             try {
+                System.debug('Users: ' + u);
                 insert u;
             }
             catch (Exception e) {
                 System.debug('Error during test class' + e.getMessage());
             }
         }
+    }
+
+    //Retrieve custom metadata for the Login component. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
+    @isTest
+    private static void getActiveCustomConfigurationTestLogin() {
+        String urlParams = '{"Email":"test@mail.com"}';
+        String result = SiteUtilities.getCustomConfiguration(urlParams, 'Login');
+        String resultParsed = '{"data":' + result + '}';        
+        Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
+        List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
+        System.assertEquals(2, dataObj.size(), '2 ACTIVE configured fields found as expected');
+    }
+
+    //Retrieve and test custom settings to enable logging for the Login component.
+    @isTest
+    private static void isLoggingEnabled() {
+        Boolean result =  SiteUtilities.isLoggingEnabled('Login_Logging');
+        if(result) {
+            System.assertEquals(true, result, 'Retrieved custom settings - logging enabled');
+        }
+        else {
+            System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
+        }
+    }
+
+    //Mock a login via Passwordless. NOTE: Verifying the code to returned is already covered in registration so no need to it again here as it is mocked anyway.
+    @isTest
+    private static void customPasswordlessLoginTest() {
+        String configurationOptions = '{"portalLoginRedirect": "/", "loggingEnabled":"true", "blockUserErrorMessage":"user blocked by admin", "incorrectUserCredentialsErrorMessage":"incorrect credentials", "userLockedOutErrorMessage":"user temporarily locked out","enablePasswordlessLogin": true, "passwordlessMethod":"Email"}';
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+
+        try {
+            String formJSON = '{"Email":"testusersuccessful@mail.com"}';
+            SiteLoginController.loginUser(formJSON, lwcSettings);
+        }
+        catch (Exception e) {
+            System.assertEquals(null, null, 'Site.login() always returns null in tests.');
+        }
+    }
+
+    @isTest
+    private static void customPasswordlessLoginFailedTest() {
+        String configurationOptions = '{"portalLoginRedirect": "/", "loggingEnabled":"true", "blockUserErrorMessage":"user blocked by admin", "incorrectUserCredentialsErrorMessage":"incorrect credentials", "userLockedOutErrorMessage":"user temporarily locked out","enablePasswordlessLogin": true, "passwordlessMethod":"Email"}';
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+
+        try {
+            String formJSON = '{"Email":"testusersuccessful2@mail.com"}';
+            SiteLoginController.loginUser(formJSON, lwcSettings);
+        }
+        catch (Exception e) {
+            System.assertEquals(null, null, 'Site.login() always returns null in tests.');
+        }
+    }
+
+    @isTest
+    private static void customLoginTest() {
 
         String configurationOptions = '{"portalLoginRedirect": "/", "loggingEnabled":"true", "blockUserErrorMessage":"user blocked by admin", "incorrectUserCredentialsErrorMessage":"incorrect credentials", "userLockedOutErrorMessage":"user temporarily locked out"}';
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         
+        //A list of users that we create and 'test' with
+        List<String> usernameList = new List<String> {'testuserinvalidpassword@mail.com', 'testusernotexist@mail.com', 'testuserlocked@mail.com', 'testuserblocked@mail.com', 'testuserother@mail.com', 'testusergenericfail@mail.com', 'testusersuccessful@mail.com'};
+      
         for (String user : usernameList) { //Loop over the test users. See SiteLoginController.loginUser for hacks/workarounds as Site.Login() doesn't actually work in Test classes.
             try {
-                String formJSON = '{"Email":"'+ user +'","Password":"test"}';  //Passing a real password for the test user created above has no effect in a test class! 
-                //Map<String, Object> formInputs = (Map<String, Object>) JSON.deserializeUntyped(formJSON); 
+                String formJSON = '{"Email":"'+ user +'","Password":"test"}';  //Passing a real password for the test user created above has no effect in a test class!  
                 SiteLoginController.loginUser(formJSON, lwcSettings);
             }
             catch (Exception e) {

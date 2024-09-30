@@ -28,7 +28,7 @@ export default class customPropertyEditorProfiles extends LightningElement {
     wiredProfiles({error, data}) {
         if(data) {
             this.jsonString = JSON.parse(data);
-            this.profiles = this.jsonString.memberProfiles;
+            this.profiles = Object.values(this.jsonString.memberProfiles);            
         }
     }
     

@@ -91,11 +91,6 @@ public with sharing class SiteRegistrationController {
                 Site.validatePassword(user, SiteUtilities.convertToString(formJson.get('password')), SiteUtilities.convertToString(formJson.get('confirmPassword'))); 
             } 
         }
-        catch (SObjectException ex) {
-           SiteUtilities.messages.add('An error occurred whilst trying to update the User Object:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
-           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
-           throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
-        }
         catch (Exception ex) {
            SiteUtilities.messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
@@ -118,7 +113,6 @@ public with sharing class SiteRegistrationController {
         String userId;
         String identifier;
         Boolean showVerificationCode = false; 
-        String jsonPart = '{"registerResult":[';
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         
@@ -178,27 +172,10 @@ public with sharing class SiteRegistrationController {
             }
         }
         SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);
-        jsonPart += '{';
-        jsonPart += '"pageUrl":"' + pageUrl + '",';
-        jsonPart += '"showVerificationCode":' + showVerificationCode + ',';
-        jsonPart += '"verificationId":"' + identifier + '"}]}';
-        result += jsonPart;
-        return result;
-    }
-
-    /**
-     * @description verifyUser description
-     * @param  formInputs           formInputs description
-     * @param  configurationOptions configurationOptions description
-     * @return                      return description
-     */
-    @AuraEnabled
-    public static String verifyUser(String formInputs, String configurationOptions) {
-        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
-        Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
-        String startUrl = Site.getBaseSecureUrl() + SiteUtilities.convertToString(formJson.get('portalRegistrationRedirect'));
-        Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));        
-        return SiteUtilities.verifyCode(method, SiteUtilities.convertToString(formJson.get('identifier')), SiteUtilities.convertToString(formJson.get('verificationCode')), startUrl, lwcSettings, formJson, SiteUtilities.SELF_REG_COMPONENT_NAME, new User());  
+        
+        Map<String, String> itemsToAdd = new Map<String, String>();
+        itemsToAdd.put(identifier, '{"pageUrl":"' +  pageUrl + '","verificationId":"'+  identifier + '","showVerificationCode":'+ SiteUtilities.convertToString(showVerificationCode) +' }');
+        return SiteUtilities.jsonBuilder('registerResult', itemsToAdd);
     }
 
     /**

@@ -13,7 +13,7 @@ export default class customPropertyEditorRecordTypes extends LightningElement {
     wiredRecordTypes({error, data}) {
         if(data) {
             this.jsonString = JSON.parse(data);
-            this.rt = this.jsonString.recordTypes;
+            this.rt = Object.values(this.jsonString.recordTypes);
         }
     }
     

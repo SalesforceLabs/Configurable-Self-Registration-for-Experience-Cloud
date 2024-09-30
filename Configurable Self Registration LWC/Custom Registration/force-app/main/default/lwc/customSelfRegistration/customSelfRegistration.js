@@ -10,7 +10,7 @@
 import {LightningElement, api, track, wire} from 'lwc';
 import {CurrentPageReference} from 'lightning/navigation';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
-import verifyUser from '@salesforce/apex/SiteRegistrationController.verifyUser';
+import verifyUser from '@salesforce/apex/SiteUtilities.verifyUser';
 import getCustomConfiguration from '@salesforce/apex/SiteUtilities.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
@@ -39,7 +39,8 @@ export default class customSelfRegistration extends LightningElement {
     urlParameters = null;
     showPassword = false;
     @api showVerificationCode = false;
-    registerResults = null;
+    registerResults;
+    parsedRegisterResults;
     pageUrl;
 
     get passwordIcon() {
@@ -241,9 +242,10 @@ export default class customSelfRegistration extends LightningElement {
             //Different behaviour for Passwordless vs Password registration.
             //Initial page load, user requests a verification code which shows an input to enter the code and then login.
             if(this.parsedSettings.enablePasswordlessLogin && this.showVerificationCode) { //Verify the code received and login.
-                verifyUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.parsedSettings)}).then((result) => {
+                verifyUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.parsedSettings), componentName: 'Self Registration'}).then((result) => {
                     this.registerResults = JSON.parse(result);
-                    this.pageUrl = this.registerResults.registerResult[0].pageUrl;
+                    this.parsedRegisterResults = Object.values(this.registerResults.registerResult);
+                    this.pageUrl = this.parsedRegisterResults[0].pageUrl;
                     window.location.href = this.pageUrl; 
                 }).catch((error) => {
                     this.handleSubmit(false, this.parsedSettings.registerButtonAwaitingCodeMessage, false);                            
@@ -254,17 +256,18 @@ export default class customSelfRegistration extends LightningElement {
             else { 
                 registerUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.parsedSettings)}).then((result) => {
                     this.registerResults = JSON.parse(result);
-                    this.showVerificationCode = this.registerResults.registerResult[0].showVerificationCode;
-                    this.pageUrl = this.registerResults.registerResult[0].pageUrl;
+                    this.parsedRegisterResults = Object.values(this.registerResults.registerResult);
+                    this.showVerificationCode = this.parsedRegisterResults[0].showVerificationCode;
+                    this.pageUrl = this.parsedRegisterResults[0].pageUrl;
                     
                     if(this.showVerificationCode) { //Verification code should have been sent by the configured method - Email or SMS.                      
-                        this.template.querySelector('lightning-input[data-id=identifier').value = this.registerResults.registerResult[0].verificationId; //Dynamically set the value of the Verification Id field.
+                        this.template.querySelector('lightning-input[data-id=identifier').value = this.parsedRegisterResults[0].verificationId; //Dynamically set the value of the Verification Id field.
                         this.template.querySelector('.verificationCode').classList.remove('slds-hide'); //Dynamically show the input to the user by removing the slds-hide class.
                         this.handleSubmit(false, this.parsedSettings.registerButtonAwaitingCodeMessage, false);
                     }
                     else { //Standard username/password registration.
                         window.location.href = this.pageUrl;
-                    }                  
+                    }
                 }).catch((error) => {
                     this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);                            
                     this._setServerError(error.body.message);

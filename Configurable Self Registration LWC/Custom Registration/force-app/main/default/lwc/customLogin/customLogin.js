@@ -3,7 +3,7 @@ import {CurrentPageReference} from 'lightning/navigation';
 import loginUser from '@salesforce/apex/SiteLoginController.loginUser';
 import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
 import getCustomConfiguration from '@salesforce/apex/SiteUtilities.getCustomConfiguration';
-import verifyUser from '@salesforce/apex/SiteLoginController.verifyUser';
+import verifyUser from '@salesforce/apex/SiteUtilities.verifyUser';
 
 //TODO: Setting the experience Id is required for Dynamic Branding. However, the Site.setExperienceId method doesn't appear to be working properly. 
 //The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
@@ -160,8 +160,9 @@ export default class CustomLogin extends LightningElement {
             //Different behaviour for Passwordless vs Password registration.
             //Initial page load, user requests a verification code which shows an input to enter the code and then login.
             if(this.enablePasswordlessLogin && this.showVerificationCode) { //Verify the code received and login.
-                verifyUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.configurationOptions)}).then((result) => {
+                verifyUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.configurationOptions), componentName: 'Login'}).then((result) => {
                     this.registerResults = JSON.parse(result);
+                    console.log('registerResults:' +this.registerResults);
                     this.pageUrl = this.registerResults.registerResult[0].pageUrl;
                     window.location.href = this.pageUrl; 
                 }).catch((error) => {

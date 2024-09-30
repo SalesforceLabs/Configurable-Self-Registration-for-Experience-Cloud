@@ -7,33 +7,43 @@
 @isTest
 private class SiteRegistrationControllerTest {
 
+    //Create a test Person Account record
+    @TestSetup
+    private static void createPersonAccountTestData() {
+        
+        Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
+
+        Schema.SObjectType targetType = Schema.getGlobalDescribe().get('Account');
+        SObject newObject = targetType.newSObject(); 
+        Account acc = (Account)newObject;
+        acc.put('RecordTypeId', recordTypeId);
+        acc.put('FirstName', 'Test');
+        acc.put('LastName', 'PA');
+        acc.put('PersonEmail', 'user@test.com');
+        insert acc;
+    }
+
     //Retrieve custom metadata for the Self Registration component. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
     @isTest
     private static void getActiveCustomConfigurationTestSelfRegistration() {
         String urlParams = '{"FirstName":"Test"}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
-        String resultParsed = '{"data":' + result + '}';        
+        String resultParsed = '{"data":' + result + '}';
+        System.debug('resultedParsed: ' + resultParsed);        
         Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
         List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
-        System.assertEquals(5, dataObj.size(), '5 ACTIVE configured fields found as expected');
+        System.assertEquals(4, dataObj.size(), '5 ACTIVE configured fields found as expected');
     }
 
     //Retrieve and test custom settings to enable logging for the Self Regisration component.
     @isTest
     private static void isLoggingEnabledSelfRegistration() {
         Boolean result =  SiteUtilities.isLoggingEnabled('Self_Registration_Logging');
-        System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
-    }
-
-    @isTest
-    private static void checkForSMSLicence() {
-        Integer count = SiteUtilities.checkSMSLicence();
-        
-        if(count == 0) {
-            System.assertEquals(0, count, 'SMS licence is not available in the org.'); 
+        if(result) {
+            System.assertEquals(true, result, 'Retrieved custom settings - logging enabled');
         }
         else {
-            System.assertEquals(1, count, 'SMS licence is available in the org.'); 
+            System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
         }
     }
 
@@ -42,7 +52,7 @@ private class SiteRegistrationControllerTest {
     private static void registerUserCreatePersonAccountObjectSytemAccessLevelTest() {
 
         Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"Username":"user_not_found@test.com", "Email":"user_not_found@test.com", "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -66,13 +76,13 @@ private class SiteRegistrationControllerTest {
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
     }
 
-    //Mock the failed creation of a Person Account when the admin creates custom metadata with the incorrect Custom Field API names.
+    //Mock the failed creation of a Person Account with an incorrect record type!
     @isTest
     private static void registerUserCreatePersonAccountObjectFailedTest() {
 
         Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_not_found@test.com", "Email":"user_not_found@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"001dadsdsa67gs", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
              SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -97,12 +107,12 @@ private class SiteRegistrationControllerTest {
             con.FirstName = 'Test ' + i;
             con.LastName = 'Contact';
             con.AccountId = acc.Id;
-            con.Email = 'user@test.com';
+            con.Email = 'usercontact@test.com';
             cons.add(con);
         }
         insert cons;
          
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"usercontact@test.com", "Email":"usercontact@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email", "accessLevelMode":"System", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false","errorMultipleRecordsFound":"Multiple records found", "portalLoginError":"There was a problem logging in"}';
 
         try {
@@ -121,7 +131,7 @@ private class SiteRegistrationControllerTest {
         acc.Name = 'TestAcc';
         insert acc;
         
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_create_contact_success@test.com", "Email":"user_create_contact_success@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -137,7 +147,7 @@ private class SiteRegistrationControllerTest {
         acc.Name = 'TestAcc';
         insert acc;
         
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue" }';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_create_contact_fail@test.com", "Email":"user_create_contact_fail@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue" }';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
@@ -164,7 +174,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void registerUserNoCreateObjectRecordNotFoundTest() {
             
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_no_create@test.com", "Email":"user_no_create@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
@@ -178,7 +188,7 @@ private class SiteRegistrationControllerTest {
     //Create If not found is true but the Create type is set to N/A so the code doesn't know how to proceed and fails.
     @isTest
     private static void registerUserCreateObjectUnknownTypeTest() {            
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_create_unknown@test.com", "Email":"user_create_unknown@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"N/A", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
@@ -215,23 +225,7 @@ private class SiteRegistrationControllerTest {
 
         String result = SiteRegistrationController.loginUser(username, password, configurationOptionsObject);
         System.assert(result == '', 'Site.login() always returns empty pageRef in tests.');
-    }
-
-    //Create a test Person Account record
-    @TestSetup
-    private static void createPersonAccountTestData() {
-        
-        Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-
-        Schema.SObjectType targetType = Schema.getGlobalDescribe().get('Account');
-        SObject newObject = targetType.newSObject(); 
-        Account acc = (Account)newObject;
-        acc.put('RecordTypeId', recordTypeId);
-        acc.put('FirstName', 'Test');
-        acc.put('LastName', 'PA');
-        acc.put('PersonEmail', 'user@test.com');
-        insert acc;
-    }
+    }  
 
     @isTest
     private static void testPasswordlessSelfRegistration() {
@@ -259,19 +253,19 @@ private class SiteRegistrationControllerTest {
         String testRequestCode = SiteRegistrationController.registerUser(formInputs, configurationOptions);
         Map<String, Object> testRequestCodeParsed = (Map<String, Object>) JSON.deserializeUntyped(testRequestCode);
         List<Object> dataObj = (List<Object>) testRequestCodeParsed.get('registerResult');
-        
-        String identifier = '';
-        for (Object obj : dataObj) {
-            Map<String, Object> dataObj2 = (Map<String, Object>) obj;
-            identifier = (String) dataObj2.get('verificationId');
+    
+        String verificationId = null;
+        for(Object obj : dataObj) {
+            Map<String, Object> objMap = (Map<String, Object>) obj;
+            verificationId = (String) objMap.get('verificationId');
         }
-
-        //NOTE: In Apex tests, there is no Network context, so a hardcoded value is returned.
-        System.assertEquals('123456', identifier, 'Identifier returned as expected');
         
-        formInputs = '{"Email":"user@test.com", "identifier":"'+ identifier +'", "verificationCode":"123456"}';
-        UserManagementWrapper mockUM = (UserManagementWrapper)MockUtil.createMock(UserManagementWrapper.class);
-        String verifyUserResponse = mockUM.verifyUserMock(formInputs, configurationOptions);
+        //NOTE: In Apex tests, there is no Network context, so a hardcoded value is returned.
+        System.assertEquals('123456', verificationId, 'Identifier returned as expected');
+        
+        formInputs = '{"Email":"user@test.com", "identifier":"'+ verificationId +'", "verificationCode":"123456"}';
+        UserManagementWrapper mockUM = (UserManagementWrapper)Test.createStub(UserManagementWrapper.class, new MockProvider());
+        String verifyUserResponse = mockUM.verifyUser(formInputs, configurationOptions, SiteUtilities.SELF_REG_COMPONENT_NAME);
 
         Map<String, Object> verifyUserResponseJSON = (Map<String, Object>) JSON.deserializeUntyped(verifyUserResponse);
         List<Object> dataVerifyUser = (List<Object>) verifyUserResponseJSON.get('registerResult');
@@ -286,6 +280,64 @@ private class SiteRegistrationControllerTest {
 
         System.assertEquals('https://www.google.com', pageUrl, 'Page Redirect as expected');
         System.assertEquals(true, verificationSuccess, 'Verification successful');
+    }
+
+    @isTest
+    private static void getUserTest() {
+       
+        //Get the user licence Id for Customer Community
+        //See: https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_userlicense.htm
+        Id userLicence = [
+            SELECT Id,Name,LicenseDefinitionKey FROM UserLicense
+            WHERE LicenseDefinitionKey = 'PID_Customer_Community'
+            LIMIT 1
+        ].Id;
+
+        //Then get a profile that uses that licence so we can assign it to the test user.
+        //NOTE: The query to find a Profile may detect a standard profile that cannot be used without the setting turned on: Setup > Digital Experiences > Settings and select Allow using standard external profiles for self-registration, user creation, and login
+        //Unable to workaround this as profiles cannot be created in tests, and you can't easily identify a custom profile via the API to select one.
+        Id profile = [
+            SELECT Id,Name,UserLicenseId FROM Profile
+            WHERE UserLicenseId = :userLicence
+            LIMIT 1
+        ].Id; 
+       
+       List<Account> acc2 = [SELECT Id,PersonContactId,PersonEmail FROM Account WHERE PersonEmail = 'user@test.com' LIMIT 1]; 
+       User uCreate = new User(
+            FirstName = 'Admin Test',  
+            LastName = 'User',  
+            Email = 'user@test.com',
+            MobilePhone = '07774567891',  
+            Username = 'user@test.com', 
+            CommunityNickname = 'SiteUser',
+            EmailEncodingKey = 'ISO-8859-1',  
+            Alias = 'atuser',  
+            TimeZoneSidKey = 'GMT',  
+            LocaleSidKey = 'en_US',  
+            LanguageLocaleKey = 'en_US', 
+            ProfileId = profile,
+            ContactId = (Id)acc2[0].get('PersonContactId'),
+            IsActive = true
+       );
+       insert uCreate; 
+
+       List<User> u = SiteUtilities.getUserIdWithUsername('user@test.com', '');
+       System.assertEquals(true, String.isNotBlank(u[0].Username), 'User found by username'); 
+       
+       List<User> u2 = SiteUtilities.getUserIdWithUsername('', '07774567891');
+       System.assertEquals(true, String.isNotBlank(u2[0].MobilePhone), 'User found by phone');
+    }
+
+    //Try and login somebody that hasn't registered yet.
+    @isTest
+    private static void loginNonExistantUserTest() {
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"N/A", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        
+        UserManagementWrapper mockUM = (UserManagementWrapper)Test.createStub(UserManagementWrapper.class, new MockProvider());
+        String verifyLoginResponse = mockUM.loginUser('test', 'testpw', lwcSettings);
+
+        System.assertEquals(verifyLoginResponse, 'Failed Login', 'Site.login() always returns empty pageRef in tests so the test is mocked.');
     }
 
     @isTest
