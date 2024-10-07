@@ -46,7 +46,7 @@
                                 <!-- Deal with a combobox type for the country code picklist for Mobile passwordless registration & others if added. -->
                                 <template lwc:elseif={result.value.showAsPicklist}>
                                     <template if:true={result.value.fieldShowIcon}>
-                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" data-reveal={result.value.fieldShowPasswordVisibility} class={result.value.fieldIconClass}></lightning-icon>
+                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" class={result.value.fieldIconClass}></lightning-icon>
                                     </template>
                                     <lightning-combobox name={result.value.fieldName} value={result.value.fieldValue} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} field-level-help={result.value.fieldHelpText} placeholder={result.value.fieldPlaceholder} 
                                         options={result.value.picklistOptions} onchange={handleOnChange} required={result.value.fieldRequired} message-when-value-missing={result.value.fieldRequiredMessage}
@@ -56,7 +56,7 @@
 
                                 <template lwc:else> 
                                     <template if:true={result.value.fieldShowIcon}>
-                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" data-reveal={result.value.fieldShowPasswordVisibility} class={result.value.fieldIconClass}></lightning-icon>
+                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" class={result.value.fieldIconClass}></lightning-icon>
                                     </template>
                                     <lightning-input type={result.value.fieldType} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} name={result.value.fieldName} value={result.value.fieldValue}
                                         class={result.value.fieldClass} required={result.value.fieldRequired} field-level-help={result.value.fieldHelpText}

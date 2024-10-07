@@ -36,11 +36,10 @@ public without sharing class SiteUtilities {
     public static String getCustomConfiguration(String urlParams, String componentName) {
         String result = '';
         Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
-        //Map<String, String> itemsToAdd = new Map<String, String>();
 
         try {
             List<SObject> metadata = new List<SObject>(); 
-            if(componentName == SiteUtilities.LOGIN_COMPONENT_NAME) {
+            if(componentName == LOGIN_COMPONENT_NAME) {
                 metadata = Custom_Login_Configuration__mdt.getAll().values();
             }
             else {
@@ -78,12 +77,12 @@ public without sharing class SiteUtilities {
                 jsonPart += '"fieldDateStyle":"' + mapping.get('Field_Date_Style__c') + '",';
                 
                 //Settings to control icon visibility
-                jsonPart += '"fieldShowIcon":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Icon__c')) + ','; //Needs to be a boolean as it directly controls dynamic template
+                jsonPart += '"fieldShowIcon":' + convertToBoolean(mapping.get('Field_Show_Icon__c')) + ','; //Needs to be a boolean as it directly controls dynamic template
                 jsonPart += '"fieldIconName":"' + mapping.get('Field_Icon_Name__c') + '",';
                 jsonPart += '"fieldIconClass":"' + mapping.get('Field_Icon_Class__c') + '",';
                 jsonPart += '"fieldParentClass":"' + mapping.get('Field_Parent_Class__c') + '",';
-                
-                jsonPart += '"fieldShowPasswordVisibility":' + SiteUtilities.convertToBoolean(mapping.get('Field_Show_Password_Visibility__c')) + ',';
+                jsonPart += '"fieldToggleIconName":"' + mapping.get('Field_Toggle_Icon_Name__c') + '",';
+                jsonPart += '"fieldShowPasswordVisibility":' + convertToBoolean(mapping.get('Field_Show_Password_Visibility__c')) + ',';
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
@@ -92,7 +91,7 @@ public without sharing class SiteUtilities {
                 for(String key : urlParameters.keySet()) {
                     if(mapping.get('Field_Name__c') == key) {
                         jsonPart += ',';
-                        if(SiteUtilities.convertToBoolean(urlParameters.get(key))) {
+                        if(convertToBoolean(urlParameters.get(key))) {
                             jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
                         }
                         else {
@@ -235,7 +234,6 @@ public without sharing class SiteUtilities {
             if(String.isNotBlank(jsonString)){
                 jsonString += ',';
             } 
-            //jsonString += '"' + jsonKey + '":' + itemsToAdd.get(jsonKey) + '';
             jsonString += itemsToAdd.get(jsonKey); 
         }
         jsonString +=  ']}';
@@ -286,7 +284,7 @@ public without sharing class SiteUtilities {
 
     /**
      * @description sets the ProfileId on the non-persisted User Object
-     * *  NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
+     * NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
      * @param  user pass in the user object which is currently not persisted until the user is verified
      * @param  profileId the profileId to set on the user object as configured in the property panel with Exp. Builder.
      */
@@ -295,20 +293,23 @@ public without sharing class SiteUtilities {
     }
 
     /**
-     * @description sets the ContactId with either the ContactId or the PersonContactId based on how the component is configured.
-     *  NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
+     * @description sets the ContactId on the non-persisted User Object
+     * NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
      * @param  user pass in the user object which is currently not persisted until the user is verified
-     * @param  type pass in the type of 'Account' or 'Contact' to correctly set the ContactId
-     * @param  recordId pass in the recordId which is either used to set the ContactId directly, or find the PersonContactId
+     * @param  contactId the profileId to set on the user object as configured in the property panel with Exp. Builder.
      */
-	public void setContactId(User user, String type, Id recordId){
-        if(type == 'Account') {
-            Id contactId = [SELECT Id,PersonContactId FROM Account WHERE Id = :recordId].PersonContactId;
-            user.ContactId = contactId;
-        }
-        else {
-            user.ContactId = recordId;
-        }
+    public void setContactId(User user, Id contactId){
+        user.ContactId = contactId;
+    }
+
+    /**
+     * @description find the PersonContactId for a given AccountId.
+     *  NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
+     * @param  accountId pass in the Account Id to find the PersonContactId
+     * @return Id of the PersonContact
+     */
+	public static Id getPersonContactId(Id accountId){
+        return [SELECT Id,PersonContactId FROM Account WHERE Id = :accountId].PersonContactId;        
     }
 
     /**
@@ -341,9 +342,9 @@ public without sharing class SiteUtilities {
         //Formula field is used to calculate value we are interested i.e. the submitted value with no domain that we can query with '='. 
         //This way, if the username changes in anyway, filter continues to work as a 2nd field doesn't need to be updated!
         List<NetworkMember> userList = [
-            SELECT Id, Member.Portal_Username__c, Member.Id, NetworkId
+            SELECT Id, Member.Username, Member.Id, NetworkId
             FROM NetworkMember 
-            WHERE Member.Portal_Username__c = :username
+            WHERE Member.Username = :username
             AND NetworkId = :networkId
             WITH SECURITY_ENFORCED
         ];
@@ -386,6 +387,24 @@ public without sharing class SiteUtilities {
         }
         return null;
     }
+
+    /**
+     * @description deleteRecord deletes the recordId specified. This method is called when a verification code validation failure occurs during passwordless login/registration.
+     * @param contactId the Id of a Contact to delete when using Business Accounts & Contacts or an Account when using Person Accounts.
+     */
+    public static void deleteRecord(Id recordId, String type, String componentName, Map<String, Object> lwcSettings) {
+        try {
+            if(type == 'Account') {
+                delete new Account (Id = recordId);
+            }
+            else {  
+                delete new Contact (Id = recordId);
+            }            
+        } catch(Exception e) {
+            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', componentName);
+            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
+        }
+    }
     
     /**
      * @description send a verification code via the specified method e.g. EMAIL, SMS, SALESFORCE_AUTHENTICATOR, TOTP for Self Registration & Login
@@ -422,22 +441,25 @@ public without sharing class SiteUtilities {
         String startUrl = convertToString(formJson.get('portalRegistrationRedirect'));
         String identifier = convertToString(formJson.get('identifier'));
         String code = convertToString(formJson.get('verificationCode'));
+        String mobilePhone;
+        String username = String.isNotBlank(convertToString(formJson.get('Username'))) ? convertToString(formJson.get('Username')) : convertToString(formJson.get('Email'));
+        
+        if(String.isNotBlank(convertToString(formJson.get('countryCode')))) {
+            mobilePhone = UserManagement.formatPhoneNumber(convertToString(formJson.get('countryCode')), convertToString(formJson.get('MobilePhone'))); //Format the phone number with the user management class otherwise user isn't found!!
+        }
         
         if(componentName == SELF_REG_COMPONENT_NAME) {
             res = UserManagement.verifySelfRegistration(method, identifier, code, startUrl);
         }
         else {
-            String username = String.isNotBlank(SiteUtilities.convertToString(formJson.get('Username'))) ? SiteUtilities.convertToString(formJson.get('Username')) : SiteUtilities.convertToString(formJson.get('Email'));
-            String password = SiteUtilities.convertToString(formJson.get('password'));
-            String mobilePhone = UserManagement.formatPhoneNumber(SiteUtilities.convertToString(formJson.get('countryCode')), SiteUtilities.convertToString(formJson.get('MobilePhone'))); //Format the phone number with the user management class otherwise user isn't found!!
-            List<User> user = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
+            List<User> user = getUserIdWithUsername(username, mobilePhone);
             res = UserManagement.verifyPasswordlessLogin(user[0].Id, method, identifier, code, startUrl);
         }
         
         messages.add('Validating verification code for user. Submitted data: ' + formJson);
         
         if(res.success == false) { 
-            messages.add('Unable to validate the verification code. Error was: ' + res.message);
+            messages.add('Unable to validate the verification code. Error was: ' + res.message);    
             createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', componentName);    
             throw new AuraHandledException(convertToString(lwcSettings.get('failedCodeVerificationMessage')));
         }

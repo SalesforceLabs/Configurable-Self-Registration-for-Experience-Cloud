@@ -32,7 +32,7 @@ private class SiteRegistrationControllerTest {
         System.debug('resultedParsed: ' + resultParsed);        
         Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
         List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
-        System.assertEquals(4, dataObj.size(), '5 ACTIVE configured fields found as expected');
+        System.assertEquals(5, dataObj.size(), '5 ACTIVE configured fields found as expected');
     }
 
     //Retrieve and test custom settings to enable logging for the Self Regisration component.

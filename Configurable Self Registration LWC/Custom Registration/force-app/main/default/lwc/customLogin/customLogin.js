@@ -36,8 +36,6 @@ export default class CustomLogin extends LightningElement {
 	@api showSpinner = false;
     @api anyServerError = false;
     @api serverErrorMessage = null;
-    @api passwordFieldShowIcon; //TODO
-    @api passwordFieldHideIcon; //TODO
 	showPassword = false;
     
     @api results = null; //Results for custom configuration search
@@ -63,16 +61,14 @@ export default class CustomLogin extends LightningElement {
         }
     }
 
-	get passwordIcon() {
-        return this.showPassword ? this.passwordFieldHideIcon : this.passwordFieldShowIcon; //TODO: Metadata for the field?!
-    }
-    
     get passwordType() {
         return this.showPassword ? 'text' : 'password';
     }
     
-    togglePassword() {
+    togglePassword(event) {
         this.showPassword = !this.showPassword;
+        this.passwordIcon = this.showPassword ? event.currentTarget.dataset.iconhide : event.currentTarget.dataset.iconshow;
+        event.currentTarget.iconName = this.passwordIcon;
     }
 
     renderedCallback() {

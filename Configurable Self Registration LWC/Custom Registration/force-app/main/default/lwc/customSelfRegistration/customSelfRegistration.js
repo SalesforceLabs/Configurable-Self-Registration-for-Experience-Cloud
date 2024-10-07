@@ -114,25 +114,30 @@ export default class customSelfRegistration extends LightningElement {
             }
 
             //Checks Object Type to Create is set correctly when the component is set to create a new record, otherwise displays an error.        
-            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'N/A') {
-                this._setComponentError(true, 'Object Type to Create cannot be "N/A" when the Create Record function is set to TRUE.');
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == '') {
+                this._setComponentError(true, 'Object Type to Create must be set when the Create Record function is set to TRUE.');
             }
 
-            //Enforces an Account Id to be entered if creating a Contact
-            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact' && this.parsedSettings.accountId == '') {
-                this._setComponentError(true, 'Please specify an Account Id parameter when creating a Contact.');
-            }
+            //Enforces an Account Id if "Create Not Found" setting is set and the object to create is a Contact type
+            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact') {
 
-            //Enforces an Account Id of 15 or 18 length. 
-            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact' && this.parsedSettings.accountId != '' && this.parsedSettings.accountId.length != 15 && this.parsedSettings.accountId.length != 18) {
-                this._setComponentError(true, 'Account Id parameter must be a Salesforce 15 or 18 character reference');
-            }
+                if(this.parsedSettings.accountId == '' || this.parsedSettings.accountId == null) { //Account Id can't be blank
+                    this._setComponentError(true, 'Please specify an Account Id parameter when creating a Contact.');
+                }
+                else {
+                    
+                    //Enforces an Account Id must be a 15/18 character length. 
+                    if(this.parsedSettings.accountId.length != 15 && this.parsedSettings.accountId.length != 18) {
+                        this._setComponentError(true, 'Account Id parameter must be a Salesforce 15 or 18 character reference');
+                    }
 
-            //Enforces an Account Id which starts with 001. 
-            if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Contact' && this.parsedSettings.accountId.substring(0,3) != '001' && (this.parsedSettings.accountId.length == 15 || this.parsedSettings.accountId.length == 18)) {
-                this._setComponentError(true, 'Account Id parameter must start with 001 (Account Object Type).');
-            }
-            
+                    //Enforces an Account Id which starts with 001. 
+                    if(this.parsedSettings.accountId.substring(0,3) != '001' && (this.parsedSettings.accountId.length == 15 || this.parsedSettings.accountId.length == 18)) {
+                        this._setComponentError(true, 'Account Id parameter must start with 001 (Account Object Type).');
+                    }
+                }
+            } 
+
             //Checks if Person Accounts are enabled on the org if Object Create Type is 'Person Account' and Create If Not Found = TRUE
             if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Person Account') {
                 checkPersonAccount().then((enabled) => {

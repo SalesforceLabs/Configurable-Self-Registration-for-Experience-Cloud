@@ -6,6 +6,7 @@ export default class customPropertyEditorCreateType extends LightningElement {
 
     get options() {
         return [
+            { label: '', value: '' },
             { label: 'Contact', value: 'Contact' },
             { label: 'Person Account', value: 'Person Account' },
         ];

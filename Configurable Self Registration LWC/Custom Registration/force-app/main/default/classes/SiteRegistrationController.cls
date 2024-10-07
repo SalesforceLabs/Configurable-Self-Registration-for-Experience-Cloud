@@ -112,7 +112,8 @@ public with sharing class SiteRegistrationController {
         Id recordId = null;
         String userId;
         String identifier;
-        Boolean showVerificationCode = false; 
+        Boolean showVerificationCode = false;
+        Boolean recordCreated = false; 
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         
@@ -120,8 +121,9 @@ public with sharing class SiteRegistrationController {
         Map<String, Object> sanitisedFormJson = new Map<String, Object>();
         sanitisedFormJson = sanitiseJson(formJson);
 
-        isValidUsername(formJson, lwcSettings);
         User user = createUnsavedUser(formJson, lwcSettings);
+        formJson.put('Username', user.username);
+        isValidUsername(formJson, lwcSettings);
 
         //No password is required for Passwordless, so don't try to validate it!
         if(!SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin'))) {
@@ -135,26 +137,35 @@ public with sharing class SiteRegistrationController {
         }
     
         if(SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && String.isBlank(recordId)) { 
-            SiteUtilities.messages.add('About to create new ' + lwcSettings.get('objectCreateType'));
+            SiteUtilities.messages.add('About to create new ' + SiteUtilities.convertToString(lwcSettings.get('objectCreateType')));
             recordId = createObject(formJson, lwcSettings);
+            recordCreated = true;
             SiteUtilities.messages.add('Created Record Id returned was: ' + recordId);   
         }
 
         if(SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin'))) {
 
             //Set the resulting contactId on the yet to be saved user
-            String type = SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && (SiteUtilities.convertToString(lwcSettings.get('objectCreateType')) == 'Account' || SiteUtilities.convertToString(lwcSettings.get('objectToQuery')) == 'Account') ? 'Account' : 'Contact';
-            new SiteUtilities().setContactId(user, type, recordId);
+            Id contactId = SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin')) && SiteUtilities.convertToString(lwcSettings.get('objectCreateType')) == 'Person Account' ? SiteUtilities.getPersonContactId(recordId) : recordId;
+            new SiteUtilities().setContactId(user, contactId);
 
-            SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod'))  + ' to User: ' + user);            
+            SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')) + ' to User: ' + user);            
             try {
                 Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(lwcSettings.get('passwordlessMethod')));
                 identifier = SiteUtilities.sendVerificationCode(method, user, SiteUtilities.SELF_REG_COMPONENT_NAME);
                 showVerificationCode = true;
             }
-            catch (NoAccessException e) {
-                //TODO: Delete the contact if one is created?
+            catch (Exception e) {
+
                 SiteUtilities.messages.add('Error sending a verification code. Please try again later.' + ' Error: ' + e.getMessage());
+
+                //Delete the contact if there was a problem sending the code but only if it was the record that was created by the self registration. Don't delete an existing record.
+                if(SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && recordCreated) { 
+                    SiteUtilities.messages.add('Deleting created record Id: ' + recordId);
+                    SiteUtilities.deleteRecord(recordId, recordId.getSObjectType().getDescribe().getName(), SiteUtilities.SELF_REG_COMPONENT_NAME, lwcSettings);
+                    SiteUtilities.messages.add('Record was successfully deleted with Id: ' + recordId);
+                }
+                                
                 SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
                 throw new AuraHandledException(SiteUtilities.convertToString(lwcSettings.get('portalErrorSendVerificationCode'))); 
             }
@@ -254,15 +265,25 @@ public with sharing class SiteRegistrationController {
         
         if(!recordList.isEmpty() && recordList.size() == 1) {
             String objectType = recordList.getSObjectType().getDescribe().getName();
-            switch on objectType { //TODO: Need to return the contactId for passwordless!
-                when 'Contact', 'Case' {
+            switch on objectType {
+                when 'Contact' {
                     try {
-                        return (Id)recordList[0].get('AccountId');
+                        return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? (Id)recordList[0].get('Id') : (Id)recordList[0].get('AccountId'); 
                     }
                     catch(SObjectException e) {
                         SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
                         SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
+                    }
+                }
+                when 'Case' {
+                    try {
+                        return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? (Id)recordList[0].get('ContactId') : (Id)recordList[0].get('AccountId'); 
+                    }
+                    catch(SObjectException e) {
+                       SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+                       SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
+                       throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
                     }
                 }
                 when else {
@@ -306,18 +327,32 @@ public with sharing class SiteRegistrationController {
                 if(checkFieldExists(objectMetadata, key)) {
                     newContact.put(key, formInputs.get(key));
                 }
-                newContacts.add(newContact);
             }
 
+            //Fake up First/Last Name as its a required field when creating a Contact... These aren't typically present if using Passwordless.
+            //NOTE: Recommended to capture if using standard Self Registration or use a Login Flow to capture after login.
+            if(!newContact.isSet('FirstName')) {
+               newContact.put('FirstName', 'Site'); 
+            }
+
+            if(!newContact.isSet('LastName')) {
+               newContact.put('LastName', 'User'); 
+            }
+
+            newContacts.add(newContact);
             SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newContacts);
             srList = Database.insert(securityDecision.getRecords()[0], false);
 
             if(srList.isSuccess()) { //Return the AccountId if the Contact creation was successful, this is what is used during External User creation not the Contact Id!
-                return SiteUtilities.convertToString(configurationOptions.get('accountId'));
+                return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? srList.getId() :  SiteUtilities.convertToString(configurationOptions.get('accountId'));
             }
-            return recordId; 
+            else {
+               SiteUtilities.messages.add('Failed to create a new Contact record. API Error: ' + srList.getErrors());
+               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
+               throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate'))); 
+            } 
         } catch (Exception e) {
-            SiteUtilities.messages.add('Failed to create new Contact record for registered user with submitted values. API Error: ' + e.getMessage());
+            SiteUtilities.messages.add('Failed to create new a Contact record. API Error: ' + e.getMessage());
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
@@ -396,8 +431,8 @@ public with sharing class SiteRegistrationController {
         else if(SiteUtilities.convertToString(configurationOptions.get('objectCreateType'))  == 'Person Account') {
             return createPersonAccount(formInputs, configurationOptions);
         }
-        else { //Object to create was set to 'N/A' which is not valid 
-            SiteUtilities.messages.add('No record found for specified query. Create If Not found setting enabled but object type was set to N/A. Please check settings and change to Person Account or Contact.');
+        else { //Object to create was set to blank which is not valid 
+            SiteUtilities.messages.add('No record found for specified query. Create If Not found setting enabled but Object Type to Create is blank. Please check settings and change to Person Account or Contact.');
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
@@ -423,7 +458,6 @@ public with sharing class SiteRegistrationController {
         user.FirstName = String.isBlank(user.FirstName) ? 'Site' : user.FirstName;
         user.LastName = String.isBlank(user.LastName) ? 'User' + System.now().getTime() : user.LastName;
         
-        //TODO: This needs testing.
         String personPhone = SiteUtilities.convertToString(formInputs.get('PersonMobilePhone')); //Map the PersonMobilePhone field to the Mobile field.
         user.MobilePhone = String.isBlank(user.MobilePhone) && String.isNotBlank(personPhone) ? personPhone : user.MobilePhone;
 
