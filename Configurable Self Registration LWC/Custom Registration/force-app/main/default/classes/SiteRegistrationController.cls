@@ -370,7 +370,7 @@ public with sharing class SiteRegistrationController {
         try {
             List<Account> newPersonAccounts = new List<Account>();
             Account newPersonAccount = new Account();
-            newPersonAccount.put('RecordTypeId', Id.valueOf(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
+            newPersonAccount.put('RecordTypeId', Schema.SObjectType.Account.getRecordTypeInfosByName().get(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))).getRecordTypeId());
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
             formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
             

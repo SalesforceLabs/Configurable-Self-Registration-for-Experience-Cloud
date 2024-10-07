@@ -51,9 +51,8 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void registerUserCreatePersonAccountObjectSytemAccessLevelTest() {
 
-        Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
         String formInputs = '{"Username":"user_not_found@test.com", "Email":"user_not_found@test.com", "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
 
@@ -80,7 +79,6 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void registerUserCreatePersonAccountObjectFailedTest() {
 
-        Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_not_found@test.com", "Email":"user_not_found@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"001dadsdsa67gs", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
@@ -229,8 +227,7 @@ private class SiteRegistrationControllerTest {
 
     @isTest
     private static void testPasswordlessSelfRegistration() {
-        Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-
+        
         //Get the user licence Id for Customer Community
         //See: https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_userlicense.htm
         Id userLicence = [
@@ -242,14 +239,14 @@ private class SiteRegistrationControllerTest {
         //Then get a profile that uses that licence so we can assign it to the test user.
         //NOTE: The query to find a Profile may detect a standard profile that cannot be used without the setting turned on: Setup > Digital Experiences > Settings and select Allow using standard external profiles for self-registration, user creation, and login
         //Unable to workaround this as profiles cannot be created in tests, and you can't easily identify a custom profile via the API to select one.
-        Id profile = [
+        String profile = [
             SELECT Id,Name,UserLicenseId FROM Profile
             WHERE UserLicenseId = :userLicence
             LIMIT 1
-        ].Id;
+        ].Name;
 
         String formInputs = '{"Email":"user@test.com"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"' + recordTypeId  +'", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRegistrationRedirect":"/"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRegistrationRedirect":"/"}';
         String testRequestCode = SiteRegistrationController.registerUser(formInputs, configurationOptions);
         Map<String, Object> testRequestCodeParsed = (Map<String, Object>) JSON.deserializeUntyped(testRequestCode);
         List<Object> dataObj = (List<Object>) testRequestCodeParsed.get('registerResult');

@@ -158,7 +158,7 @@ public without sharing class SiteUtilities {
         List<RecordType> rt = new List<RecordType>([SELECT Id,Name,SobjectType,IsActive FROM RecordType WHERE SobjectType = :objectType AND IsActive = true]);
         Map<String, String> itemsToAdd = new Map<String,String>();
         for (RecordType r : rt) {
-            itemsToAdd.put(r.Id, '{"label":"' +  r.Name + '","value":"'+  r.Id + '"}');
+            itemsToAdd.put(r.Id, '{"label":"' +  r.Name + '","value":"'+  r.Name + '"}');
         }
         return jsonBuilder('recordTypes', itemsToAdd);
     }
@@ -180,7 +180,7 @@ public without sharing class SiteUtilities {
 
         List<Profile> profs = [SELECT Id,Name FROM Profile WHERE Id IN :profIds];
         for (Profile p : profs) {
-            itemsToAdd.put(p.Id, '{"label":"' +  p.Name + '","value":"'+  p.Id + '"}');
+            itemsToAdd.put(p.Id, '{"label":"' +  p.Name + '","value":"'+  p.Name + '"}');
         }
         return jsonBuilder('memberProfiles', itemsToAdd);
     }
@@ -288,8 +288,8 @@ public without sharing class SiteUtilities {
      * @param  user pass in the user object which is currently not persisted until the user is verified
      * @param  profileId the profileId to set on the user object as configured in the property panel with Exp. Builder.
      */
-    public void setProfileId(User user, Id profileId){
-        user.ProfileId = profileId;
+    public void setProfileId(User user, String profileName){
+        user.ProfileId = [SELECT Id,Name FROM Profile WHERE Name = :profileName].Id;
     }
 
     /**
