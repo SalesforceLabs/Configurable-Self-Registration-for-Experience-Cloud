@@ -10,9 +10,7 @@ private class SiteRegistrationControllerTest {
     //Create a test Person Account record
     @TestSetup
     private static void createPersonAccountTestData() {
-        
         Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-
         Schema.SObjectType targetType = Schema.getGlobalDescribe().get('Account');
         SObject newObject = targetType.newSObject(); 
         Account acc = (Account)newObject;
@@ -20,7 +18,7 @@ private class SiteRegistrationControllerTest {
         acc.put('FirstName', 'Test');
         acc.put('LastName', 'PA');
         acc.put('PersonEmail', 'user@test.com');
-        insert acc;
+        insert acc;        
     }
 
     //Retrieve custom metadata for the Self Registration component. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
@@ -129,7 +127,7 @@ private class SiteRegistrationControllerTest {
         acc.Name = 'TestAcc';
         insert acc;
         
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_create_contact_success@test.com", "Email":"user_create_contact_success@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"Username":"user_create_contact_success@test.com", "Email":"user_create_contact_success@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -183,11 +181,11 @@ private class SiteRegistrationControllerTest {
         } 
     }
 
-    //Create If not found is true but the Create type is set to N/A so the code doesn't know how to proceed and fails.
+    //Create If not found is true but the Create type is set to blank so the code doesn't know how to proceed and fails.
     @isTest
     private static void registerUserCreateObjectUnknownTypeTest() {            
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_create_unknown@test.com", "Email":"user_create_unknown@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"N/A", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
              SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -195,6 +193,41 @@ private class SiteRegistrationControllerTest {
         catch(AuraHandledException ex) {
             System.assertEquals(null, null, 'Failed: Record Not Found & Create If Not Found is switched off.');
         } 
+    }
+
+    //Requesting too many codes for the same email/mobile during passwordless registration causes a failure and the Person Account created should be deleted.
+    @isTest
+    private static void deleteRecordTest() {
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in", "portalErrorSendVerificationCode": "testfailure"}';
+        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+
+        Account acc = new Account();
+        acc.Name = 'TestAcc';
+        insert acc;
+
+        Contact con = new Contact();
+        con.FirstName = 'Test';
+        con.LastName = 'Contact';
+        con.AccountId = acc.Id;
+        con.Email = 'usercontact_to_delete@test.com';
+        insert con;
+
+        //Test exception.
+        try {
+            SiteUtilities.deleteRecord(acc.Id, 'WrongType', 'Self Registration', configurationOptionsObject);
+        }
+        catch (Exception e) {
+            System.assertEquals('Script-thrown exception', e.getMessage(), 'Incorrect type passed, exception generated');
+        } 
+        
+        SiteUtilities.deleteRecord(con.Id, 'Contact', 'Self Registration', configurationOptionsObject);
+        SiteUtilities.deleteRecord(acc.Id, 'Account', 'Self Registration', configurationOptionsObject);
+
+        Integer conCount = [SELECT count() FROM Contact WHERE Id = :con.Id];
+        Integer accCount = [SELECT count() FROM Account WHERE Id = :acc.Id];
+        
+        System.assertEquals(conCount, 0, 'Contact was created and deleted successfully');
+        System.assertEquals(accCount, 0, 'Account was created and deleted successfully');        
     }
 
     //Test that person accounts are enabled
