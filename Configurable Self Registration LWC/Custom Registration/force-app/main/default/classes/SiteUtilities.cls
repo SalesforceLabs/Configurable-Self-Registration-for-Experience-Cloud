@@ -82,7 +82,10 @@ public without sharing class SiteUtilities {
                 jsonPart += '"fieldIconClass":"' + mapping.get('Field_Icon_Class__c') + '",';
                 jsonPart += '"fieldParentClass":"' + mapping.get('Field_Parent_Class__c') + '",';
                 jsonPart += '"fieldToggleIconName":"' + mapping.get('Field_Toggle_Icon_Name__c') + '",';
-                jsonPart += '"fieldShowPasswordVisibility":' + convertToBoolean(mapping.get('Field_Show_Password_Visibility__c')) + ',';
+                jsonPart += '"fieldToggleFieldType":"' + mapping.get('Field_Toggle_Type__c') + '",';
+
+                String autocomplete = convertToBoolean(mapping.get('Field_Allow_Auto_Complete__c')) ? 'on' : 'off';
+                jsonPart += '"fieldAutocomplete":"' + autocomplete + '",';
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
@@ -135,7 +138,6 @@ public without sharing class SiteUtilities {
             result += ex.getLineNumber() + ' : ' + ex.getMessage();
             throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
         }
-        //return jsonBuilder(key, itemsToAdd);
         return '['+result+']';
     }
 

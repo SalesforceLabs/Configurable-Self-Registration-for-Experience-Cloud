@@ -36,7 +36,6 @@ export default class CustomLogin extends LightningElement {
 	@api showSpinner = false;
     @api anyServerError = false;
     @api serverErrorMessage = null;
-	showPassword = false;
     
     @api results = null; //Results for custom configuration search
 	@track formInputs = {}; //Form values submitted.
@@ -61,14 +60,12 @@ export default class CustomLogin extends LightningElement {
         }
     }
 
-    get passwordType() {
-        return this.showPassword ? 'text' : 'password';
-    }
-    
-    togglePassword(event) {
-        this.showPassword = !this.showPassword;
-        this.passwordIcon = this.showPassword ? event.currentTarget.dataset.iconhide : event.currentTarget.dataset.iconshow;
-        event.currentTarget.iconName = this.passwordIcon;
+    toggle = true;
+    toggleFieldTypeAndIcon(event) {
+        this.toggle = !this.toggle;
+        event.currentTarget.iconName = this.toggle ? event.currentTarget.dataset.startingicon : event.currentTarget.dataset.toggleicon;
+        var fieldType = this.toggle ? event.currentTarget.dataset.startingtype : event.currentTarget.dataset.toggletype;
+        event.currentTarget.parentNode.querySelector('lightning-input').type = fieldType;
     }
 
     renderedCallback() {

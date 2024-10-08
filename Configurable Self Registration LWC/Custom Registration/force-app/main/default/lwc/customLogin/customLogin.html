@@ -14,34 +14,22 @@
 				<div class="slds-is-relative">
 					<div class="slds-form-element">
 						<div class={result.value.fieldParentClass}>
-							<template lwc:if={result.value.fieldShowPasswordVisibility}>
-								<lightning-icon size="x-small" icon-name={result.value.fieldIconName} data-iconhide={result.value.fieldToggleIconName} data-iconshow={result.value.fieldIconName} title="" onclick={togglePassword} class={result.value.fieldIconClass}></lightning-icon>
-								<lightning-input type={passwordType} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} name={result.value.fieldName} value={result.value.fieldValue}
-									class={result.value.fieldClass} required={result.value.fieldRequired} field-level-help={result.value.fieldHelpText}
-									placeholder={result.value.fieldPlaceholder} message-when-pattern-mismatch={result.value.fieldMessage}
-									pattern={result.value.fieldRegex} message-when-value-missing={result.value.fieldRequiredMessage} checked={result.value.fieldChecked}
-									message-when-too-short={result.value.fieldMinLengthMessage} min-length={result.value.fieldMinLength}
-									message-when-too-long={result.value.fieldMaxLengthMessage} maxlength={result.value.fieldMaxLength} onchange={handleOnChange}
-									min={result.value.fieldMinValue} message-when-range-underflow={result.value.fieldMessageUnder} max={result.value.fieldMaxValue}
-									message-when-range-overflow={result.value.fieldMessageOver} data-last={result.last} data-id={result.value.fieldName}>
-								</lightning-input>
-							</template>
 
 							<!-- Deal with a combobox type for the country code picklist for Mobile passwordless registration & others if added. -->
-							<template lwc:elseif={result.value.showAsPicklist}>
-								<template if:true={result.value.fieldShowIcon}>
+							<template lwc:if={result.value.showAsPicklist}>
+								<template lwc:if={result.value.fieldShowIcon}>
 									<lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" class={result.value.fieldIconClass}></lightning-icon>
 								</template>
 								<lightning-combobox name={result.value.fieldName} value={result.value.fieldValue} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} field-level-help={result.value.fieldHelpText} placeholder={result.value.fieldPlaceholder} 
 									options={result.value.picklistOptions} onchange={handleOnChange} required={result.value.fieldRequired} message-when-value-missing={result.value.fieldRequiredMessage}
-									class={result.value.fieldClass} data-last={result.last} data-id={result.value.fieldName}>
+									class={result.value.fieldClass} data-last={result.last} data-id={result.value.fieldName} autocomplete={result.value.fieldAutocomplete}>
 								</lightning-combobox>
 							</template>
 
-							<template lwc:else> 
-								<template if:true={result.value.fieldShowIcon}>
-									<lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" class={result.value.fieldIconClass}></lightning-icon>
-								</template>
+							<template lwc:else>
+								<template lwc:if={result.value.fieldShowIcon}>
+                                    <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" data-startingtype={result.value.fieldType} data-toggletype={result.value.fieldToggleFieldType} data-startingicon={result.value.fieldIconName} data-toggleicon={result.value.fieldToggleIconName} onclick={toggleFieldTypeAndIcon} class={result.value.fieldIconClass}></lightning-icon>
+                                </template>
 								<lightning-input type={result.value.fieldType} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} name={result.value.fieldName} value={result.value.fieldValue}
 									class={result.value.fieldClass} required={result.value.fieldRequired} field-level-help={result.value.fieldHelpText}
 									placeholder={result.value.fieldPlaceholder} message-when-pattern-mismatch={result.value.fieldMessage}
@@ -49,7 +37,7 @@
 									message-when-too-short={result.value.fieldMinLengthMessage} min-length={result.value.fieldMinLength}
 									message-when-too-long={result.value.fieldMaxLengthMessage} maxlength={result.value.fieldMaxLength} onchange={handleOnChange}
 									min={result.value.fieldMinValue} message-when-range-underflow={result.value.fieldMessageUnder} max={result.value.fieldMaxValue}
-									message-when-range-overflow={result.value.fieldMessageOver} date-style={result.value.fieldDateStyle} data-last={result.last} data-id={result.value.fieldName}>
+									message-when-range-overflow={result.value.fieldMessageOver} date-style={result.value.fieldDateStyle} data-last={result.last} data-id={result.value.fieldName} autocomplete={result.value.fieldAutocomplete}>
 								</lightning-input>
 							</template>
 						</div>

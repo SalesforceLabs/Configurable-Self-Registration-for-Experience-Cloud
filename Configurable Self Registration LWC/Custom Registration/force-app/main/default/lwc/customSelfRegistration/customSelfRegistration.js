@@ -1,10 +1,8 @@
 /*****************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce)
  * CREATE DATE    : 05/05/2023
- * PURPOSE        : Self Registration LWC component for Experience Builder pages
- * SPECIAL NOTES  : Dependency on SiteRegistrationController.js class
- * ===================================================================================================
- * Change History :
+ * LAST CHANGED   : 08/10/2024
+ * PURPOSE        : Self Registration LWC for Experience Builder pages
  *****************************************************************************************************/
 
 import {LightningElement, api, track, wire} from 'lwc';
@@ -37,22 +35,17 @@ export default class customSelfRegistration extends LightningElement {
     //Get the URL Parameters so we can pass any predefined values through to the form and pre-set values.
     currentPageReference = null; 
     urlParameters = null;
-    showPassword = false;
     @api showVerificationCode = false;
     registerResults;
     parsedRegisterResults;
     pageUrl;
-
-    get passwordIcon() {
-        return this.showPassword ? 'utility:hide' : 'utility:preview';
-    }
     
-    get passwordType() {
-        return this.showPassword ? 'text' : 'password';
-    }
-    
-    togglePassword() {
-        this.showPassword = !this.showPassword;
+    toggle = true;
+    toggleFieldTypeAndIcon(event) {
+        this.toggle = !this.toggle;
+        event.currentTarget.iconName = this.toggle ? event.currentTarget.dataset.startingicon : event.currentTarget.dataset.toggleicon;
+        var fieldType = this.toggle ? event.currentTarget.dataset.startingtype : event.currentTarget.dataset.toggletype;
+        event.currentTarget.parentNode.querySelector('lightning-input').type = fieldType;
     }
 
     @wire(CurrentPageReference)
