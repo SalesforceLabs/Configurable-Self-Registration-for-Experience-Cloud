@@ -11,6 +11,10 @@
         <value xsi:type="xsd:double">4.0</value>
     </values>
     <values>
+        <field>Field_Allow_Auto_Complete__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
         <field>Field_Class__c</field>
         <value xsi:nil="true"/>
     </values>
@@ -91,8 +95,12 @@
         <value xsi:type="xsd:boolean">false</value>
     </values>
     <values>
-        <field>Field_Show_Password_Visibility__c</field>
-        <value xsi:type="xsd:boolean">false</value>
+        <field>Field_Toggle_Icon_Name__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Field_Toggle_Type__c</field>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Field_Type__c</field>

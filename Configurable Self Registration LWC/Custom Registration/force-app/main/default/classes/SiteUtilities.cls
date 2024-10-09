@@ -344,9 +344,9 @@ public without sharing class SiteUtilities {
         //Formula field is used to calculate value we are interested i.e. the submitted value with no domain that we can query with '='. 
         //This way, if the username changes in anyway, filter continues to work as a 2nd field doesn't need to be updated!
         List<NetworkMember> userList = [
-            SELECT Id, Member.Username, Member.Id, NetworkId
+            SELECT Id, Member.Username, Member.Portal_Username__c, Member.Id, NetworkId
             FROM NetworkMember 
-            WHERE Member.Username = :username
+            WHERE (Member.Username = :username OR Member.Portal_Username__c = :username)
             AND NetworkId = :networkId
             WITH SECURITY_ENFORCED
         ];
@@ -365,9 +365,8 @@ public without sharing class SiteUtilities {
         List<User> u;
         
         if(String.isNotBlank(username)) {
-            u = [SELECT Id,Name,Email,Username,Portal_Username__c FROM User WHERE (Username = :username OR Portal_Username__c = :username)];
+            u = [SELECT Id,Name,Email,Username FROM User WHERE Username = :username];
         }
-
         if(String.isNotBlank(mobilePhone)) {
             u = [SELECT Id, MobilePhone, IsActive FROM User WHERE MobilePhone = :MobilePhone AND IsActive = true];
         }
