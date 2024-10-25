@@ -332,7 +332,10 @@ private class SiteRegistrationControllerTest {
             LIMIT 1
         ].Id; 
        
-       List<Account> acc2 = [SELECT Id,PersonContactId,PersonEmail FROM Account WHERE PersonEmail = 'user@test.com' LIMIT 1]; 
+       String email = 'user@test.com';
+       String query = 'SELECT Id,PersonContactId,PersonEmail FROM Account WHERE PersonEmail = :email LIMIT 1';
+       sObject acc2 = Database.query(query);
+
        User uCreate = new User(
             FirstName = 'Admin Test',  
             LastName = 'User',  
@@ -346,7 +349,7 @@ private class SiteRegistrationControllerTest {
             LocaleSidKey = 'en_US',  
             LanguageLocaleKey = 'en_US', 
             ProfileId = profile,
-            ContactId = (Id)acc2[0].get('PersonContactId'),
+            ContactId = (Id)acc2.get('PersonContactId'),
             IsActive = true
        );
        insert uCreate; 
