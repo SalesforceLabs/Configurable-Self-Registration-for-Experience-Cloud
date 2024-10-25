@@ -75,7 +75,18 @@ export default class customSelfRegistration extends LightningElement {
         }
     }
 
-    connectedCallback() {        
+    connectedCallback() {
+        
+        //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
+        getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
+            this.results = JSON.parse(result);
+            for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
+                this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
+            }
+        }).catch(error=>{
+            console.log(error);
+        })
+
         if(this.propertyPanelSettings) {
             this.parsedSettings = JSON.parse(this.propertyPanelSettings);
             this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);
@@ -146,25 +157,14 @@ export default class customSelfRegistration extends LightningElement {
             if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == 'Person Account' && this.parsedSettings.personAccountRecordTypeId == '') {
                 this._setComponentError(true, 'Please select a Person Account Record Type from the list to create a Person Account during registration.');  
             }
+
+            //Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
+            isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
+                this.parsedSettings['loggingEnabled'] = enabled;
+            }).catch(error=>{
+                console.log(error); 
+            })
         }
-
-        //Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
-        isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
-            this.parsedSettings['loggingEnabled'] = enabled;
-        }).catch(error=>{
-            console.log(error); 
-        })
-
-        //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
-        getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: 'Self Registration'}).then(result=>{
-            this.results = JSON.parse(result);
-            for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
-                console.log('processing: ' , this.results[i].fieldName);
-                this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
-            }
-        }).catch(error=>{
-            console.log(error);
-        })
     }
 
     comparePasswordValues(sourceInput, inputToCompare) {
@@ -236,7 +236,6 @@ export default class customSelfRegistration extends LightningElement {
         this._resetServerError();
 
         if(this._areAllInputFieldsValid()) {
-            console.log('fields: ' + JSON.stringify(this.formInputs));
             this.handleSubmit(true, this.parsedSettings.registerButtonWaitingMessage, true);
             
             //Different behaviour for Passwordless vs Password registration.

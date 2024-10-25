@@ -89,8 +89,12 @@ public without sharing class SiteUtilities {
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                jsonPart += '"fieldMaxLengthMessage":"' + mapping.get('Field_Message_Too_Long__c') + '"'; 
+                jsonPart += '"fieldMaxLengthMessage":"' + mapping.get('Field_Message_Too_Long__c') + '",'; 
                 
+                //TODO: We could add fields to control the default values from custom metadata if needed.
+                jsonPart += '"fieldChecked":' + false + ',';
+                jsonPart += '"fieldValue":""';
+
                 for(String key : urlParameters.keySet()) {
                     if(mapping.get('Field_Name__c') == key) {
                         jsonPart += ',';
