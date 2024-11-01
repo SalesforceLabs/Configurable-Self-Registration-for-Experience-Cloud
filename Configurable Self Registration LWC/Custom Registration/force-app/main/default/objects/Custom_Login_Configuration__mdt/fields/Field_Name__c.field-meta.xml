@@ -3,7 +3,7 @@
     <fullName>Field_Name__c</fullName>
     <description>Set this to the API Name of a field. NOTE: If invalid API Name, the field is ignored during form submission.</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Set this to the API Name of a field. NOTE: If invalid API Name, the field is ignored during form submission.</inlineHelpText>
     <label>Field API Name</label>
     <length>255</length>

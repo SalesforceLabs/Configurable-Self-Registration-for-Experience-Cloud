@@ -3,7 +3,7 @@
     <fullName>Field_Max_Length__c</fullName>
     <description>The maximum number of characters that can be entered in this field on the form</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>The maximum number of characters that can be entered in this field on the form</inlineHelpText>
     <label>Field Max Characters</label>
     <precision>11</precision>

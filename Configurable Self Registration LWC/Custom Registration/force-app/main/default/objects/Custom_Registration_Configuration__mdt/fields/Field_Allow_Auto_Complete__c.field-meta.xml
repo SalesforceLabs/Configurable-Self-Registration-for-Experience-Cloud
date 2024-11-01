@@ -3,7 +3,7 @@
     <fullName>Field_Allow_Auto_Complete__c</fullName>
     <defaultValue>true</defaultValue>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Field Allow Auto Complete</label>
     <type>Checkbox</type>
 </CustomField>

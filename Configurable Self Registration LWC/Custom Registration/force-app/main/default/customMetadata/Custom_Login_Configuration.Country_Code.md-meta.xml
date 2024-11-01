@@ -76,10 +76,8 @@
     </values>
     <values>
         <field>Field_Picklist_Options__c</field>
-        <value xsi:type="xsd:string">[{&quot;label&quot;: &quot;(+1) United States&quot;,
-            &quot;value&quot;: &quot;1&quot;},
-            {&quot;label&quot;: &quot;(+44) United Kingdom&quot;, &quot;value&quot;:
-            &quot;44&quot;}]</value>
+        <value xsi:type="xsd:string">[{&quot;label&quot;: &quot;(+1) United States&quot;, &quot;value&quot;: &quot;1&quot;},
+{&quot;label&quot;:&quot;(+44) United Kingdom&quot;, &quot;value&quot;:&quot;44&quot;}]</value>
     </values>
     <values>
         <field>Field_Placeholder__c</field>

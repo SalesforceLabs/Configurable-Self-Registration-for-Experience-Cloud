@@ -3,7 +3,7 @@
     <fullName>Field_Under_Minimum_Range_Message__c</fullName>
     <description>Error message to be displayed when a date is before the min. date specified or number is lower than minimum specified.</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Error message to be displayed when a date is before the min. date specified or number is lower than minimum specified.</inlineHelpText>
     <label>Field Under Minimum Range Message</label>
     <length>255</length>
