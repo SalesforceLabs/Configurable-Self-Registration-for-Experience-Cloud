@@ -447,6 +447,7 @@ public with sharing class SiteRegistrationController {
     public static User createUnsavedUser(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
 
         User user = new User();
+        formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, userObjectMetadata);
 
         for(String key : formInputs.keySet()) {
             if(checkFieldExists(userObjectMetadata, key)) {
