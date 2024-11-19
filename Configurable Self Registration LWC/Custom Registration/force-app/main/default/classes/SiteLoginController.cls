@@ -4,7 +4,7 @@
  * @description Apex controller to support custom built UI Custom Login for Experience Cloud
  ***************************************************************************************************************/
 public with sharing class SiteLoginController {
-   
+
     /**
      * @description Custom Exception method. Thrown to force an error when user is not found, and get the Login History. Also called in a test class.
      */
@@ -38,15 +38,14 @@ public with sharing class SiteLoginController {
                 List<User> user = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
                 
                 //Only send a code if the user is NOT found!
-                if(user.size() == 0) {
+                if(user.isEmpty()) {
                     SiteUtilities.messages.add('Error sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: '+ formJson +' . User not found.');
                     throw new CustomLoginException('Your login attempt has failed. Make sure the username and password are correct.');
                 }
-                else {
-                    SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: ' + formJson);
-                    identifier = SiteUtilities.sendVerificationCode(method, user[0], SiteUtilities.LOGIN_COMPONENT_NAME);                
-                    showVerificationCode = true;
-                }
+                
+                SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: ' + formJson);
+                identifier = SiteUtilities.sendVerificationCode(method, user[0], SiteUtilities.LOGIN_COMPONENT_NAME);                
+                showVerificationCode = true;
             }
             else {
                 ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalLoginRedirect')));
@@ -56,10 +55,10 @@ public with sharing class SiteLoginController {
                 //If we are running in a Test, check the test user and throw a custom exception to mimic failed logins.
                 if(Test.isRunningTest()) {
                     switch on username {
-                        when 'testusergenericfail@mail.com' {
+                        when SiteLoginControllerTest.USERNAME_GENERIC_FAIL {
                             throw new CustomLoginException('Unknown error.'); 
                         }
-                        when 'testusersuccessful@mail.com' {
+                        when SiteLoginControllerTest.USERNAME_SUCCESSFUL {
                             //Don't throw an exception.
                         }
                         when else {
@@ -98,16 +97,16 @@ public with sharing class SiteLoginController {
                //If we are running in a Test, check the test user and return a hardcoded status to mimic login history as Site.login() doesn't actually login.
                if(Test.isRunningTest()) {
                     switch on username {
-                        when 'testuserblocked@mail.com' {
+                        when SiteLoginControllerTest.USERNAME_FROZEN {
                             status = 'User is Frozen';
                         }
-                        when 'testuserinvalidpassword@mail.com' {
+                        when SiteLoginControllerTest.USERNAME_INVALID_PASSWORD {
                             status = 'Invalid Password';
                         }
-                        when 'testusernotexist@mail.com' {
+                        when SiteLoginControllerTest.USERNAME_NOT_FOUND {
                             status = 'Username Not Found';
                         }   
-                        when 'testuserlocked@mail.com' {
+                        when SiteLoginControllerTest.USERNAME_LOCKOUT {
                             status = 'Password Lockout';
                         }
                         when else { //testuserother@mail.com
@@ -117,31 +116,26 @@ public with sharing class SiteLoginController {
                 }
 
                //TODO: Handle more types of Login History Status if needed... https://stackoverflow.com/questions/11581806/is-it-possible-to-check-if-a-user-is-locked-out
+               String error = '';
                switch on status { 
                     when 'User is Frozen' {
-                        String error = SiteUtilities.convertToString(configurationOptions.get('blockUserErrorMessage'));
-                        SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME); 
-                        throw new AuraHandledException(error);
+                         error = SiteUtilities.convertToString(configurationOptions.get('blockUserErrorMessage'));
                     }
                     when 'Invalid Password', 'Username Not Found' {
-                        String error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
-                        SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME);
-                        throw new AuraHandledException(error); 
+                        error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
                     }
                     when 'Password Lockout' {
-                        String error = SiteUtilities.convertToString(configurationOptions.get('userLockedOutErrorMessage'));
-                        SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME);
-                        throw new AuraHandledException(error);  
+                        error = SiteUtilities.convertToString(configurationOptions.get('userLockedOutErrorMessage'));
                     }
                     when else {
                         SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
                         SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME); 
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
                     }
-               }               
+                }               
+                SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME);
+                throw new AuraHandledException(error); 
             }
             SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
             SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME);        
