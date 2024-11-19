@@ -8,8 +8,8 @@ public without sharing class SiteUtilities {
     public static final String SELF_REG_COMPONENT_NAME = 'Self Registration';
     public static final String LOGIN_COMPONENT_NAME = 'Login';
     public static final String SMS_LICENCE_NAME = 'setting/force.com/orgValue.IdentityVerificationCredits';
-    public static final String INFORMATION_LOG_TYPE = SiteUtilities.INFORMATION_LOG_TYPE;
-    public static final String ERROR_LOG_TYPE = SiteUtilities.ERROR_LOG_TYPE;
+    public static final String INFORMATION_LOG_TYPE = 'Information';
+    public static final String ERROR_LOG_TYPE = 'Error';
 
     public static Map<String, Auth.VerificationMethod> methods = new Map<String, Auth.VerificationMethod>{'Email' => Auth.VerificationMethod.EMAIL, 'SMS' => Auth.VerificationMethod.SMS};
     public static List<String> messages = new List<String>();
