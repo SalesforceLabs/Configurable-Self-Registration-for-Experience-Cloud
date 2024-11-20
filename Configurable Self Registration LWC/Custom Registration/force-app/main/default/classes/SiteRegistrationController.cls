@@ -470,8 +470,8 @@ public with sharing class SiteRegistrationController {
                     when 'INTEGER' {
                         formInputs.put(key, Integer.valueOf(SiteUtilities.convertToString(formInputs.get(key))));
                     }
-                    when else {
-                        formInputs.put(key, SiteUtilities.convertToString(formInputs.get(key)));
+                    when else { //just logs taht we didn't handle this?
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), 'Unhandled datatype: '+dataType+'. this has been left alone', 'Debug', SiteUtilities.SELF_REG_COMPONENT_NAME);        
                     }
                 }
             }    
