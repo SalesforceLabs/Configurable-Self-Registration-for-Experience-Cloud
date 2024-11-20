@@ -55,10 +55,10 @@ public with sharing class SiteLoginController {
                 //If we are running in a Test, check the test user and throw a custom exception to mimic failed logins.
                 if(Test.isRunningTest()) {
                     switch on username {
-                        when SiteLoginControllerTest.USERNAME_GENERIC_FAIL {
-                            throw new CustomLoginException('Unknown error.'); 
+                        when 'testusergenericfail@mail.com' { //SiteLoginControllerTest.USERNAME_GENERIC_FAIL
+                                                        throw new CustomLoginException('Unknown error.'); 
                         }
-                        when SiteLoginControllerTest.USERNAME_SUCCESSFUL {
+                        when 'testusersuccessful@mail.com'{//SiteLoginControllerTest.USERNAME_SUCCESSFUL 
                             //Don't throw an exception.
                         }
                         when else {
