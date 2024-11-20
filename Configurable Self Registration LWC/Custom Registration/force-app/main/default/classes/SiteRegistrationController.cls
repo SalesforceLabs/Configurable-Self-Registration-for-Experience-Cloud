@@ -190,123 +190,6 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description getMetadataForObject pass in the object type to retrieve the metadata for. Returns a map of fields for the specified object.
-     * @param  objectType as a string e.g. Account
-     * @return field map from the specified object
-     */
-    private static Map<String, Schema.SObjectField> getMetadataForObject(String objectType) {
-        return Schema.getGlobalDescribe().get(objectType).getDescribe().fields.getMap();
-    }
-    
-    /**
-     * @description Process the form inputs to convert strings to relevant data types to prevent SOQL/Create record errors
-     *  Dates: https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
-     *  Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
-     *  Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
-     *  Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
-     * @param  formInputs a map of the form fields submitted from the registration form.
-     * @param configurationOptions a map of the configuration options from the LWC property panel
-     * @param objectMetadata a map of the metadata for a specified object 
-     */
-    private static Map<String, Object> convertFormDataToCorrectDataType(Map<String, Object> formInputs, Map<String, Object> configurationOptions, Map<String, Schema.SObjectField> objectMetadata) {
-        
-        for(String key : formInputs.keySet()) { 
-            if(checkFieldExists(objectMetadata, key)) {
-                Schema.DisplayType dataType = objectMetadata.get(key).getDescribe().getType();
-            
-                //Now we have the data type of the field, convert as required.
-                if(SiteUtilities.convertToString(dataType) == 'DATE') {
-                    Date d = Date.valueOf(SiteUtilities.convertToString(formInputs.get(key)));
-                    formInputs.put(key,d);
-                }
-                if(SiteUtilities.convertToString(dataType) == 'TIME') {
-                    String[] strTimeSplit = SiteUtilities.convertToString(formInputs.get(key)).split(':');
-                    Time t = Time.newInstance(Integer.valueOf(strTimeSplit[0]),  Integer.valueOf(strTimeSplit[1]), 0, 0);
-                    formInputs.put(key,t);
-                }
-                if(SiteUtilities.convertToString(dataType) == 'DATETIME') {
-                    Datetime dt = (DateTime)JSON.deserialize('"' + SiteUtilities.convertToString(formInputs.get(key)) +'"', DateTime.class);
-                    formInputs.put(key,dt);
-                }
-                if(SiteUtilities.convertToString(dataType) == 'BOOLEAN') {
-                    Boolean b = SiteUtilities.convertToBoolean(formInputs.get(key));
-                    formInputs.put(key,b);
-                }
-            }    
-        }
-
-        return formInputs;
-    }
-
-    /**
-     * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
-     * @param formInputs - Map of the submitted form values 
-     * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
-     * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
-     * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
-     */
-    private static Id getObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
-        List<sObject> recordList = new List<sObject>();
-
-        Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
-        formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);        
-
-        //Configurable via the component config panel. May affect what record is found based on org settings.
-        //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
-        //See: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_AccessLevel.htm
-        try {
-            recordList = SiteUtilities.getRecords(formInputs, configurationOptions);
-        }
-        catch(Exception e) {
-            SiteUtilities.messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
-            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
-        }
-        
-        if(!recordList.isEmpty() && recordList.size() == 1) {
-            String objectType = recordList.getSObjectType().getDescribe().getName();
-            switch on objectType {
-                when 'Contact' {
-                    try {
-                        return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? (Id)recordList[0].get('Id') : (Id)recordList[0].get('AccountId'); 
-                    }
-                    catch(SObjectException e) {
-                        SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
-                        throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
-                    }
-                }
-                when 'Case' {
-                    try {
-                        return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? (Id)recordList[0].get('ContactId') : (Id)recordList[0].get('AccountId'); 
-                    }
-                    catch(SObjectException e) {
-                       SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-                       SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
-                       throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
-                    }
-                }
-                when else {
-                    return (Id)recordList[0].get('Id');
-                }
-            }
-        }
-        else if(recordList.size() > 1) { //More than one record found on specified query
-            SiteUtilities.messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('multipleRecordsFoundError') + ' Form Values: ' + formInputs);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);        
-            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('multipleRecordsFoundError'))); 
-        }
-        else if (SiteUtilities.convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
-            return null;
-        }
-        else { //No record found on specified query and CreateIfNotFound = False 
-            SiteUtilities.messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('noRecordFoundError') + ' Form Values: ' + formInputs);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);        
-            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('noRecordFoundError'))); 
-        }
-    }
-
-    /**
      * @description createContact description
      * @param formInputs - JSON String of the submitted form values 
      * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
@@ -541,5 +424,127 @@ public with sharing class SiteRegistrationController {
         }
         SiteUtilities.messages.add('User successfully registered and was logged in.');
         return pageUrl;
+    }
+
+    /**
+     * @description getMetadataForObject pass in the object type to retrieve the metadata for. Returns a map of fields for the specified object.
+     * @param  objectType as a string e.g. Account
+     * @return field map from the specified object
+     */
+    private static Map<String, Schema.SObjectField> getMetadataForObject(String objectType) {
+        return Schema.getGlobalDescribe().get(objectType).getDescribe().fields.getMap();
+    }
+
+    /**
+     * @description Process the form inputs to convert strings to relevant data types to prevent SOQL/Create record errors
+     *  Dates: https://salesforce.stackexchange.com/questions/285603/invalid-bind-expression-type-of-string-for-column-of-type-date
+     *  Datetimes: https://salesforcecody.com/system-typeexception-invalid-date-time-2021-12-28t092046-0500/
+     *  Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
+     *  Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
+     * @param  formInputs a map of the form fields submitted from the registration form.
+     * @param configurationOptions a map of the configuration options from the LWC property panel
+     * @param objectMetadata a map of the metadata for a specified object 
+     */
+    private static Map<String, Object> convertFormDataToCorrectDataType(Map<String, Object> formInputs, Map<String, Object> configurationOptions, Map<String, Schema.SObjectField> objectMetadata) {
+        
+        for(String key : formInputs.keySet()) { 
+            if(checkFieldExists(objectMetadata, key)) {
+                String dataType = SiteUtilities.convertToString(objectMetadata.get(key).getDescribe().getType());
+                switch on datatype{
+                    when 'DATE'{ 
+                        formInputs.put(key, Date.valueOf(SiteUtilities.convertToString(formInputs.get(key))));
+                    }
+                    when 'TIME' {
+                        String[] strTimeSplit = SiteUtilities.convertToString(formInputs.get(key)).split(':');
+                        formInputs.put(key, Time.newInstance(Integer.valueOf(strTimeSplit[0]),  Integer.valueOf(strTimeSplit[1]), 0, 0));
+                    }
+                    when 'DATETIME' {
+                        formInputs.put(key, (DateTime)JSON.deserialize('"' + SiteUtilities.convertToString(formInputs.get(key)) +'"', DateTime.class));
+                    }
+                    when 'BOOLEAN'  {
+                        formInputs.put(key, SiteUtilities.convertToBoolean(formInputs.get(key)));
+                    }
+                    when 'DECIMAL' {
+                        formInputs.put(key, Decimal.valueOf(SiteUtilities.convertToString(formInputs.get(key))));
+                    }
+                    when 'INTEGER' {
+                        formInputs.put(key, Integer.valueOf(SiteUtilities.convertToString(formInputs.get(key))));
+                    }
+                    when else {
+                        formInputs.put(key, SiteUtilities.convertToString(formInputs.get(key)));
+                    }
+                }
+            }    
+        }
+
+        return formInputs;
+    }
+
+    /**
+     * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
+     * @param formInputs - Map of the submitted form values 
+     * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
+     * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
+     * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
+     */
+    private static Id getObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
+        List<sObject> recordList = new List<sObject>();
+
+        Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
+        formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);        
+
+        //Configurable via the component config panel. May affect what record is found based on org settings.
+        //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
+        //See: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_AccessLevel.htm
+        try {
+            recordList = SiteUtilities.getRecords(formInputs, configurationOptions);
+        }
+        catch(Exception e) {
+            SiteUtilities.messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
+            throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
+        }
+        
+        if(!recordList.isEmpty() && recordList.size() == 1) {
+            String objectType = recordList.getSObjectType().getDescribe().getName();
+            switch on objectType {
+                when 'Contact' {
+                    try {
+                        return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? (Id)recordList[0].get('Id') : (Id)recordList[0].get('AccountId'); 
+                    }
+                    catch(SObjectException e) {
+                        SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
+                        throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
+                    }
+                }
+                when 'Case' {
+                    try {
+                        return SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ? (Id)recordList[0].get('ContactId') : (Id)recordList[0].get('AccountId'); 
+                    }
+                    catch(SObjectException e) {
+                       SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
+                       SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.SELF_REG_COMPONENT_NAME);
+                       throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
+                    }
+                }
+                when else {
+                    return (Id)recordList[0].get('Id');
+                }
+            }
+        }
+        else if(recordList.size() > 1) { //More than one record found on specified query
+            SiteUtilities.messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('multipleRecordsFoundError') + ' Form Values: ' + formInputs);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);        
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('multipleRecordsFoundError'))); 
+        }
+        else if (SiteUtilities.convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
+            return null;
+        }
+        else { //No record found on specified query and CreateIfNotFound = False 
+            SiteUtilities.messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('noRecordFoundError') + ' Form Values: ' + formInputs);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.SELF_REG_COMPONENT_NAME);        
+            throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('noRecordFoundError'))); 
+        }
     }
 }

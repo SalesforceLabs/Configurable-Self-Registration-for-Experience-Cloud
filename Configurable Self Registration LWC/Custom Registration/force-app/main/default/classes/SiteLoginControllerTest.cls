@@ -6,13 +6,21 @@
  */
 @isTest
 private class SiteLoginControllerTest {
+	
+    public static final String USERNAME_SUCCESSFUL = 'testusersuccessful@mail.com';
+	public static final String USERNAME_OTHER = 'testuserother@mail.com';
+	public static final String USERNAME_GENERIC_FAIL = 'testusergenericfail@mail.com';
+    public static final String USERNAME_LOCKOUT = 'testuserlocked@mail.com';
+	public static final String USERNAME_NOT_FOUND = 'testusernotexist@mail.com';
+	public static final String USERNAME_INVALID_PASSWORD = 'testuserinvalidpassword@mail.com';
+	public static final String USERNAME_FROZEN = 'testuserblocked@mail.com';
     
     //Setup some users for testing the logins via standard and passwordless login.
     @TestSetup
     private static void createTestData(){
 
         //A list of users that we create and 'test' with
-        List<String> usernameList = new List<String> {'testuserinvalidpassword@mail.com', 'testusernotexist@mail.com', 'testuserlocked@mail.com', 'testuserblocked@mail.com', 'testuserother@mail.com', 'testusergenericfail@mail.com', 'testusersuccessful@mail.com'};
+        List<String> usernameList = new List<String> {USERNAME_INVALID_PASSWORD, USERNAME_NOT_FOUND, USERNAME_LOCKOUT, USERNAME_FROZEN, USERNAME_OTHER, USERNAME_GENERIC_FAIL, USERNAME_SUCCESSFUL};
 
         //Get the user licence Id for Customer Community
         //See: https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_userlicense.htm
@@ -119,7 +127,7 @@ private class SiteLoginControllerTest {
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
 
         try {
-            String formJSON = '{"Email":"testusersuccessful@mail.com"}';
+            String formJSON = '{"Email":"' + USERNAME_SUCCESSFUL + '"}';
             SiteLoginController.loginUser(formJSON, lwcSettings);
         }
         catch (Exception e) {
@@ -133,7 +141,7 @@ private class SiteLoginControllerTest {
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
 
         try {
-            String formJSON = '{"Email":"testusersuccessful2@mail.com"}';
+            String formJSON = '{"Email":"' + USERNAME_SUCCESSFUL + '"}';
             SiteLoginController.loginUser(formJSON, lwcSettings);
         }
         catch (Exception e) {
@@ -148,7 +156,7 @@ private class SiteLoginControllerTest {
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         
         //A list of users that we create and 'test' with
-        List<String> usernameList = new List<String> {'testuserinvalidpassword@mail.com', 'testusernotexist@mail.com', 'testuserlocked@mail.com', 'testuserblocked@mail.com', 'testuserother@mail.com', 'testusergenericfail@mail.com', 'testusersuccessful@mail.com'};
+        List<String> usernameList = new List<String> {USERNAME_INVALID_PASSWORD, USERNAME_NOT_FOUND, USERNAME_LOCKOUT, USERNAME_FROZEN, USERNAME_OTHER, USERNAME_GENERIC_FAIL, USERNAME_SUCCESSFUL};
       
         for (String user : usernameList) { //Loop over the test users. See SiteLoginController.loginUser for hacks/workarounds as Site.Login() doesn't actually work in Test classes.
             try {
