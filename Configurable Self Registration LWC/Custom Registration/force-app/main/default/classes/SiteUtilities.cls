@@ -8,6 +8,8 @@ public without sharing class SiteUtilities {
     public static final String SELF_REG_COMPONENT_NAME = 'Self Registration';
     public static final String LOGIN_COMPONENT_NAME = 'Login';
     public static final String SMS_LICENCE_NAME = 'setting/force.com/orgValue.IdentityVerificationCredits';
+    public static final String INFORMATION_LOG_TYPE = SiteUtilities.INFORMATION_LOG_TYPE;
+    public static final String ERROR_LOG_TYPE = SiteUtilities.ERROR_LOG_TYPE;
 
     public static Map<String, Auth.VerificationMethod> methods = new Map<String, Auth.VerificationMethod>{'Email' => Auth.VerificationMethod.EMAIL, 'SMS' => Auth.VerificationMethod.SMS};
     public static List<String> messages = new List<String>();
@@ -250,7 +252,7 @@ public without sharing class SiteUtilities {
      * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Custom Metadata Types.
      * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
      * @param message - a list of messages to store on the Platform Event
-     * @param logType - the type of error to log, either 'Information' or 'Log'
+     * @param logType - the type of error to log, either SiteUtilities.INFORMATION_LOG_TYPE or SiteUtilities.ERROR_LOG_TYPE
      * @param componentName - the name of the component that is calling this function
      */
     public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName){
@@ -406,7 +408,7 @@ public without sharing class SiteUtilities {
                 delete new Contact (Id = recordId);
             }            
         } catch(Exception e) {
-            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', componentName);
+            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
     }
@@ -465,7 +467,7 @@ public without sharing class SiteUtilities {
         
         if(res.success == false) { 
             messages.add('Unable to validate the verification code. Error was: ' + res.message);    
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Error', componentName);    
+            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName);    
             throw new AuraHandledException(convertToString(lwcSettings.get('failedCodeVerificationMessage')));
         }
 
@@ -476,7 +478,7 @@ public without sharing class SiteUtilities {
         itemsToAdd.put(identifier, '{"pageUrl":"' +  url + '","verificationSuccess":'+  res.success + '}');
 
         messages.add('Verification was successful. Redirecting user to: ' + url);
-        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), 'Information', componentName); 
+        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName); 
         return jsonBuilder('registerResult', itemsToAdd);    
     }
 }

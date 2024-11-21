@@ -53,12 +53,13 @@ public with sharing class SiteLoginController {
                 ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
 
                 //If we are running in a Test, check the test user and throw a custom exception to mimic failed logins.
+                //NOTE: Cannot reference the constants from the test class in a 'switch' statement.
                 if(Test.isRunningTest()) {
                     switch on username {
-                        when 'testusergenericfail@mail.com' { //SiteLoginControllerTest.USERNAME_GENERIC_FAIL
-                                                        throw new CustomLoginException('Unknown error.'); 
+                        when 'testusergenericfail@mail.com' {
+                            throw new CustomLoginException('Unknown error.'); 
                         }
-                        when 'testusersuccessful@mail.com'{//SiteLoginControllerTest.USERNAME_SUCCESSFUL 
+                        when 'testusersuccessful@mail.com' {
                             //Don't throw an exception.
                         }
                         when else {
@@ -95,18 +96,19 @@ public with sharing class SiteLoginController {
                }
 
                //If we are running in a Test, check the test user and return a hardcoded status to mimic login history as Site.login() doesn't actually login.
+               //NOTE: Cannot reference the constants from the test class in a 'switch' statement.
                if(Test.isRunningTest()) {
                     switch on username {
-                        when SiteLoginControllerTest.USERNAME_FROZEN {
+                        when 'testuserblocked@mail.com' {
                             status = 'User is Frozen';
                         }
-                        when SiteLoginControllerTest.USERNAME_INVALID_PASSWORD {
+                        when 'testuserinvalidpassword@mail.com' {
                             status = 'Invalid Password';
                         }
-                        when SiteLoginControllerTest.USERNAME_NOT_FOUND {
+                        when 'testusernotexist@mail.com' {
                             status = 'Username Not Found';
                         }   
-                        when SiteLoginControllerTest.USERNAME_LOCKOUT {
+                        when 'testuserlocked@mail.com' {
                             status = 'Password Lockout';
                         }
                         when else { //testuserother@mail.com
@@ -129,20 +131,20 @@ public with sharing class SiteLoginController {
                     }
                     when else {
                         SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME); 
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME); 
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
                     }
                 }               
                 SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME);
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME);
                 throw new AuraHandledException(error); 
             }
             SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Error', SiteUtilities.LOGIN_COMPONENT_NAME);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME);        
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
         SiteUtilities.messages.add(username + ' successfully logged into the portal.');
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), 'Information', SiteUtilities.LOGIN_COMPONENT_NAME);     
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME);     
         return result;
     }
 }
