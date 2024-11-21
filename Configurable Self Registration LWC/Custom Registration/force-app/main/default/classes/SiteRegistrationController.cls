@@ -204,10 +204,12 @@ public with sharing class SiteRegistrationController {
             Contact newContact = new Contact();
             newContact.put('AccountId', SiteUtilities.convertToString(configurationOptions.get('accountId')));
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Contact');
-            Map<String, Object> convertedInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
+            formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
              
-            for(String fieldName : convertedInputs.keySet()) {
-                newContact.put(fieldName, convertedInputs.get(fieldName));
+            for(String fieldName : formInputs.keySet()) {
+                if(checkFieldExists(objectMetadata, fieldName)) {
+                    newContact.put(fieldName, formInputs.get(fieldName));
+                }
             }
 
             //Fake up First/Last Name as its a required field when creating a Contact... These aren't typically present if using Passwordless.
@@ -253,17 +255,19 @@ public with sharing class SiteRegistrationController {
             Account newPersonAccount = new Account();
             newPersonAccount.put('RecordTypeId', Schema.SObjectType.Account.getRecordTypeInfosByName().get(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))).getRecordTypeId());
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
-            Map<String, Object> convertedInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
+            formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
             
-            for(String fieldName : convertedInputs.keySet()) {
-                newPersonAccount.put(fieldName, convertedInputs.get(fieldName));
+            for(String fieldName : formInputs.keySet()) {
+                if(checkFieldExists(objectMetadata, fieldName)) {
+                    newPersonAccount.put(fieldName, formInputs.get(fieldName));
                 
-                if(fieldName == 'Email') { //Form field is called Email, map this to the PersonEmail field.
-                    newPersonAccount.put('PersonEmail', convertedInputs.get(fieldName)); 
-                }
+                    if(fieldName == 'Email') { //Form field is called Email, map this to the PersonEmail field.
+                        newPersonAccount.put('PersonEmail', formInputs.get(fieldName)); 
+                    }
 
-                if(fieldName == 'Mobile') { //Form field is called Mobile, map this to the PersonMobilePhone field.
-                    newPersonAccount.put('PersonMobilePhone', convertedInputs.get(fieldName)); 
+                    if(fieldName == 'Mobile') { //Form field is called Mobile, map this to the PersonMobilePhone field.
+                        newPersonAccount.put('PersonMobilePhone', formInputs.get(fieldName)); 
+                    }
                 }
             }
 
@@ -326,10 +330,12 @@ public with sharing class SiteRegistrationController {
     public static User createUnsavedUser(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
 
         User user = new User();
-        Map<String, Object> convertedInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, userObjectMetadata);
+        formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, userObjectMetadata);
 
-        for(String fieldName : convertedInputs.keySet()) {
-            user.put(fieldName, convertedInputs.get(fieldName));                   
+        for(String fieldName : formInputs.keySet()) {
+            if(checkFieldExists(userObjectMetadata, fieldName)) {
+                user.put(fieldName, formInputs.get(fieldName));                   
+            }
         }
 
         user.CommunityNickname = 'SiteUser' + System.now().getTime();
@@ -441,40 +447,37 @@ public with sharing class SiteRegistrationController {
      * @param objectMetadata a map of the metadata for a specified object 
      */
     private static Map<String, Object> convertFormDataToCorrectDataType(Map<String, Object> formInputs, Map<String, Object> configurationOptions, Map<String, Schema.SObjectField> objectMetadata) {
-        
-        Map<String, Object> convertedInputs = new Map<String, Object>();
-
-        for(String fieldName : formInputs.keySet()) { 
+    
+        for(String fieldName : formInputs.keySet()) {
             if(checkFieldExists(objectMetadata, fieldName)) {
                 String dataType = SiteUtilities.convertToString(objectMetadata.get(fieldName).getDescribe().getType());
-                switch on datatype{
+                switch on dataType {
                     when 'DATE'{ 
-                        convertedInputs.put(fieldName, Date.valueOf(SiteUtilities.convertToString(convertedInputs.get(fieldName))));
+                        formInputs.put(fieldName, Date.valueOf(SiteUtilities.convertToString(formInputs.get(fieldName))));
                     }
                     when 'TIME' {
-                        String[] strTimeSplit = SiteUtilities.convertToString(convertedInputs.get(fieldName)).split(':');
-                        convertedInputs.put(fieldName, Time.newInstance(Integer.valueOf(strTimeSplit[0]),  Integer.valueOf(strTimeSplit[1]), 0, 0));
+                        String[] strTimeSplit = SiteUtilities.convertToString(formInputs.get(fieldName)).split(':');
+                        formInputs.put(fieldName, Time.newInstance(Integer.valueOf(strTimeSplit[0]),  Integer.valueOf(strTimeSplit[1]), 0, 0));
                     }
                     when 'DATETIME' {
-                        convertedInputs.put(fieldName, (DateTime)JSON.deserialize('"' + SiteUtilities.convertToString(convertedInputs.get(fieldName)) +'"', DateTime.class));
+                        formInputs.put(fieldName, (DateTime)JSON.deserialize('"' + SiteUtilities.convertToString(formInputs.get(fieldName)) +'"', DateTime.class));
                     }
                     when 'BOOLEAN'  {
-                        convertedInputs.put(fieldName, SiteUtilities.convertToBoolean(convertedInputs.get(fieldName)));
+                        formInputs.put(fieldName, SiteUtilities.convertToBoolean(formInputs.get(fieldName)));
                     }
                     when 'DECIMAL' {
-                        convertedInputs.put(fieldName, Decimal.valueOf(SiteUtilities.convertToString(formInputs.get(fieldName))));
+                        formInputs.put(fieldName, Decimal.valueOf(SiteUtilities.convertToString(formInputs.get(fieldName))));
                     }
                     when 'INTEGER' {
-                        convertedInputs.put(fieldName, Integer.valueOf(SiteUtilities.convertToString(formInputs.get(fieldName))));
+                        formInputs.put(fieldName, Integer.valueOf(SiteUtilities.convertToString(formInputs.get(fieldName))));
                     }
-                    when else { //Just return the value in the convertedInputs - it will still be a string.
-                        convertedInputs.put(fieldName, SiteUtilities.convertToString(formInputs.get(fieldName)));       
+                    when else { //Just return the value in the convertedInputs - it will still be a STRING, PHONE, EMAIL (maybe others, which don't need any special treatment)
+                        formInputs.put(fieldName, SiteUtilities.convertToString(formInputs.get(fieldName)));       
                     }
-                }
-            }    
+                }   
+            } 
         }
-
-        return convertedInputs;
+        return formInputs;
     }
 
     /**
@@ -488,13 +491,13 @@ public with sharing class SiteRegistrationController {
         List<sObject> recordList = new List<sObject>();
 
         Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
-        Map<String, Object> convertedInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);        
-
+        formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
+        
         //Configurable via the component config panel. May affect what record is found based on org settings.
         //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
         //See: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_AccessLevel.htm
         try {
-            recordList = SiteUtilities.getRecords(convertedInputs, configurationOptions);
+            recordList = SiteUtilities.getRecords(formInputs, configurationOptions);
         }
         catch(Exception e) {
             SiteUtilities.messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
