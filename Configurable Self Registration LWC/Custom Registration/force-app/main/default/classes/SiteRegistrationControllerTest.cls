@@ -7,8 +7,6 @@
 @isTest
 private class SiteRegistrationControllerTest {
 
-    public static final String USERNAME_NOT_FOUND = 'testusernotexist@mail.com';
-
     //Create a test Person Account record
     @TestSetup
     private static void createPersonAccountTestData() {
@@ -51,7 +49,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void registerUserCreatePersonAccountObjectSytemAccessLevelTest() {
 
-        String formInputs = '{"Username":'+ SiteRegistrationControllerTest.USERNAME_NOT_FOUND +', "Email":'+ SiteRegistrationControllerTest.USERNAME_NOT_FOUND +', "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!"}';
+        String formInputs = '{"Username":"testusernotexist@mail.com", "Email":"testusernotexist@mail.com", "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
         SiteRegistrationController.registerUser(formInputs, configurationOptions);
@@ -79,7 +77,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void registerUserCreatePersonAccountObjectFailedTest() {
 
-        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":' + SiteRegistrationControllerTest.USERNAME_NOT_FOUND +', "Email":' + SiteRegistrationControllerTest.USERNAME_NOT_FOUND +',"password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
+        String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"testusernotexist@mail.com", "Email":"testusernotexist@mail.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"001dadsdsa67gs", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
         try {
