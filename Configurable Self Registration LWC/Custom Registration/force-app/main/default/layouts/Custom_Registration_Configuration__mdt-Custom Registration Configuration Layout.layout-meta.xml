@@ -59,7 +59,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Toggle_Type__c</field>
+                <field>Field_Allow_Auto_Complete__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -81,11 +81,11 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Picklist_Options__c</field>
+                <field>Field_Picklist_Options__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Allow_Autocomplete__c</field>
+                <field>Field_Toggle_Type__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -108,7 +108,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Toggle_Icon_Name__c</field>
+                <field>Field_Toggle_Icon_Name__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -230,7 +230,7 @@
     <showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox>
     <showSubmitAndAttachButton>false</showSubmitAndAttachButton>
     <summaryLayout>
-        <masterLabel>00hWU000002CHiJ</masterLabel>
+        <masterLabel>00hHo000002twU5</masterLabel>
         <sizeX>4</sizeX>
         <sizeY>0</sizeY>
         <summaryLayoutStyle>Default</summaryLayoutStyle>
