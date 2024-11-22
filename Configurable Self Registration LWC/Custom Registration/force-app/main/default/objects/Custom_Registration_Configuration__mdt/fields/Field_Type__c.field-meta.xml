@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Type__c</fullName>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Field Type</label>
@@ -59,6 +60,11 @@
                 <fullName>url</fullName>
                 <default>false</default>
                 <label>url</label>
+            </value>
+            <value>
+                <fullName>picklist</fullName>
+                <default>false</default>
+                <label>picklist</label>
             </value>
         </valueSetDefinition>
     </valueSet>
