@@ -92,31 +92,36 @@ export default class customSelfRegistration extends LightningElement {
             this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);
             
             //Tries to remove spaces from the field list in the SOQL query to prevent errors with parsing.
-            let queryParts = this.parsedSettings.customQuery.split("SELECT ");
-            let queryPartsFields = queryParts[1].split(" FROM");
-            let queryPartsRemoveSpacesFromFields = queryPartsFields[0].replace(" ", "");
-            this.parsedSettings['customQuery'] = 'SELECT ' + queryPartsRemoveSpacesFromFields + ' FROM' + queryPartsFields[1];
+            if(this.parsedSettings.customQuery != null && this.parsedSettings.customQuery != '') {
+                let queryParts = this.parsedSettings.customQuery.split("SELECT ");
+                let queryPartsFields = queryParts[1] == undefined ? "" : queryParts[1].split(" FROM");
+                let queryPartsRemoveSpacesFromFields = queryPartsFields[0] == undefined ? "" : queryPartsFields[0].replace(" ", "");
+                let restOfQuery = queryPartsFields[1] == undefined ? "" : queryPartsFields[1];
+                this.parsedSettings.customQuery = 'SELECT ' + queryPartsRemoveSpacesFromFields + ' FROM' + restOfQuery;
+                let newQueryParts = this.parsedSettings.customQuery.split(" ");
 
-            let newQueryParts = this.parsedSettings.customQuery.split(" ");
+                //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
+                if(newQueryParts[3] != 'Contact' &&  newQueryParts[3] != 'Account' &&  newQueryParts[3] != 'Case') {
+                    this._setComponentError(true, 'Only Contact, Account or Case objects are supported with a Custom Query on this component.');
+                }
 
-            //Checks SOQL query for valid types of Contact or Account, otherwise displays an error.
-            if(this.parsedSettings.customQuery == null || (newQueryParts[3] != 'Contact' &&  newQueryParts[3] != 'Account' &&  newQueryParts[3] != 'Case')) {
-                this._setComponentError(true, 'Only Contact, Account or Case objects are supported with a Custom Query on this component.');
+                this.parsedSettings['objectToQuery'] = newQueryParts[3]; //Pass this through to Apex so we can check data types of fields in the query.
+
+                //Check the custom query for Account, and if the Person Accounts are not enabled then error.
+                if(newQueryParts[3] == 'Account') {
+                    checkPersonAccount().then((enabled) => {
+                        if(!enabled) {
+                            this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
+                        } 
+                    }).catch(error=>{
+                        console.log(error); 
+                    })
+                }
             }
-
-            this.parsedSettings['objectToQuery'] = newQueryParts[3]; //Pass this through to Apex so we can check data types of fields in the query.
-
-            //Check the custom query for Account, and if the Person Accounts are not enabled then error.
-            if(newQueryParts[3] == 'Account') {
-                checkPersonAccount().then((enabled) => {
-                    if(!enabled) {
-                        this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
-                    } 
-                }).catch(error=>{
-                    console.log(error); 
-                })
+            else {
+                this._setComponentError(true, 'A Custom Query is required to use this component.');
             }
-
+            
             //Checks Object Type to Create is set correctly when the component is set to create a new record, otherwise displays an error.        
             if(this.parsedSettings.createNotFound && this.parsedSettings.objectCreateType == '') {
                 this._setComponentError(true, 'Object Type to Create must be set when the Create Record function is set to TRUE.');

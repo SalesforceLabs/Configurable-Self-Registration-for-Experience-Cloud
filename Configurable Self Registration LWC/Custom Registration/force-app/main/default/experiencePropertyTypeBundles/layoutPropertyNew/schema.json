@@ -4,8 +4,7 @@
   "properties" : {
     "customQuery" : {
       "lightning:type" : "lightning__textType",
-      "title" : "Custom Query",
-      "description" : "Write a SOQL query to find a singular Contact, Account or Case record during registration. See docs for more information on using form values as bind variables. NOTE: You must include the AccountId field when querying Contacts."
+      "title" : "Custom Query"
     },
     "accessLevelMode" : {
       "lightning:type" : "lightning__textType",
@@ -118,6 +117,6 @@
       "description" : "If creating a Contact, set the Account Id that the Contact will be related to. If using Person Accounts, leave this field blank."
     }
   },
-  "required" : [ "customQuery", "registerButtonSignUpMessage", "registerButtonWaitingMessage", "portalRegistrationRedirect", "registerButtonAwaitingCodeMessage", "passwordMatchError", "usernameTakenMessage", "noRecordFoundError", "multipleRecordsFoundError", "errorOnCreate", "portalLoginError", "portalRegistrationError", "portalRegistrationUserExists", "portalErrorSendVerificationCode" ],
+  "required" : ["registerButtonSignUpMessage", "registerButtonWaitingMessage", "portalRegistrationRedirect", "registerButtonAwaitingCodeMessage", "passwordMatchError", "usernameTakenMessage", "noRecordFoundError", "multipleRecordsFoundError", "errorOnCreate", "portalLoginError", "portalRegistrationError", "portalRegistrationUserExists", "portalErrorSendVerificationCode" ],
   "unevaluatedProperties" : false
 }
