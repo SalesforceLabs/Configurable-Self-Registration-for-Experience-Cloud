@@ -95,10 +95,6 @@
         <value xsi:type="xsd:boolean">false</value>
     </values>
     <values>
-        <field>Field_Show_Password_Visibility__c</field>
-        <value xsi:type="xsd:boolean">false</value>
-    </values>
-    <values>
         <field>Field_Toggle_Icon_Name__c</field>
         <value xsi:nil="true"/>
     </values>
