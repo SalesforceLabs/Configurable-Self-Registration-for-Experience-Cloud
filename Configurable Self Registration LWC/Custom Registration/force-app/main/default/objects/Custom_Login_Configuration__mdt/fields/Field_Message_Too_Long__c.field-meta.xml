@@ -1,10 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Message_Too_Long__c</fullName>
-    <description>Text is displayed if the field value entered is longer than the specified maximum.</description>
+    <description
+  >Text is displayed if the field value entered is longer than the specified maximum.</description>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
-    <inlineHelpText>Text is displayed if the field value entered is longer than the specified maximum.</inlineHelpText>
+    <inlineHelpText
+  >Text is displayed if the field value entered is longer than the specified maximum.</inlineHelpText>
     <label>Field Message Too Long</label>
     <length>255</length>
     <required>false</required>

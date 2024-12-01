@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Set_Date_Style_for_Dates</fullName>
     <active>true</active>
-    <description>Guides the user to select a date style when using a date field.</description>
-    <errorConditionFormula>AND(ISPICKVAL(Field_Type__c, &quot;date&quot;), ISBLANK(TEXT(Field_Date_Style__c)))</errorConditionFormula>
+    <description
+  >Guides the user to select a date style when using a date field.</description>
+    <errorConditionFormula
+  >AND(ISPICKVAL(Field_Type__c, &quot;date&quot;), ISBLANK(TEXT(Field_Date_Style__c)))</errorConditionFormula>
     <errorDisplayField>Field_Date_Style__c</errorDisplayField>
     <errorMessage>You must set a Date Style for a date field.</errorMessage>
 </ValidationRule>

@@ -1,11 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Max_Length__c</fullName>
     <deprecated>false</deprecated>
-    <description>The maximum number of characters that can be entered in this field on the form</description>
+    <description
+  >The maximum number of characters that can be entered in this field on the form</description>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
-    <inlineHelpText>The maximum number of characters that can be entered in this field on the form</inlineHelpText>
+    <inlineHelpText
+  >The maximum number of characters that can be entered in this field on the form</inlineHelpText>
     <label>Field Max Characters</label>
     <precision>11</precision>
     <required>false</required>

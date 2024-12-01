@@ -1,10 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Min_Length__c</fullName>
-    <description>The minimum number of characters that must be entered in this field on the form</description>
+    <description
+  >The minimum number of characters that must be entered in this field on the form</description>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
-    <inlineHelpText>The minimum number of characters that must be entered in this field on the form</inlineHelpText>
+    <inlineHelpText
+  >The minimum number of characters that must be entered in this field on the form</inlineHelpText>
     <label>Field Min Characters</label>
     <precision>18</precision>
     <required>false</required>
