@@ -24,7 +24,6 @@ public without sharing class TestUtilities {
 		text.Field_Required__c = true;
 		text.Active__c = true;
 		text.Portal_API_Name__c = 'ALL';
-		text.Display_Order__c = 2;
 		Custom_Login_Configuration__mdt checkbox = new Custom_Login_Configuration__mdt();
 		checkbox.Field_Type__c = 'checkbox';
 		checkbox.Active__c = true;

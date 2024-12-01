@@ -147,13 +147,13 @@ private class SiteLoginControllerTest {
 				assert.areEqual(m.get('fieldRegex'), '.', 'wrong regex');
 				assert.areEqual(m.get('fieldName'), 'email', 'wrong fieldname');
 				assert.areEqual(m.get('fieldRequiredMessage'), 'required field is required', 'wrong message');
-				assert.areEqual(m.get('fieldRequired'), true, 'field should be required');
+				assert.areEqual(m.get('fieldRequired'), 'true', 'field should be required');
 			}
 			if (m.get('fieldType') == 'checkbox') {
-				// system.debug(json.serializePretty(m));
+				system.debug(json.serializePretty(m));
 
 				checked += 1;
-				assert.areEqual(m.get('fieldName'), 'success', 'field name incorrect');
+				assert.areEqual(m.get('fieldName'), 'Success', 'field name incorrect');
 			}
 		}
 		Assert.areEqual(3, checked, 'not all objects were recognised and checked');
