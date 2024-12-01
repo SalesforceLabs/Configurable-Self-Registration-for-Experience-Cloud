@@ -43,7 +43,9 @@ public without sharing class SiteUtilities {
 
 		try {
 			List<SObject> metadata = new List<SObject>();
-			if (componentName == LOGIN_COMPONENT_NAME) {
+			if (Test.isRunningTest()) {
+				metadata = TestUtilities.getTestMetadata(componentName);
+			} else if (componentName == LOGIN_COMPONENT_NAME) {
 				metadata = Custom_Login_Configuration__mdt.getAll().values();
 			} else {
 				metadata = Custom_Registration_Configuration__mdt.getAll().values();
@@ -141,7 +143,7 @@ public without sharing class SiteUtilities {
 			}
 		} catch (Exception ex) {
 			result += ex.getLineNumber() + ' : ' + ex.getMessage();
-			throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
+			throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again. ' + result);
 		}
 		return '[' + result + ']';
 	}
@@ -302,10 +304,7 @@ public without sharing class SiteUtilities {
 			return false;
 		}
 
-		if (!logSetting.isEmpty() && logSetting.size() == 1) {
-			return true;
-		}
-		return false;
+		return (!logSetting.isEmpty() && logSetting.size() == 1);
 	}
 
 	/**

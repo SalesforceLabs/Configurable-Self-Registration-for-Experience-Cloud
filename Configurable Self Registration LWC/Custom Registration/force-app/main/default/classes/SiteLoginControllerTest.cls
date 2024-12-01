@@ -110,12 +110,48 @@ private class SiteLoginControllerTest {
 	//Retrieve custom metadata for the Login component. Uses records created via the Managed Package for standard fields which we can guarantee will be there.
 	@isTest
 	private static void getActiveCustomConfigurationTestLogin() {
-		String urlParams = '{"Email":"test@mail.com"}';
+		String urlParams = '{"email":"test@mail.com","success":true}';
 		String result = SiteUtilities.getCustomConfiguration(urlParams, 'Login');
 		String resultParsed = '{"data":' + result + '}';
+		// system.debug(resultParsed.replaceAll(',', ',\r'));
 		Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
 		List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
-		System.assertEquals(2, dataObj.size(), '2 ACTIVE configured fields found as expected');
+		System.assertEquals(3, dataObj.size(), '3 ACTIVE configured fields found as expected');
+		integer checked = 0;
+		for (object o : dataObj) {
+			// system.debug(JSON.serializePretty(o));
+			map<string, object> m = (map<string, object>) o;
+			if (m.get('fieldType') == 'picklist') {
+				// system.debug(json.serializePretty(m));
+
+				checked += 1;
+				list<object> options = (list<object>) m.get('picklistOptions');
+				assert.areEqual(json.serialize(options[0]), '{"value":"yes","label":"yes"}', 'wrong picklist options');
+				assert.areEqual(json.serialize(options[1]), '{"value":"no","label":"no"}', 'wrong picklist options');
+				assert.areEqual(m.get('fieldPlaceholder'), 'placeholder', 'placeholder is wrong');
+				assert.areEqual(m.get('fieldMessage'), null, 'field message is present without regex');
+				assert.areEqual(m.get('fieldHelpText'), 'Field_Help_Text__c', 'help text is wrong');
+			}
+			if (m.get('fieldType') == 'text') {
+				system.debug(json.serializePretty(m));
+
+				checked += 1;
+				assert.areEqual(m.get('fieldPlaceholder'), 'placeholder', 'wrong placeholder');
+				assert.areEqual(m.get('fieldMessage'), 'Field_Message__c', 'wrong field message');
+				assert.areEqual(m.get('fieldHelpText'), 'Field_Help_Text__c', 'wrong help text');
+				assert.areEqual(m.get('fieldRegex'), '.', 'wrong regex');
+				assert.areEqual(m.get('fieldName'), 'email', 'wrong fieldname');
+				assert.areEqual(m.get('fieldRequiredMessage'), 'required field is required', 'wrong message');
+				assert.areEqual(m.get('fieldRequired'), 'true', 'field should be required');
+			}
+			if (m.get('fieldType') == 'checkbox') {
+				system.debug(json.serializePretty(m));
+
+				checked += 1;
+				assert.areEqual(m.get('fieldName'), 'Success', 'field name incorrect');
+			}
+		}
+		Assert.areEqual(3, checked, 'not all objects were recognised and checked');
 	}
 
 	//Retrieve and test custom settings to enable logging for the Login component.
@@ -181,5 +217,15 @@ private class SiteLoginControllerTest {
 				System.assertEquals(null, null, 'Site.login() always returns null in tests.');
 			}
 		}
+	}
+
+	@istest
+	public static void getPersonAccRecTypes() {
+		Assert.isNotNull(SiteUtilities.getPersonAccountRecordTypes('Account'), 'Expected person account record type');
+	}
+
+	@istest
+	public static void getProfileMembers() {
+		Assert.isNotNull(SiteUtilities.getProfileMembers('networkId'), 'expected empty result');
 	}
 }

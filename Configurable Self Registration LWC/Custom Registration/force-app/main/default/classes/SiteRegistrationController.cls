@@ -290,6 +290,7 @@ public with sharing class SiteRegistrationController {
 				Schema.SObjectType.Account.getRecordTypeInfosByName().get(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))).getRecordTypeId()
 			);
 			Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
+
 			formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
 
 			for (String fieldName : formInputs.keySet()) {
@@ -354,22 +355,26 @@ public with sharing class SiteRegistrationController {
 	 * @return Id of the newly created record. Either Contact.AccountId if type is a Contact or Id if Person Account
 	 */
 	public static Id createObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
-		if (SiteUtilities.convertToString(configurationOptions.get('objectCreateType')) == 'Contact') {
-			return createContact(formInputs, configurationOptions);
-		} else if (SiteUtilities.convertToString(configurationOptions.get('objectCreateType')) == 'Person Account') {
-			return createPersonAccount(formInputs, configurationOptions);
-		} else {
-			//Object to create was set to blank which is not valid
-			SiteUtilities.messages.add(
-				'No record found for specified query. Create If Not found setting enabled but Object Type to Create is blank. Please check settings and change to Person Account or Contact.'
-			);
-			SiteUtilities.createLogEntry(
-				SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')),
-				String.join(SiteUtilities.messages, '\n'),
-				SiteUtilities.ERROR_LOG_TYPE,
-				SiteUtilities.SELF_REG_COMPONENT_NAME
-			);
-			throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
+		switch on SiteUtilities.convertToString(configurationOptions.get('objectCreateType')) {
+			when 'Contact' {
+				return createContact(formInputs, configurationOptions);
+			}
+			when 'Person Account' {
+				return createPersonAccount(formInputs, configurationOptions);
+			}
+			when else {
+				//Object to create was set to blank which is not valid
+				SiteUtilities.messages.add(
+					'No record found for specified query. Create If Not found setting enabled but Object Type to Create is blank. Please check settings and change to Person Account or Contact.'
+				);
+				SiteUtilities.createLogEntry(
+					SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')),
+					String.join(SiteUtilities.messages, '\n'),
+					SiteUtilities.ERROR_LOG_TYPE,
+					SiteUtilities.SELF_REG_COMPONENT_NAME
+				);
+				throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
+			}
 		}
 	}
 
@@ -450,10 +455,9 @@ public with sharing class SiteRegistrationController {
 			 */
 			if (e.getMessage().containsIgnoreCase('user already exists')) {
 				throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalRegistrationUserExists')));
-			} else {
-				//Anything else, show the generic message.
-				throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalRegistrationError')));
 			}
+			//Anything else, show the generic message.
+			throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalRegistrationError')));
 		}
 		return userId;
 	}

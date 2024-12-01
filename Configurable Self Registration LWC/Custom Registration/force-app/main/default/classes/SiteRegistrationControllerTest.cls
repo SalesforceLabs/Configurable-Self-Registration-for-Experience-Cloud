@@ -29,7 +29,7 @@ private class SiteRegistrationControllerTest {
 		System.debug('resultedParsed: ' + resultParsed);
 		Map<String, Object> fieldConfiguration = (Map<String, Object>) JSON.deserializeUntyped(resultParsed);
 		List<Object> dataObj = (List<Object>) fieldConfiguration.get('data');
-		System.assertEquals(5, dataObj.size(), '5 ACTIVE configured fields found as expected');
+		System.assertEquals(3, dataObj.size(), '3 ACTIVE configured fields found as expected');
 	}
 
 	//Retrieve and test custom settings to enable logging for the Self Regisration component.
@@ -46,7 +46,7 @@ private class SiteRegistrationControllerTest {
 	//Mock a scenario where we do not find a record with the custom query, and create a Person Account
 	@isTest
 	private static void registerUserCreatePersonAccountObjectSytemAccessLevelTest() {
-		String formInputs = '{"Username":"testusernotexist@mail.com", "Email":"testusernotexist@mail.com", "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!"}';
+		String formInputs = '{"Username":"testusernotexist@mail.com", "Email":"testusernotexist@mail.com", "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!", "firstname":"firstname"}';
 		String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
 		SiteRegistrationController.registerUser(formInputs, configurationOptions);
