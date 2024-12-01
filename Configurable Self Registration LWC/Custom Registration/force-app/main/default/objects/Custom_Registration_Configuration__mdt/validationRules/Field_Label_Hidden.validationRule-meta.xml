@@ -2,11 +2,8 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Label_Hidden</fullName>
     <active>true</active>
-    <description
-  >Enforce a user to populate a Field Label if the Field Label Variant is not &quot;hidden&quot;</description>
-    <errorConditionFormula
-  >AND(NOT(ISBLANK(Field_Label__c)), ISPICKVAL(Field_Label_Variant__c, &quot;label-hidden&quot;))</errorConditionFormula>
+    <description>Enforce a user to populate a Field Label if the Field Label Variant is not &quot;hidden&quot;</description>
+    <errorConditionFormula>AND(NOT(ISBLANK(Field_Label__c)), ISPICKVAL(Field_Label_Variant__c, &quot;label-hidden&quot;))</errorConditionFormula>
     <errorDisplayField>Field_Label__c</errorDisplayField>
-    <errorMessage
-  >You cannot specify a Field Label when Field Variant is set to &apos;label-hidden&apos;. Use Field Placeholder as an alternative.</errorMessage>
+    <errorMessage>You cannot specify a Field Label when Field Variant is set to &apos;label-hidden&apos;. Use Field Placeholder as an alternative.</errorMessage>
 </ValidationRule>

@@ -1,11 +1,11 @@
 public class CustomSortWrapper {
-  private Integer displayOrder;
+	private Integer displayOrder;
 
-  public CustomSortWrapper(Integer order) {
-    displayOrder = order;
-  }
+	public CustomSortWrapper(Integer order) {
+		displayOrder = order;
+	}
 
-  public Integer getDisplayOrder() {
-    return displayOrder;
-  }
+	public Integer getDisplayOrder() {
+		return displayOrder;
+	}
 }

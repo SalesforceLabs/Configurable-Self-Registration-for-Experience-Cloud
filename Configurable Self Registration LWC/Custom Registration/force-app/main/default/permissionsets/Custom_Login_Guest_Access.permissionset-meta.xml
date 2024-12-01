@@ -17,7 +17,7 @@
         <name>Custom_Login_Configuration__mdt</name>
     </customMetadataTypeAccesses>
     <description
-  >Assign to Experience Cloud Guest Users when using the Custom Self Registration &amp; Login managed package to grant access to relevant features. Used for the Login component only.</description>
+	>Assign to Experience Cloud Guest Users when using the Custom Self Registration &amp; Login managed package to grant access to relevant features. Used for the Login component only.</description>
     <fieldPermissions>
         <editable>true</editable>
         <field>Experience_Cloud_Log__c.Component_Name__c</field>
