@@ -4,6 +4,13 @@
 
 package.xml
 
+#Old classes that are now deprecated from the package but cannot be removed. 
+#They need to remain for code coverage but don't need to be deployed as they are marked as '@deprecated' and cause failures if deploying as an unmanaged package.
+**RetrievePersonAccountRecordTypes.cls**
+**RetrievePersonAccountRecordTypes.cls-meta.xml**
+**RetrievePersonAccountRecordTypesTestOld.cls**
+**RetrievePersonAccountRecordTypesTestOld.cls-meta**
+
 # LWC configuration files
 **/jsconfig.json
 **/.eslintrc.json

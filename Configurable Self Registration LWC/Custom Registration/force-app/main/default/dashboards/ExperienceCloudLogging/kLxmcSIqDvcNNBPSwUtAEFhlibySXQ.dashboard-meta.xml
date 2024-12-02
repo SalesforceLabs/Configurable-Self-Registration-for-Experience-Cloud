@@ -182,7 +182,7 @@
     <dashboardType>LoggedInUser</dashboardType>
     <description>Shows &apos;Error&apos; logs for the self registration and login custom LWCs</description>
     <isGridLayout>true</isGridLayout>
-    <owner>jlowe@labs.ldo</owner>
+    <!--<owner>jlowe@labs.ldo</owner>-->
     <runningUser>jlowe@labs.ldo</runningUser>
     <textColor>#000000</textColor>
     <title>Experience Cloud Logging</title>
