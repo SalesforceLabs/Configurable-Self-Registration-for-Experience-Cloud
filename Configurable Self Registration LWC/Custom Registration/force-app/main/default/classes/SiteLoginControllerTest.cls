@@ -148,7 +148,7 @@ private class SiteLoginControllerTest {
 				system.debug(json.serializePretty(m));
 
 				checked += 1;
-				assert.areEqual(m.get('fieldName'), 'Success', 'field name incorrect');
+				assert.areEqual(m.get('fieldName'), 'success', 'field name incorrect');
 			}
 		}
 		Assert.areEqual(3, checked, 'not all objects were recognised and checked');

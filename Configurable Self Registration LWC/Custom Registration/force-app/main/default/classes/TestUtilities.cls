@@ -11,6 +11,7 @@ public without sharing class TestUtilities {
 		picklist.Field_Help_Text__c = 'Field_Help_Text__c';
 		picklist.Active__c = true;
 		picklist.Portal_API_Name__c = 'ALL';
+		picklist.Display_Order__c = 1;
 
 		Custom_Login_Configuration__mdt text = new Custom_Login_Configuration__mdt();
 		text.Field_Type__c = 'text';
@@ -23,7 +24,7 @@ public without sharing class TestUtilities {
 		text.Field_Required__c = true;
 		text.Active__c = true;
 		text.Portal_API_Name__c = 'ALL';
-
+		text.Display_Order__c = 2;
 		Custom_Login_Configuration__mdt checkbox = new Custom_Login_Configuration__mdt();
 		checkbox.Field_Type__c = 'checkbox';
 		checkbox.Active__c = true;
