@@ -208,15 +208,18 @@ private class SiteRegistrationControllerTest {
 		con.Email = 'usercontact_to_delete@test.com';
 		insert con;
 
+		case c = new case();
+		insert c;
+
 		//Test exception.
 		try {
-			SiteUtilities.deleteRecord(acc.Id, 'WrongType', 'Self Registration', configurationOptionsObject);
+			SiteUtilities.deleteRecord(c.Id, 'Self Registration', configurationOptionsObject);
 		} catch (Exception e) {
 			System.assertEquals('Script-thrown exception', e.getMessage(), 'Incorrect type passed, exception generated');
 		}
 
-		SiteUtilities.deleteRecord(con.Id, 'Contact', 'Self Registration', configurationOptionsObject);
-		SiteUtilities.deleteRecord(acc.Id, 'Account', 'Self Registration', configurationOptionsObject);
+		SiteUtilities.deleteRecord(con.Id, 'Self Registration', configurationOptionsObject);
+		SiteUtilities.deleteRecord(acc.Id, 'Self Registration', configurationOptionsObject);
 
 		Integer conCount = [SELECT COUNT() FROM Contact WHERE Id = :con.Id];
 		Integer accCount = [SELECT COUNT() FROM Account WHERE Id = :acc.Id];

@@ -170,7 +170,7 @@ public with sharing class SiteRegistrationController {
 				//Delete the contact if there was a problem sending the code but only if it was the record that was created by the self registration. Don't delete an existing record.
 				if (SiteUtilities.convertToBoolean(lwcSettings.get('createNotFound')) && recordCreated) {
 					SiteUtilities.messages.add('Deleting created record Id: ' + recordId);
-					SiteUtilities.deleteRecord(recordId, recordId.getSObjectType().getDescribe().getName(), SiteUtilities.SELF_REG_COMPONENT_NAME, lwcSettings);
+					SiteUtilities.deleteRecord(recordId, SiteUtilities.SELF_REG_COMPONENT_NAME, lwcSettings);
 					SiteUtilities.messages.add('Record was successfully deleted with Id: ' + recordId);
 				}
 
