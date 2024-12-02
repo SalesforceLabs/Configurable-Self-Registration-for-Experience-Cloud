@@ -125,15 +125,20 @@ private class SiteLoginControllerTest {
 				// system.debug(json.serializePretty(m));
 
 				checked += 1;
-				list<object> options = (list<object>) m.get('picklistOptions');
-				assert.areEqual(json.serialize(options[0]), '{"value":"yes","label":"yes"}', 'wrong picklist options');
-				assert.areEqual(json.serialize(options[1]), '{"value":"no","label":"no"}', 'wrong picklist options');
+				list<object> optionLists = (list<object>) json.deserializeUntyped((String) m.get('picklistOptions'));
+				map<String, Object> options0 = ((map<String, Object>) optionLists[0]);
+				map<String, Object> options1 = ((map<String, Object>) optionLists[1]);
+				assert.areEqual(options0.get('value'), 'yes', 'wrong picklist options');
+				assert.areEqual(options0.get('label'), 'yes', 'wrong picklist options');
+				assert.areEqual(options1.get('value'), 'no', 'wrong picklist options');
+				assert.areEqual(options1.get('label'), 'no', 'wrong picklist options');
+
 				assert.areEqual(m.get('fieldPlaceholder'), 'placeholder', 'placeholder is wrong');
 				assert.areEqual(m.get('fieldMessage'), null, 'field message is present without regex');
 				assert.areEqual(m.get('fieldHelpText'), 'Field_Help_Text__c', 'help text is wrong');
 			}
 			if (m.get('fieldType') == 'text') {
-				system.debug(json.serializePretty(m));
+				// system.debug(json.serializePretty(m));
 
 				checked += 1;
 				assert.areEqual(m.get('fieldPlaceholder'), 'placeholder', 'wrong placeholder');
@@ -145,7 +150,7 @@ private class SiteLoginControllerTest {
 				assert.areEqual(m.get('fieldRequired'), 'true', 'field should be required');
 			}
 			if (m.get('fieldType') == 'checkbox') {
-				system.debug(json.serializePretty(m));
+				// system.debug(json.serializePretty(m));
 
 				checked += 1;
 				assert.areEqual(m.get('fieldName'), 'success', 'field name incorrect');
