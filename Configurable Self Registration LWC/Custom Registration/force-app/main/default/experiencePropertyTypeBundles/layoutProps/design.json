@@ -1,9 +1,6 @@
 {
     "propertySheet": {
       "propertyRenderers": {
-        "customQuery": {
-          "definition": "c/customPropertyEditorQuery"
-        },
         "passwordlessProfileId": {
           "definition": "c/customPropertyEditorProfiles"
         },

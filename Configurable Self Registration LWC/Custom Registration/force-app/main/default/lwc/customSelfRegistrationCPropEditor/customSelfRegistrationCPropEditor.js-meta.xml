@@ -9,7 +9,7 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
-            <property name="propertyPanelSettings" type="c__layoutPropertyNew"
+            <property name="propertyPanelSettings" type="c__layoutProps"
                 label="Self Registration Settings"
                 default="{
                     &quot;accessLevelMode&quot;:&quot;System&quot;,

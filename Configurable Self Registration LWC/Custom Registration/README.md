@@ -1,18 +1,13 @@
-# Salesforce DX Project: Next Steps
+# Configurable Self Registration/Login for Experience Cloud
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+Clone this repository and deploy it to your org as an unmanaged package to make your own changes. Alternatively, install the latest released version from the App Exchange listing: https://appexchange.salesforce.com/appxListingDetail?listingId=c06efea1-214d-4dda-b87b-3e7186319593.
 
-## How Do You Plan to Deploy Your Changes?
+User Guide is available here: https://salesforce.quip.com/M0o9AYupf991
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+Release notes are available here: https://salesforce.quip.com/Af8CAQSB5eEA
 
-## Configure Your Salesforce DX Project
+#NOTES:
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+If deploying from the repository as an unmanaged package, ensure that the user you are running the deployment as has a role assigned to them on their User record otherwise Apex Tests will fail with "portal owner must have a role".
 
-## Read All About It
-
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+With the current unmanaged version, tests fail if Person Accounts are not enabled in your org. See open issues.

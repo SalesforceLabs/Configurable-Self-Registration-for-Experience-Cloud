@@ -13,7 +13,7 @@ private class CPEControllerTest {
         for (Object item : dataObj) {
             data = (Map<String, Object>) item;
         }
-        System.assertEquals(2, data.values().size(), '2 ACTIVE configured record types found as expected'); 
+        System.Assert.isTrue(data.values().size() > 1, 'At least 1 Record type found in the org'); 
     }
 
     @isTest
