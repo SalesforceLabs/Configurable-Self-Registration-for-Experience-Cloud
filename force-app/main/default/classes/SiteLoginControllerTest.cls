@@ -150,7 +150,7 @@ private class SiteLoginControllerTest {
 				assert.areEqual(m.get('fieldRequired'), 'true', 'field should be required');
 			}
 			if (m.get('fieldType') == 'checkbox') {
-				system.debug(json.serializePretty(m));
+				// system.debug(json.serializePretty(m));
 
 				checked += 1;
 				assert.areEqual(m.get('fieldName'), 'success', 'field name incorrect');
