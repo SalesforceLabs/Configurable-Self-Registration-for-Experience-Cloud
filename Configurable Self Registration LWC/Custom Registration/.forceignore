@@ -11,6 +11,9 @@ package.xml
 **RetrievePersonAccountRecordTypesTestOld.cls**
 **RetrievePersonAccountRecordTypesTestOld.cls-meta**
 
+#Old LWC used in v1.87 that didn't fix an issue. Cannot be removed due to packaging constraints. No need to deploy it if unmanaged.
+**./lwc/customPropertyEditorQuery/**
+
 # LWC configuration files
 **/jsconfig.json
 **/.eslintrc.json

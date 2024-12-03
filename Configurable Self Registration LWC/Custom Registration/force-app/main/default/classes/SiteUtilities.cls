@@ -316,8 +316,11 @@ public without sharing class SiteUtilities {
      * @param  accountId pass in the Account Id to find the PersonContactId
      * @return Id of the PersonContact
      */
-	public static Id getPersonContactId(Id accountId){
-        return [SELECT Id,PersonContactId FROM Account WHERE Id = :accountId].PersonContactId;        
+	public static Id getPersonContactId(Id accountId) {
+        String account = accountId;
+        sObject personAccount = Database.query('SELECT Id,PersonContactId FROM Account WHERE Id = :account');
+        return (Id)personAccount.get('PersonContactId');
+        //return [SELECT Id,PersonContactId FROM Account WHERE Id = :accountId].PersonContactId;        
     }
 
     /**
