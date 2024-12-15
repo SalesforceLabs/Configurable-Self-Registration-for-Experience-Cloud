@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>61.0</apiVersion>
     <isExposed>true</isExposed>
@@ -9,9 +9,11 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
-            <property name="propertyPanelSettings" type="c__layoutProps"
-                label="Self Registration Settings"
-                default="{
+            <property
+        name="propertyPanelSettings"
+        type="c__layoutProps"
+        label="Self Registration Settings"
+        default="{
                     &quot;accessLevelMode&quot;:&quot;System&quot;,
                     &quot;registerButtonSignUpMessage&quot;:&quot;Sign Up&quot;,
                     &quot;registerButtonWaitingMessage&quot;:&quot;Registering... Please Wait.&quot;,
@@ -28,7 +30,8 @@
                     &quot;portalErrorSendVerificationCode&quot;:&quot;There was a problem sending a verification code. Please try again later or contact us for further assistance.&quot;,
                     &quot;failedCodeVerificationMessage&quot;:&quot;There was a problem validating the verification code. Please check and try again, or contact us for further assistance.&quot;,
                     &quot;passwordlessMethod&quot;:&quot;Email&quot; 
-                }" />
+                }"
+      />
         </targetConfig> 
     </targetConfigs>
 </LightningComponentBundle>

@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Required</fullName>
     <active>true</active>
-    <description>Enforce the population of a Field Required Message if Field Required = TRUE</description>
-    <errorConditionFormula>AND(ISBLANK(Field_Required_Message__c ), Field_Required__c)</errorConditionFormula>
+    <description
+  >Enforce the population of a Field Required Message if Field Required = TRUE</description>
+    <errorConditionFormula
+  >AND(ISBLANK(Field_Required_Message__c ), Field_Required__c)</errorConditionFormula>
     <errorDisplayField>Field_Required_Message__c</errorDisplayField>
-    <errorMessage>Field Required Message is also required when setting Field Required to TRUE.</errorMessage>
+    <errorMessage
+  >Field Required Message is also required when setting Field Required to TRUE.</errorMessage>
 </ValidationRule>
