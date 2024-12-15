@@ -21,10 +21,10 @@ export default class CustomLogin extends LightningElement {
 	loginResults = null;
 	pageUrl;
 
-  //Other settings
-  @api portalLoginRedirect;
-  @api enablePasswordlessLogin;
-  @api passwordlessMethod;
+	//Configurable Error Messages from the Component Property Panel
+	@api blockUserErrorMessage;
+	@api incorrectUserCredentialsErrorMessage;
+	@api userLockedOutErrorMessage;
 
 	//Other settings
 	@api portalLoginRedirect;
@@ -81,11 +81,8 @@ export default class CustomLogin extends LightningElement {
 		}
 	}
 
-  handleSubmit(spinnerState, buttonText, buttonState) {
-    this.showSpinner = spinnerState;
-    this.buttonLabel = buttonText;
-    this.isButtonDisabled = buttonState;
-  }
+	connectedCallback() {
+		this.handleSubmit(false, this.loginButtonLoginMessage, false);
 
 		//Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
 		isLoggingEnabled({ settingName: "Login_Logging" })
@@ -97,10 +94,7 @@ export default class CustomLogin extends LightningElement {
 			});
 
 		//Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
-		getCustomConfiguration({
-			urlParams: JSON.stringify(this.urlParameters),
-			componentName: "Login"
-		})
+		getCustomConfiguration({ urlParams: JSON.stringify(this.urlParameters), componentName: "Login" })
 			.then((result) => {
 				this.results = JSON.parse(result);
 				for (let i = 0; i <= this.results.length; i++) {
@@ -164,11 +158,7 @@ export default class CustomLogin extends LightningElement {
 			//Initial page load, user requests a verification code which shows an input to enter the code and then login.
 			if (this.enablePasswordlessLogin && this.showVerificationCode) {
 				//Verify the code received and login.
-				verifyUser({
-					formInputs: JSON.stringify(this.formInputs),
-					configurationOptions: JSON.stringify(this.configurationOptions),
-					componentName: "Login"
-				})
+				verifyUser({ formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.configurationOptions), componentName: "Login" })
 					.then((result) => {
 						this.registerResults = JSON.parse(result);
 						console.log("registerResults:" + this.registerResults);
@@ -181,10 +171,7 @@ export default class CustomLogin extends LightningElement {
 						event.preventDefault();
 					});
 			} else {
-				loginUser({
-					formInputs: JSON.stringify(this.formInputs),
-					configurationOptions: this.configurationOptions
-				})
+				loginUser({ formInputs: JSON.stringify(this.formInputs), configurationOptions: this.configurationOptions })
 					.then((result) => {
 						this.loginResults = JSON.parse(result);
 						this.showVerificationCode = this.loginResults.loginResult[0].showVerificationCode;

@@ -2,13 +2,11 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Label__c</fullName>
     <deprecated>false</deprecated>
-    <description
-  >Displayed on the Self Registration form. The form does not display the field
+    <description>Displayed on the Self Registration form. The form does not display the field
         configuration&apos;s Field Label.</description>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
-    <inlineHelpText
-  >Displayed on the Self Registration form. The form does not display the field
+    <inlineHelpText>Displayed on the Self Registration form. The form does not display the field
         configuration&apos;s Field Label.</inlineHelpText>
     <label>Field Label</label>
     <length>255</length>

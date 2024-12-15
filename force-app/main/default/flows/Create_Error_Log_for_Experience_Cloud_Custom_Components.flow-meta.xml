@@ -4,8 +4,7 @@
     <description>Used for Custom Experience Cloud Components. 
 Subscribes to a Platform Event for Custom Logging and creates an Error Log record.</description>
     <environments>Default</environments>
-    <interviewLabel
-  >Create Error Log for Experience Cloud {!$Flow.CurrentDateTime}</interviewLabel>
+    <interviewLabel>Create Error Log for Experience Cloud {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Create Error Log for Experience Cloud Custom Components</label>
     <processMetadataValues>
         <name>BuilderType</name>
