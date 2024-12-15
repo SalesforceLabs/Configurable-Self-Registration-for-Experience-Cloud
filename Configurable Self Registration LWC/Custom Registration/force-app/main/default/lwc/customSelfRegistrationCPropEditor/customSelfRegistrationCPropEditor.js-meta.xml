@@ -10,10 +10,10 @@
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
             <property
-        name="propertyPanelSettings"
-        type="c__layoutProps"
-        label="Self Registration Settings"
-        default="{
+				name="propertyPanelSettings"
+				type="c__layoutProps"
+				label="Self Registration Settings"
+				default="{
                     &quot;accessLevelMode&quot;:&quot;System&quot;,
                     &quot;registerButtonSignUpMessage&quot;:&quot;Sign Up&quot;,
                     &quot;registerButtonWaitingMessage&quot;:&quot;Registering... Please Wait.&quot;,
@@ -31,7 +31,7 @@
                     &quot;failedCodeVerificationMessage&quot;:&quot;There was a problem validating the verification code. Please check and try again, or contact us for further assistance.&quot;,
                     &quot;passwordlessMethod&quot;:&quot;Email&quot; 
                 }"
-      />
+			/>
         </targetConfig> 
     </targetConfigs>
 </LightningComponentBundle>
