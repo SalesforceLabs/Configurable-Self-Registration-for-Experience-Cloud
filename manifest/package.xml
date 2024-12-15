@@ -21,7 +21,8 @@
     </types>
     <types>
         <members>Custom_Experience_Cloud_Setting.Login_Logging</members>
-        <members>Custom_Experience_Cloud_Setting.Self_Registration_Logging</members>
+        <members
+    >Custom_Experience_Cloud_Setting.Self_Registration_Logging</members>
         <members>Custom_Login_Configuration.Country_Code</members>
         <members>Custom_Login_Configuration.Email</members>
         <members>Custom_Login_Configuration.Identifier</members>
@@ -55,7 +56,8 @@
         <name>FlexiPage</name>
     </types>
     <types>
-        <members>Create_Error_Log_for_Experience_Cloud_Custom_Components</members>
+        <members
+    >Create_Error_Log_for_Experience_Cloud_Custom_Components</members>
         <name>Flow</name>
     </types>
     <types>
@@ -63,9 +65,12 @@
         <name>GlobalValueSet</name>
     </types>
     <types>
-        <members>Custom_Experience_Cloud_Setting__mdt-Custom Experience Cloud Setting Layout</members>
-        <members>Custom_Login_Configuration__mdt-Custom Login Configuration Layout</members>
-        <members>Custom_Registration_Configuration__mdt-Custom Registration Configuration Layout</members>
+        <members
+    >Custom_Experience_Cloud_Setting__mdt-Custom Experience Cloud Setting Layout</members>
+        <members
+    >Custom_Login_Configuration__mdt-Custom Login Configuration Layout</members>
+        <members
+    >Custom_Registration_Configuration__mdt-Custom Registration Configuration Layout</members>
         <members>Experience_Cloud_Log__c-Experience Cloud Log Layout</members>
         <name>Layout</name>
     </types>
@@ -101,10 +106,13 @@
     </types>
     <types>
         <members>ExperienceCloudLogging</members>
-        <members>ExperienceCloudLogging/Error_Logs_Login_Last_30_Days_5tz</members>
+        <members
+    >ExperienceCloudLogging/Error_Logs_Login_Last_30_Days_5tz</members>
         <members>ExperienceCloudLogging/Error_Logs_Login_QrP</members>
-        <members>ExperienceCloudLogging/Error_Logs_Self_Registration_HLT</members>
-        <members>ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</members>
+        <members
+    >ExperienceCloudLogging/Error_Logs_Self_Registration_HLT</members>
+        <members
+    >ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</members>
         <name>Report</name>
     </types>
     <types>

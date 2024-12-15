@@ -4,7 +4,8 @@
         <headerColor>#0070D2</headerColor>
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
     </brand>
-    <description>Installed by the package Configurable Self Registration &amp; Login For Experience Cloud</description>
+    <description
+  >Installed by the package Configurable Self Registration &amp; Login For Experience Cloud</description>
     <formFactors>Small</formFactors>
     <formFactors>Large</formFactors>
     <isNavAutoTempTabsDisabled>true</isNavAutoTempTabsDisabled>

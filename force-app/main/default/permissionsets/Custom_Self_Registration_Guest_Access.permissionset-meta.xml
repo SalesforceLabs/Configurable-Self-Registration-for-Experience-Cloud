@@ -24,7 +24,8 @@
         <enabled>true</enabled>
         <name>Custom_Registration_Configuration__mdt</name>
     </customMetadataTypeAccesses>
-    <description>Assign to Experience Cloud Guest Users when using the Custom Self Registration
+    <description
+  >Assign to Experience Cloud Guest Users when using the Custom Self Registration
         &amp; Login managed package to grant access to relevant features. Used for the Self
         Registration component only.</description>
     <fieldPermissions>

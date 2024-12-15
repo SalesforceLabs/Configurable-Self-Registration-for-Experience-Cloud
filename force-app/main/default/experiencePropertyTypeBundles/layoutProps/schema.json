@@ -1,138 +1,138 @@
 {
-	"title": "Self Registration Configuration",
-	"lightning:type": "lightning__objectType",
-	"properties": {
-		"customQuery": {
-			"lightning:type": "lightning__multilineTextType",
-			"description": "Write a SOQL query to find a singular Contact, Account or Case record during registration. See docs for more information on using form values as bind variables. NOTE: You must include the AccountId field when querying Contacts.",
-			"title": "Custom Query"
-		},
-		"accessLevelMode": {
-			"lightning:type": "lightning__textType",
-			"title": "Access Level Mode"
-		},
-		"sendEmailConfirmation": {
-			"lightning:type": "lightning__booleanType",
-			"title": "Send email confirmation?",
-			"description": "Send email confirmation on successful registration of a user. Consider switching off, if using another solution for sending email communications such as Marketing Cloud, or if Welcome Emails are switched on for your site."
-		},
-		"registerButtonSignUpMessage": {
-			"lightning:type": "lightning__textType",
-			"title": "Sign Up Button Label",
-			"description": "Text used on the submit button"
-		},
-		"registerButtonWaitingMessage": {
-			"lightning:type": "lightning__textType",
-			"title": "Sign Up Button Waiting Message",
-			"description": "Text used after submit button is clicked"
-		},
-		"portalRegistrationRedirect": {
-			"lightning:type": "lightning__textType",
-			"title": "Redirect URL After Registration",
-			"description": "Set the URL that the user will be redirected to once they successfully register"
-		},
-		"passwordMatchError": {
-			"lightning:type": "lightning__textType",
-			"title": "Password Match Error",
-			"description": "Error message shown if passwords do not match"
-		},
-		"usernameTakenMessage": {
-			"lightning:type": "lightning__textType",
-			"title": "Username Taken Error",
-			"description": "Error message shown if the chosen username is already taken"
-		},
-		"noRecordFoundError": {
-			"lightning:type": "lightning__textType",
-			"title": "Record Not Found Error",
-			"description": "Error message shown if the SOQL query doesn't find any results. Shown to the user."
-		},
-		"multipleRecordsFoundError": {
-			"lightning:type": "lightning__textType",
-			"title": "Multiple Records Found Error",
-			"description": "Error message shown if the SOQL query finds more than one result. Shown to the user."
-		},
-		"errorOnCreate": {
-			"lightning:type": "lightning__textType",
-			"title": "Record Create Error",
-			"description": "Error message shown if a failure occurs creating a new record during registration. Shown to the user."
-		},
-		"portalLoginError": {
-			"lightning:type": "lightning__textType",
-			"title": "Login after Registration Error",
-			"description": "Error message shown if a failure occurs logging into the portal after registration. Shown to the user."
-		},
-		"portalRegistrationError": {
-			"lightning:type": "lightning__textType",
-			"title": "User Creation Error",
-			"description": "Error message shown if a failure occurs during registration when creating a new user. Shown to the user."
-		},
-		"portalRegistrationUserExists": {
-			"lightning:type": "lightning__textType",
-			"title": "Already Registered Error",
-			"description": "Error message shown if the matched contact is already a portal user. Shown to the user."
-		},
-		"enablePasswordlessLogin": {
-			"lightning:type": "lightning__booleanType",
-			"title": "Enable Passwordless Login",
-			"description": "Enable passwordless login for the site. NOTE: Requires other configuration for this to work, see the documentation for full setup instructions."
-		},
-		"passwordlessMethod": {
-			"lightning:type": "lightning__textType",
-			"title": "Verification Method"
-		},
-		"passwordlessProfileId": {
-			"lightning:type": "lightning__textType",
-			"title": "Passwordless Profile Id"
-		},
-		"registerButtonAwaitingCodeMessage": {
-			"lightning:type": "lightning__textType",
-			"title": "Submit Verification Button Label",
-			"description": "Text used for the Submit Verification Code button."
-		},
-		"portalErrorSendVerificationCode": {
-			"lightning:type": "lightning__textType",
-			"title": "Verification Code Send Error",
-			"description": "Error message shown if there is a problem sending a verification code to the user based on the method chosen."
-		},
-		"failedCodeVerificationMessage": {
-			"lightning:type": "lightning__textType",
-			"title": "Verification Code Validation Error",
-			"description": "Error message shown if there is a problem verifying the specified verification code entered by the user."
-		},
-		"createNotFound": {
-			"lightning:type": "lightning__booleanType",
-			"title": "Create Record on Registration (if not found)?",
-			"description": "Create a Contact record of the specified type, if a record is not found when registering."
-		},
-		"objectCreateType": {
-			"lightning:type": "lightning__textType",
-			"title": "Object Type to Create"
-		},
-		"personAccountRecordTypeId": {
-			"lightning:type": "lightning__textType",
-			"title": "Person Account Record Type"
-		},
-		"accountId": {
-			"lightning:type": "lightning__textType",
-			"title": "Account Id",
-			"description": "If creating a Contact, set the Account Id that the Contact will be related to. If using Person Accounts, leave this field blank."
-		}
-	},
-	"required": [
-		"customQuery",
-		"registerButtonSignUpMessage",
-		"registerButtonWaitingMessage",
-		"portalRegistrationRedirect",
-		"registerButtonAwaitingCodeMessage",
-		"passwordMatchError",
-		"usernameTakenMessage",
-		"noRecordFoundError",
-		"multipleRecordsFoundError",
-		"errorOnCreate",
-		"portalLoginError",
-		"portalRegistrationError",
-		"portalRegistrationUserExists",
-		"portalErrorSendVerificationCode"
-	],
-	"unevaluatedProperties": false
+  "title": "Self Registration Configuration",
+  "lightning:type": "lightning__objectType",
+  "properties": {
+    "customQuery": {
+      "lightning:type": "lightning__multilineTextType",
+      "description": "Write a SOQL query to find a singular Contact, Account or Case record during registration. See docs for more information on using form values as bind variables. NOTE: You must include the AccountId field when querying Contacts.",
+      "title": "Custom Query"
+    },
+    "accessLevelMode": {
+      "lightning:type": "lightning__textType",
+      "title": "Access Level Mode"
+    },
+    "sendEmailConfirmation": {
+      "lightning:type": "lightning__booleanType",
+      "title": "Send email confirmation?",
+      "description": "Send email confirmation on successful registration of a user. Consider switching off, if using another solution for sending email communications such as Marketing Cloud, or if Welcome Emails are switched on for your site."
+    },
+    "registerButtonSignUpMessage": {
+      "lightning:type": "lightning__textType",
+      "title": "Sign Up Button Label",
+      "description": "Text used on the submit button"
+    },
+    "registerButtonWaitingMessage": {
+      "lightning:type": "lightning__textType",
+      "title": "Sign Up Button Waiting Message",
+      "description": "Text used after submit button is clicked"
+    },
+    "portalRegistrationRedirect": {
+      "lightning:type": "lightning__textType",
+      "title": "Redirect URL After Registration",
+      "description": "Set the URL that the user will be redirected to once they successfully register"
+    },
+    "passwordMatchError": {
+      "lightning:type": "lightning__textType",
+      "title": "Password Match Error",
+      "description": "Error message shown if passwords do not match"
+    },
+    "usernameTakenMessage": {
+      "lightning:type": "lightning__textType",
+      "title": "Username Taken Error",
+      "description": "Error message shown if the chosen username is already taken"
+    },
+    "noRecordFoundError": {
+      "lightning:type": "lightning__textType",
+      "title": "Record Not Found Error",
+      "description": "Error message shown if the SOQL query doesn't find any results. Shown to the user."
+    },
+    "multipleRecordsFoundError": {
+      "lightning:type": "lightning__textType",
+      "title": "Multiple Records Found Error",
+      "description": "Error message shown if the SOQL query finds more than one result. Shown to the user."
+    },
+    "errorOnCreate": {
+      "lightning:type": "lightning__textType",
+      "title": "Record Create Error",
+      "description": "Error message shown if a failure occurs creating a new record during registration. Shown to the user."
+    },
+    "portalLoginError": {
+      "lightning:type": "lightning__textType",
+      "title": "Login after Registration Error",
+      "description": "Error message shown if a failure occurs logging into the portal after registration. Shown to the user."
+    },
+    "portalRegistrationError": {
+      "lightning:type": "lightning__textType",
+      "title": "User Creation Error",
+      "description": "Error message shown if a failure occurs during registration when creating a new user. Shown to the user."
+    },
+    "portalRegistrationUserExists": {
+      "lightning:type": "lightning__textType",
+      "title": "Already Registered Error",
+      "description": "Error message shown if the matched contact is already a portal user. Shown to the user."
+    },
+    "enablePasswordlessLogin": {
+      "lightning:type": "lightning__booleanType",
+      "title": "Enable Passwordless Login",
+      "description": "Enable passwordless login for the site. NOTE: Requires other configuration for this to work, see the documentation for full setup instructions."
+    },
+    "passwordlessMethod": {
+      "lightning:type": "lightning__textType",
+      "title": "Verification Method"
+    },
+    "passwordlessProfileId": {
+      "lightning:type": "lightning__textType",
+      "title": "Passwordless Profile Id"
+    },
+    "registerButtonAwaitingCodeMessage": {
+      "lightning:type": "lightning__textType",
+      "title": "Submit Verification Button Label",
+      "description": "Text used for the Submit Verification Code button."
+    },
+    "portalErrorSendVerificationCode": {
+      "lightning:type": "lightning__textType",
+      "title": "Verification Code Send Error",
+      "description": "Error message shown if there is a problem sending a verification code to the user based on the method chosen."
+    },
+    "failedCodeVerificationMessage": {
+      "lightning:type": "lightning__textType",
+      "title": "Verification Code Validation Error",
+      "description": "Error message shown if there is a problem verifying the specified verification code entered by the user."
+    },
+    "createNotFound": {
+      "lightning:type": "lightning__booleanType",
+      "title": "Create Record on Registration (if not found)?",
+      "description": "Create a Contact record of the specified type, if a record is not found when registering."
+    },
+    "objectCreateType": {
+      "lightning:type": "lightning__textType",
+      "title": "Object Type to Create"
+    },
+    "personAccountRecordTypeId": {
+      "lightning:type": "lightning__textType",
+      "title": "Person Account Record Type"
+    },
+    "accountId": {
+      "lightning:type": "lightning__textType",
+      "title": "Account Id",
+      "description": "If creating a Contact, set the Account Id that the Contact will be related to. If using Person Accounts, leave this field blank."
+    }
+  },
+  "required": [
+    "customQuery",
+    "registerButtonSignUpMessage",
+    "registerButtonWaitingMessage",
+    "portalRegistrationRedirect",
+    "registerButtonAwaitingCodeMessage",
+    "passwordMatchError",
+    "usernameTakenMessage",
+    "noRecordFoundError",
+    "multipleRecordsFoundError",
+    "errorOnCreate",
+    "portalLoginError",
+    "portalRegistrationError",
+    "portalRegistrationUserExists",
+    "portalErrorSendVerificationCode"
+  ],
+  "unevaluatedProperties": false
 }

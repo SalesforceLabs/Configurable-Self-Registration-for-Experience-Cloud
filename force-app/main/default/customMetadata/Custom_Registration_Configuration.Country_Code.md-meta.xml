@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
     <label>Country Code</label>
     <protected>false</protected>
     <values>
@@ -76,7 +80,9 @@
     </values>
     <values>
         <field>Field_Picklist_Options__c</field>
-        <value xsi:type="xsd:string">[{&quot;label&quot;: &quot;(+1) United States&quot;, &quot;value&quot;: &quot;1&quot;},
+        <value
+      xsi:type="xsd:string"
+    >[{&quot;label&quot;: &quot;(+1) United States&quot;, &quot;value&quot;: &quot;1&quot;},
 {&quot;label&quot;:&quot;(+44) United Kingdom&quot;, &quot;value&quot;:&quot;44&quot;}]</value>
     </values>
     <values>

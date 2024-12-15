@@ -50,7 +50,8 @@
                 <indicatorHighColor>#00716B</indicatorHighColor>
                 <indicatorLowColor>#C23934</indicatorLowColor>
                 <indicatorMiddleColor>#FFB75D</indicatorMiddleColor>
-                <report>ExperienceCloudLogging/Error_Logs_Login_Last_30_Days_5tz</report>
+                <report
+        >ExperienceCloudLogging/Error_Logs_Login_Last_30_Days_5tz</report>
                 <showRange>false</showRange>
             </dashboardComponent>
             <rowIndex>0</rowIndex>
@@ -75,7 +76,8 @@
                 <indicatorHighColor>#00716B</indicatorHighColor>
                 <indicatorLowColor>#C23934</indicatorLowColor>
                 <indicatorMiddleColor>#FFB75D</indicatorMiddleColor>
-                <report>ExperienceCloudLogging/Error_Logs_Self_Registration_HLT</report>
+                <report
+        >ExperienceCloudLogging/Error_Logs_Self_Registration_HLT</report>
                 <showRange>false</showRange>
             </dashboardComponent>
             <rowIndex>0</rowIndex>
@@ -100,7 +102,8 @@
                 <indicatorHighColor>#00716B</indicatorHighColor>
                 <indicatorLowColor>#C23934</indicatorLowColor>
                 <indicatorMiddleColor>#FFB75D</indicatorMiddleColor>
-                <report>ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</report>
+                <report
+        >ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</report>
                 <showRange>false</showRange>
             </dashboardComponent>
             <rowIndex>0</rowIndex>
@@ -167,7 +170,8 @@
                 </groupingSortProperties>
                 <header>Errors - Self Reg (Last 30 Days)</header>
                 <legendPosition>Bottom</legendPosition>
-                <report>ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</report>
+                <report
+        >ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</report>
                 <showPercentage>false</showPercentage>
                 <showValues>true</showValues>
                 <sortBy>RowLabelAscending</sortBy>
@@ -180,7 +184,8 @@
         <rowHeight>36</rowHeight>
     </dashboardGridLayout>
     <dashboardType>LoggedInUser</dashboardType>
-    <description>Shows &apos;Error&apos; logs for the self registration and login custom LWCs</description>
+    <description
+  >Shows &apos;Error&apos; logs for the self registration and login custom LWCs</description>
     <isGridLayout>true</isGridLayout>
     <!--<owner>jlowe@labs.ldo</owner>-->
     <runningUser>jlowe@labs.ldo</runningUser>

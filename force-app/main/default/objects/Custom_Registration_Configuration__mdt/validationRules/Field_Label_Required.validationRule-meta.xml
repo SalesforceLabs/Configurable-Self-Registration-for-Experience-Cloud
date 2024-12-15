@@ -2,12 +2,14 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_Label_Required</fullName>
     <active>true</active>
-    <description>Enforces that the user must populate a field label when the variant is set to &quot;standard&quot; or &quot;label-inline&quot;</description>
+    <description
+  >Enforces that the user must populate a field label when the variant is set to &quot;standard&quot; or &quot;label-inline&quot;</description>
     <errorConditionFormula>AND(ISBLANK(Field_Label__c),
 OR(
 ISPICKVAL(Field_Label_Variant__c, &quot;standard&quot;),
 ISPICKVAL(Field_Label_Variant__c, &quot;label-inline&quot;))
 )</errorConditionFormula>
     <errorDisplayField>Field_Label__c</errorDisplayField>
-    <errorMessage>A Field Label must be specified when using the &quot;standard&quot; or &quot;label-inline&quot; setting for Field Label Variant.</errorMessage>
+    <errorMessage
+  >A Field Label must be specified when using the &quot;standard&quot; or &quot;label-inline&quot; setting for Field Label Variant.</errorMessage>
 </ValidationRule>

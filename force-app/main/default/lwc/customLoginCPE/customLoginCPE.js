@@ -21,10 +21,10 @@ export default class CustomLogin extends LightningElement {
 	loginResults = null;
 	pageUrl;
 
-	//Configurable Error Messages from the Component Property Panel
-	@api blockUserErrorMessage;
-	@api incorrectUserCredentialsErrorMessage;
-	@api userLockedOutErrorMessage;
+  //Other settings
+  @api portalLoginRedirect;
+  @api enablePasswordlessLogin;
+  @api passwordlessMethod;
 
 	//Other settings
 	@api portalLoginRedirect;
@@ -81,8 +81,11 @@ export default class CustomLogin extends LightningElement {
 		}
 	}
 
-	connectedCallback() {
-		this.handleSubmit(false, this.loginButtonLoginMessage, false);
+  handleSubmit(spinnerState, buttonText, buttonState) {
+    this.showSpinner = spinnerState;
+    this.buttonLabel = buttonText;
+    this.isButtonDisabled = buttonState;
+  }
 
 		//Enable or disable logging based on a Custom Metadata setting rather than property panel so it can be enabled without re-publishing the whole site.
 		isLoggingEnabled({ settingName: "Login_Logging" })
