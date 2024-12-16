@@ -7,8 +7,8 @@
  * Change History :
  *****************************************************************************************************/
 
- /* Location of icon if being used when the form input uses the "standard" variant and icon on the left */
-.input-icon-label-shown-left { 
+/* Location of icon if being used when the form input uses the "standard" variant and icon on the left */
+.input-icon-label-shown-left {
 	position: absolute;
 	top: 37px;
 	left: 4px;
@@ -91,26 +91,28 @@
 	width: 30px;
 }
 
-.top { /* Additional styling for the field parent class field to add a gap between the inputs when the form input uses the "label-hidden" variant */
+.top {
+	/* Additional styling for the field parent class field to add a gap between the inputs when the form input uses the "label-hidden" variant */
 	padding-top: 10px;
 }
 
 :host {
-	--lwc-formLabelFontSize: 16px; /* Override the Form Label Size */	
+	--lwc-formLabelFontSize: 16px; /* Override the Form Label Size */
 	--lwc-heightInput: 40px; /* Override the Input Height */
 	--lwc-fontSize2: 16px; /* Error message font-size override */
 	--lwc-fontSize3: 16px;
-	font-size:  16px;
+	font-size: 16px;
 	/* --lwc-brandDisabled: rgb(24, 114, 139); When the button is submitted, the background colour is default grey. Override this colour here. */
 }
 
 .custom-slds-button {
 	font-size: 16px; /* Override font size on the Submit Button */
-	font-weight: bold; /* //Override font weight on the Submit Button */ 
+	font-weight: bold; /* //Override font weight on the Submit Button */
 	padding-top: 4px; /* Override the button padding to make it bigger! */
 	padding-bottom: 4px; /* Override the button padding to make it bigger! */
 }
-.slds-input-has-icon .slds-input__icon:not(button) { /* Makes an icon clickable when putting the icon on the right and using standard classes as per the documentation */
+.slds-input-has-icon .slds-input__icon:not(button) {
+	/* Makes an icon clickable when putting the icon on the right and using standard classes as per the documentation */
 	pointer-events: all;
 	cursor: pointer;
 }

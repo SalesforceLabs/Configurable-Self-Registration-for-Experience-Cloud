@@ -1,12 +1,10 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api } from "lwc";
 
 export default class CustomPropertyEditorQuery extends LightningElement {
-    
-    @api value;
+	@api value;
 
-    handleChange(event) {
-        this.value = event.detail.value;
-        this.dispatchEvent(new CustomEvent("valuechange", 
-        {detail: {value: this.value}}));
-    }
+	handleChange(event) {
+		this.value = event.detail.value;
+		this.dispatchEvent(new CustomEvent("valuechange", { detail: { value: this.value } }));
+	}
 }
