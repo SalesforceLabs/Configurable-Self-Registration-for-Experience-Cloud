@@ -393,8 +393,9 @@ public with sharing class SiteRegistrationController {
 				user.put(fieldName, formInputs.get(fieldName));
 			}
 		}
-
-		user.CommunityNickname = 'SiteUser' + System.now().getTime();
+		if (string.isBlank(user.CommunityNickname)) {
+			user.CommunityNickname = 'SiteUser' + System.now().getTime();
+		}
 		user.FirstName = String.isBlank(user.FirstName) ? 'Site' : user.FirstName;
 		user.LastName = String.isBlank(user.LastName) ? 'User' + System.now().getTime() : user.LastName;
 
