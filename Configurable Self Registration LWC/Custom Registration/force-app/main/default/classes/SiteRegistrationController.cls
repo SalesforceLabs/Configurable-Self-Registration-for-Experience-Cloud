@@ -244,6 +244,11 @@ public with sharing class SiteRegistrationController {
 
 			newContacts.add(newContact);
 			SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newContacts);
+			if (!securityDecision.getRemovedFields().isEmpty()) {
+				SiteUtilities.messages.add(
+					'The guest user does not have access to some fields. These fields will not be mapped to the Contact: ' + securityDecision.getRemovedFields()
+				);
+			}
 			srList = Database.insert(securityDecision.getRecords()[0], false);
 
 			if (srList.isSuccess()) {
@@ -296,16 +301,15 @@ public with sharing class SiteRegistrationController {
 			for (String fieldName : formInputs.keySet()) {
 				if (checkFieldExists(objectMetadata, fieldName)) {
 					newPersonAccount.put(fieldName, formInputs.get(fieldName));
+				}
+				if (fieldName == 'Email') {
+					//Form field is called Email, map this to the PersonEmail field.
+					newPersonAccount.put('PersonEmail', formInputs.get(fieldName));
+				}
 
-					if (fieldName == 'Email') {
-						//Form field is called Email, map this to the PersonEmail field.
-						newPersonAccount.put('PersonEmail', formInputs.get(fieldName));
-					}
-
-					if (fieldName == 'Mobile') {
-						//Form field is called Mobile, map this to the PersonMobilePhone field.
-						newPersonAccount.put('PersonMobilePhone', formInputs.get(fieldName));
-					}
+				if (fieldName == 'Mobile') {
+					//Form field is called Mobile, map this to the PersonMobilePhone field.
+					newPersonAccount.put('PersonMobilePhone', formInputs.get(fieldName));
 				}
 			}
 
@@ -322,6 +326,11 @@ public with sharing class SiteRegistrationController {
 			newPersonAccounts.add(newPersonAccount);
 			SiteUtilities.messages.add('Person Account to create: ' + newPersonAccounts);
 			SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.CREATABLE, newPersonAccounts);
+			if (!securityDecision.getRemovedFields().isEmpty()) {
+				SiteUtilities.messages.add(
+					'The guest user does not have access to some fields. These fields will not be mapped to the Person Account: ' + securityDecision.getRemovedFields()
+				);
+			}
 			srList = Database.insert(securityDecision.getRecords()[0], false);
 
 			if (srList.isSuccess()) {
@@ -393,9 +402,7 @@ public with sharing class SiteRegistrationController {
 				user.put(fieldName, formInputs.get(fieldName));
 			}
 		}
-		if (string.isBlank(user.CommunityNickname)) {
-			user.CommunityNickname = 'SiteUser' + System.now().getTime();
-		}
+		user.CommunityNickname = String.isBlank(user.CommunityNickname) ? 'SiteUser' + System.now().getTime() : user.CommunityNickname;
 		user.FirstName = String.isBlank(user.FirstName) ? 'Site' : user.FirstName;
 		user.LastName = String.isBlank(user.LastName) ? 'User' + System.now().getTime() : user.LastName;
 
