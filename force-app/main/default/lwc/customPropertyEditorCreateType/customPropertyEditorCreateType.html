@@ -1,0 +1,11 @@
+<template>
+	<lightning-combobox
+		name="createNotFound"
+		label="Object Type to Create"
+		value={value}
+		options={options}
+		field-level-help="Choose an object type. The registration process creates a new record if the SOQL query doesn't find any results. NOTE: Create record on Registration must be set to TRUE."
+		onchange={handleChange}
+	>
+	</lightning-combobox>
+</template>
