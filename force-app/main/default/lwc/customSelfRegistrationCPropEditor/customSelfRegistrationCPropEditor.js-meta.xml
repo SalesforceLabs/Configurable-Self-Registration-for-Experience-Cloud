@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>61.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Custom Self Registration</masterLabel>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property name="propertyPanelSettings" type="c__layoutProps"
+                label="Self Registration Settings"
+                default="{
+                    &quot;accessLevelMode&quot;:&quot;System&quot;,
+                    &quot;registerButtonSignUpMessage&quot;:&quot;Sign Up&quot;,
+                    &quot;registerButtonWaitingMessage&quot;:&quot;Registering... Please Wait.&quot;,
+                    &quot;passwordMatchError&quot;:&quot;Passwords do not match&quot;,
+                    &quot;usernameTakenMessage&quot;:&quot;The specified username is already taken. Please choose a unique username.&quot;,
+                    &quot;noRecordFoundError&quot;:&quot;There was a problem locating your details, please check them and try again or contact us for further assistance.&quot;,
+                    &quot;multipleRecordsFoundError&quot;:&quot;There was a problem locating your details, please check them and try again or contact us for further assistance.&quot;,
+                    &quot;errorOnCreate&quot;:&quot;There was a problem registering your details. Please contact us for assistance.&quot;,
+                    &quot;portalLoginError&quot;:&quot;There was a problem logging you into the portal. Please contact us for further assistance.&quot;,
+                    &quot;portalRegistrationError&quot;:&quot;There was a problem during registration. Please contact us for further assistance.&quot;,
+                    &quot;portalRegistrationUserExists&quot;:&quot;User is already registered. Please login to continue.&quot;,
+                    &quot;portalRegistrationRedirect&quot;:&quot;/&quot;,
+                    &quot;registerButtonAwaitingCodeMessage&quot;:&quot;Submit Verification Code&quot;,
+                    &quot;portalErrorSendVerificationCode&quot;:&quot;There was a problem sending a verification code. Please try again later or contact us for further assistance.&quot;,
+                    &quot;failedCodeVerificationMessage&quot;:&quot;There was a problem validating the verification code. Please check and try again, or contact us for further assistance.&quot;,
+                    &quot;passwordlessMethod&quot;:&quot;Email&quot; 
+                }" />
+        </targetConfig> 
+    </targetConfigs>
+</LightningComponentBundle>

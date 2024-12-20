@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Portal_API_Name__c</fullName>
+    <deprecated>false</deprecated>
+    <description>Specify the API Name by running the query: SELECT Id,Name,UrlPathPrefix FROM Site to link field configuration to a specific site, or set to &quot;ALL&quot; to display across sites where this component is used.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Specify the API Name by running the query: SELECT Id,Name,UrlPathPrefix FROM Site to link field configuration to a specific site, or set to &quot;ALL&quot; to display across sites where this component is used.</inlineHelpText>
+    <label>Portal API Name</label>
+    <length>255</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

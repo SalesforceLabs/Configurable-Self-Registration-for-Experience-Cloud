@@ -6,3 +6,10 @@ User Guide is available here: https://salesforce.quip.com/M0o9AYupf991
 
 Release notes are available here: https://salesforce.quip.com/Af8CAQSB5eEA
 
+Latest version is v1.89.
+
+#NOTES:
+
+If deploying from the repository as an unmanaged package, ensure that the user you are running the deployment as has a role assigned to them on their User record otherwise Apex Tests will fail with "portal owner must have a role".
+
+With the current unmanaged version, Apex tests fail if Person Accounts are not enabled in your org. The component will still support both Business Accounts/Contacts and Person Accounts, but tests will need to be amended depending on your org configuration.
