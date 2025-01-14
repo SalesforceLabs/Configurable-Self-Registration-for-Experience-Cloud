@@ -16,6 +16,7 @@
         <members>SiteRegistrationController</members>
         <members>SiteRegistrationControllerTest</members>
         <members>SiteUtilities</members>
+        <members>TestUtilities</members>
         <members>UserManagementWrapper</members>
         <name>ApexClass</name>
     </types>
