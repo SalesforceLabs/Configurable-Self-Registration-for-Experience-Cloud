@@ -34,117 +34,121 @@ public without sharing class SiteUtilities {
      * @return Returns a JSON string of retrieved records
      * @see customSelfRegistration.html
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static String getCustomConfiguration(String urlParams, String componentName) {
-        String result = '';
         Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
+        List<Map<String, Object>> resultList = new List<Map<String, Object>>();
 
         try {
             List<SObject> metadata = new List<SObject>(); 
-            if(componentName == LOGIN_COMPONENT_NAME) {
-                metadata = Custom_Login_Configuration__mdt.getAll().values();
-            }
-            else {
-                metadata = Custom_Registration_Configuration__mdt.getAll().values();
-            }
+            String objectName = (componentName == LOGIN_COMPONENT_NAME) ? 'Custom_Login_Configuration__mdt' : 'Custom_Registration_Configuration__mdt';
+            
+            // Query fields explicitly to avoid getAll() truncation issues with Long Text Areas and sort by Display Order
+            String query = 'SELECT Active__c, Portal_API_Name__c, Display_Order__c, Field_Type__c, Field_Name__c, ' +
+                           'Field_Label__c, Field_Class__c, Minimum_Value__c, Field_Under_Minimum_Range_Message__c, ' +
+                           'Maximum_Value__c, Field_Over_Max_Range_Message__c, Field_Min_Length__c, ' +
+                           'Field_Message_Too_Short__c, Field_Max_Length__c, Field_Label_Variant__c, ' +
+                           'Field_Date_Style__c, Field_Show_Icon__c, Field_Icon_Name__c, Field_Icon_Class__c, ' +
+                           'Field_Parent_Class__c, Field_Toggle_Icon_Name__c, Field_Toggle_Type__c, ' +
+                           'Field_Allow_Auto_Complete__c, Field_Message_Too_Long__c, Field_Picklist_Options__c, ' +
+                           'Field_Placeholder__c, Field_Message__c, Field_Validation_REGEX__c, ' +
+                           'Field_Required__c, Field_Required_Message__c, Field_Help_Text__c ' +
+                           'FROM ' + objectName + 
+                           ' WHERE Active__c = true AND (Portal_API_Name__c = :siteName OR Portal_API_Name__c = \'ALL\')' +
+                           ' ORDER BY Display_Order__c ASC';
+            
+            metadata = Database.query(query);
 
-            List<SObject> sortedMetadata = new List<SObject>();
-            for (SObject rec : metadata) {
-                if(rec.get('Active__c') == true && (rec.get('Portal_API_Name__c') == siteName || rec.get('Portal_API_Name__c') == 'ALL')) {
-                    sortedMetadata.add(rec); 
-                }
-            }
-
-            //Custom Sort order by the Display Order field.
-            sortedMetadata.sort(new CustomSort());
-
-            for (SObject mapping : sortedMetadata) {
-                if(String.isNotBlank(result)){
-                    result += ',';
-                }
+            for (SObject mapping : metadata) {
+                Map<String, Object> fieldMap = new Map<String, Object>();
                 
-                String jsonPart = '{';
-                jsonPart += '"fieldType":"' + mapping.get('Field_Type__c') + '",'; 
-                jsonPart += '"fieldName":"' + mapping.get('Field_Name__c') + '",';
-                jsonPart += '"fieldLabel":"' + mapping.get('Field_Label__c') + '",';
-                jsonPart += '"fieldClass":"' + mapping.get('Field_Class__c') + '",';
-                jsonPart += '"fieldMinValue":"' + mapping.get('Minimum_Value__c') + '",';
-                jsonPart += '"fieldMessageUnder":"' + mapping.get('Field_Under_Minimum_Range_Message__c') + '",';
-                jsonPart += '"fieldMaxValue":"' + mapping.get('Maximum_Value__c') + '",';
-                jsonPart += '"fieldMessageOver":"' + mapping.get('Field_Over_Max_Range_Message__c') + '",';
-                jsonPart += '"fieldMinLength":"' + mapping.get('Field_Min_Length__c') + '",';
-                jsonPart += '"fieldMinLengthMessage":"' + mapping.get('Field_Message_Too_Short__c') + '",';
-                jsonPart += '"fieldMaxLength":"' + mapping.get('Field_Max_Length__c') + '",';
-                jsonPart += '"fieldLabelVariant":"' + mapping.get('Field_Label_Variant__c') + '",';
-                jsonPart += '"fieldDateStyle":"' + mapping.get('Field_Date_Style__c') + '",';
+                fieldMap.put('fieldType', mapping.get('Field_Type__c'));
+                fieldMap.put('fieldName', mapping.get('Field_Name__c'));
+                fieldMap.put('fieldLabel', mapping.get('Field_Label__c'));
+                fieldMap.put('fieldClass', mapping.get('Field_Class__c'));
+                fieldMap.put('fieldMinValue', mapping.get('Minimum_Value__c'));
+                fieldMap.put('fieldMessageUnder', mapping.get('Field_Under_Minimum_Range_Message__c'));
+                fieldMap.put('fieldMaxValue', mapping.get('Maximum_Value__c'));
+                fieldMap.put('fieldMessageOver', mapping.get('Field_Over_Max_Range_Message__c'));
+                fieldMap.put('fieldMinLength', mapping.get('Field_Min_Length__c'));
+                fieldMap.put('fieldMinLengthMessage', mapping.get('Field_Message_Too_Short__c'));
+                fieldMap.put('fieldMaxLength', mapping.get('Field_Max_Length__c'));
+                fieldMap.put('fieldLabelVariant', mapping.get('Field_Label_Variant__c'));
+                fieldMap.put('fieldDateStyle', mapping.get('Field_Date_Style__c'));
                 
                 //Settings to control icon visibility
-                jsonPart += '"fieldShowIcon":' + convertToBoolean(mapping.get('Field_Show_Icon__c')) + ','; //Needs to be a boolean as it directly controls dynamic template
-                jsonPart += '"fieldIconName":"' + mapping.get('Field_Icon_Name__c') + '",';
-                jsonPart += '"fieldIconClass":"' + mapping.get('Field_Icon_Class__c') + '",';
-                jsonPart += '"fieldParentClass":"' + mapping.get('Field_Parent_Class__c') + '",';
-                jsonPart += '"fieldToggleIconName":"' + mapping.get('Field_Toggle_Icon_Name__c') + '",';
-                jsonPart += '"fieldToggleFieldType":"' + mapping.get('Field_Toggle_Type__c') + '",';
+                fieldMap.put('fieldShowIcon', convertToBoolean(mapping.get('Field_Show_Icon__c')));
+                fieldMap.put('fieldIconName', mapping.get('Field_Icon_Name__c'));
+                fieldMap.put('fieldIconClass', mapping.get('Field_Icon_Class__c'));
+                fieldMap.put('fieldParentClass', mapping.get('Field_Parent_Class__c'));
+                fieldMap.put('fieldToggleIconName', mapping.get('Field_Toggle_Icon_Name__c'));
+                fieldMap.put('fieldToggleFieldType', mapping.get('Field_Toggle_Type__c'));
 
                 String autocomplete = convertToBoolean(mapping.get('Field_Allow_Auto_Complete__c')) ? 'on' : 'off';
-                jsonPart += '"fieldAutocomplete":"' + autocomplete + '",';
+                fieldMap.put('fieldAutocomplete', autocomplete);
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                jsonPart += '"fieldMaxLengthMessage":"' + mapping.get('Field_Message_Too_Long__c') + '",'; 
+                fieldMap.put('fieldMaxLengthMessage', mapping.get('Field_Message_Too_Long__c'));
                 
                 //TODO: We could add fields to control the default values from custom metadata if needed.
-                jsonPart += '"fieldChecked":' + false + ',';
-                jsonPart += '"fieldValue":""';
+                fieldMap.put('fieldChecked', false);
+                fieldMap.put('fieldValue', '');
 
                 for(String key : urlParameters.keySet()) {
                     if(mapping.get('Field_Name__c') == key) {
-                        jsonPart += ',';
                         if(convertToBoolean(urlParameters.get(key))) {
-                            jsonPart += '"fieldChecked":"' + urlParameters.get(key) + '"';
+                            fieldMap.put('fieldChecked', urlParameters.get(key));
                         }
                         else {
-                            jsonPart += '"fieldValue":"' + urlParameters.get(key) + '"';
+                            fieldMap.put('fieldValue', urlParameters.get(key));
                         }
                     }
                 }
 
                 if(mapping.get('Field_Type__c') == 'picklist') {
-                    jsonPart += ',';
-                    jsonPart += '"showAsPicklist":' + true + ',';
-                    jsonPart += '"picklistOptions":' + mapping.get('Field_Picklist_Options__c')  + ''; 
+                    fieldMap.put('showAsPicklist', true);
+                    String picklistOptions = (String)mapping.get('Field_Picklist_Options__c');
+                    if (String.isNotBlank(picklistOptions)) {
+                        try {
+                            fieldMap.put('picklistOptions', JSON.deserializeUntyped(picklistOptions));
+                        } catch (Exception e) {
+                            System.debug('Error parsing picklist options: ' + e.getMessage());
+                            // Fallback to empty list or handle error
+                            fieldMap.put('picklistOptions', new List<Object>());
+                            throw new AuraHandledException('There was an issue loading the picklist options. Please check the configuration is valid JSON and try again. ' + e.getMessage());
+                        }
+                    } else {
+                        fieldMap.put('picklistOptions', new List<Object>());
+                    }
                 }
 
                 if(String.isNotBlank(convertToString(mapping.get('Field_Placeholder__c')))) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldPlaceholder":"' + mapping.get('Field_Placeholder__c') + '"';
+                    fieldMap.put('fieldPlaceholder', mapping.get('Field_Placeholder__c'));
                 }
 
                 if(String.isNotBlank(convertToString(mapping.get('Field_Message__c'))) && String.isNotBlank(convertToString(mapping.get('Field_Validation_REGEX__c')))) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldMessage":"' + mapping.get('Field_Message__c') + '",';
-                    jsonPart += '"fieldRegex":"' + mapping.get('Field_Validation_REGEX__c') + '"';
+                    fieldMap.put('fieldMessage', mapping.get('Field_Message__c'));
+                    fieldMap.put('fieldRegex', mapping.get('Field_Validation_REGEX__c'));
                 }
 
                 if(convertToBoolean(mapping.get('Field_Required__c')) && String.isNotBlank(convertToString(mapping.get('Field_Required_Message__c')))) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldRequired":"' + mapping.get('Field_Required__c') + '",';
-                    jsonPart += '"fieldRequiredMessage":"' + mapping.get('Field_Required_Message__c') + '"';
+                    fieldMap.put('fieldRequired', convertToString(mapping.get('Field_Required__c')));
+                    fieldMap.put('fieldRequiredMessage', mapping.get('Field_Required_Message__c'));
                 }
 
                 if(String.isNotBlank(convertToString(mapping.get('Field_Help_Text__c')))) {
-                    jsonPart += ',';
-                    jsonPart += '"fieldHelpText":"' + mapping.get('Field_Help_Text__c') + '"';
+                    fieldMap.put('fieldHelpText', mapping.get('Field_Help_Text__c'));
                 }
-                jsonPart += '}';
-                result += jsonPart;
+                
+                resultList.add(fieldMap);
             }
         }
         catch(Exception ex) {
-            result += ex.getLineNumber() + ' : ' + ex.getMessage();
-            throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again.');
+            throw new AuraHandledException('There was an issue displaying custom metadata. Please check the configuration and try again. ' + ex.getMessage());
         }
-        return '['+result+']';
+        
+        return JSON.serialize(resultList);
     }
 
     /**
@@ -377,12 +381,12 @@ public without sharing class SiteUtilities {
             u = [SELECT Id,Name,Email,Username FROM User WHERE Username = :username];
         }
         if(String.isNotBlank(mobilePhone)) {
-            u = [SELECT Id, MobilePhone, IsActive FROM User WHERE MobilePhone = :MobilePhone AND IsActive = true];
+            u = [SELECT Id, MobilePhone, IsActive FROM User WHERE MobilePhone = :mobilePhone AND IsActive = true ORDER BY CreatedDate DESC LIMIT 1];
         }
         return u;        
     }
 
-     /**
+    /**
      * @description getLoginHistory retrieves exactly 1 entry from the LoginHistory for the specified UserId sorted by DESC i.e. the most recent. NOTE: Cannot filter by Username directly.
      * NOTE: Does not use WITH SECURITY_ENFORCED as issues are encountered accessing some fields with the Guest User.
      * @param userId pass in the User Id from getUserIdWithUsername() result. 

@@ -84,7 +84,7 @@ export default class customSelfRegistration extends LightningElement {
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
             }
         }).catch(error=>{
-            console.log(error);
+            console.error('Error loading custom configuration: ' + error.body.message);
         })
 
         if(this.propertyPanelSettings) {
@@ -114,7 +114,7 @@ export default class customSelfRegistration extends LightningElement {
                             this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
                         } 
                     }).catch(error=>{
-                        console.log(error); 
+                        console.error(error); 
                     })
                 }
             }
@@ -154,7 +154,7 @@ export default class customSelfRegistration extends LightningElement {
                         this._setComponentError(true, 'Person Accounts are not enabled on this org.'); 
                     } 
                 }).catch(error=>{
-                    console.log(error); 
+                    console.error(error); 
                 })
             }
             
@@ -167,7 +167,7 @@ export default class customSelfRegistration extends LightningElement {
             isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
                 this.parsedSettings['loggingEnabled'] = enabled;
             }).catch(error=>{
-                console.log(error); 
+                console.error(error); 
             })
         }
     }
