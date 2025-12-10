@@ -6,8 +6,6 @@
     </types>
     <types>
         <members>CPEControllerTest</members>
-        <members>CustomSort</members>
-        <members>CustomSortWrapper</members>
         <members>MockProvider</members>
         <!-- <members>RetrievePersonAccountRecordTypes</members> -->
         <!-- <members>RetrievePersonAccountRecordTypesTestOld</members> -->
