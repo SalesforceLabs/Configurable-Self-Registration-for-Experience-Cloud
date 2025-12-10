@@ -84,7 +84,7 @@ export default class customSelfRegistration extends LightningElement {
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
             }
         }).catch(error=>{
-            console.error('Error loading custom configuration: ' + error.body.message);
+            console.error('Error loading custom configuration: ' + error.body);
         })
 
         if(this.propertyPanelSettings) {
@@ -212,15 +212,26 @@ export default class customSelfRegistration extends LightningElement {
 
     handleOnChange(event) {        
         this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value.trim();        
-        //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
-        if(event.target.className.includes('passwordCmp')) { 
-            let valueToCompare = this.template.querySelector('.confirmPasswordCmp');
-            this.comparePasswordValues(event, valueToCompare);
-        }
+    }
 
-        if(event.target.className.includes('confirmPasswordCmp')) {
-            let valueToCompare = this.template.querySelector('.passwordCmp');
-            this.comparePasswordValues(event, valueToCompare);
+    handleOnBlur(event) {
+        //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
+        if(event.target.className.includes('passwordCmp') || event.target.className.includes('confirmPasswordCmp')) { 
+            let passwordCmp = this.template.querySelector('.passwordCmp');
+            let confirmPasswordCmp = this.template.querySelector('.confirmPasswordCmp');
+            
+            //Only validate if both fields are populated
+            if(passwordCmp.value != null && passwordCmp.value != '' && confirmPasswordCmp.value != null && confirmPasswordCmp.value != '') {
+                if(passwordCmp.value !== confirmPasswordCmp.value){
+                    passwordCmp.setCustomValidity(this.parsedSettings.passwordMatchError);
+                    confirmPasswordCmp.setCustomValidity(this.parsedSettings.passwordMatchError);
+                } else {
+                    passwordCmp.setCustomValidity('');
+                    confirmPasswordCmp.setCustomValidity('');
+                }
+                passwordCmp.reportValidity();
+                confirmPasswordCmp.reportValidity();
+            }
         }
     }
 
