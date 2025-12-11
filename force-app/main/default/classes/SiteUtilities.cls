@@ -15,6 +15,22 @@ public without sharing class SiteUtilities {
     public static List<String> messages = new List<String>();
     public static String siteName = Site.getName();
 
+    // Test-visible wrapper for Custom Metadata to allow mocking in tests
+    @TestVisible
+    private static List<CustomConfigurationWrapper> mockMetadataList;
+    
+    // Test-visible mock for NetworkMember results to allow mocking in tests
+    @TestVisible
+    public static List<NetworkMember> mockNetworkMemberList;
+    
+    // Test-visible mock for Custom_Experience_Cloud_Setting__mdt to allow mocking in tests
+    @TestVisible
+    public static Map<String, Boolean> mockLoggingSettings;
+    
+    // Test-visible flag to simulate exception in sendVerificationCode
+    @TestVisible
+    public static Boolean simulateSendVerificationCodeException = false;
+
     //TODO: Setting the experience Id is required for Dynamic Branding. However, the Site.setExperienceId method doesn't appear to be working properly. 
     //The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
     /*@AuraEnabled
@@ -28,6 +44,44 @@ public without sharing class SiteUtilities {
     }*/
     
     /**
+     * @description Get metadata wrappers - uses mock data in tests if available, otherwise queries real metadata
+     * Based on pattern from: https://crsinfosolutions.com/custom-metadata-unit-test/
+     */
+    @TestVisible
+    private static List<CustomConfigurationWrapper> getMetadataWrappers(String componentName) {
+        // If mock data is set in tests, use it
+        if (mockMetadataList != null) {
+            return mockMetadataList;
+        }
+        
+        // Otherwise, query real metadata
+        List<SObject> metadata = new List<SObject>(); 
+        String objectName = (componentName == LOGIN_COMPONENT_NAME) ? 'Custom_Login_Configuration__mdt' : 'Custom_Registration_Configuration__mdt';
+        
+        // Query fields explicitly to avoid getAll() truncation issues with Long Text Areas and sort by Display Order
+        String query = 'SELECT Active__c, Portal_API_Name__c, Display_Order__c, Field_Type__c, Field_Name__c, ' +
+                       'Field_Label__c, Field_Class__c, Minimum_Value__c, Field_Under_Minimum_Range_Message__c, ' +
+                       'Maximum_Value__c, Field_Over_Max_Range_Message__c, Field_Min_Length__c, ' +
+                       'Field_Message_Too_Short__c, Field_Max_Length__c, Field_Label_Variant__c, ' +
+                       'Field_Date_Style__c, Field_Show_Icon__c, Field_Icon_Name__c, Field_Icon_Class__c, ' +
+                       'Field_Parent_Class__c, Field_Toggle_Icon_Name__c, Field_Toggle_Type__c, ' +
+                       'Field_Allow_Auto_Complete__c, Field_Message_Too_Long__c, Field_Picklist_Options__c, ' +
+                       'Field_Placeholder__c, Field_Message__c, Field_Validation_REGEX__c, ' +
+                       'Field_Required__c, Field_Required_Message__c, Field_Help_Text__c ' +
+                       'FROM ' + objectName + 
+                       ' WHERE Active__c = true AND (Portal_API_Name__c = :siteName OR Portal_API_Name__c = \'ALL\')' +
+                       ' ORDER BY Display_Order__c ASC';
+        
+        metadata = Database.query(query);
+        
+        List<CustomConfigurationWrapper> wrappers = new List<CustomConfigurationWrapper>();
+        for (SObject m : metadata) {
+            wrappers.add(new CustomConfigurationWrapper(m));
+        }
+        return wrappers;
+    }
+
+    /**
      * @description Retrieve Custom Metadata Types which contain custom field configuration for the Login & Self Registration forms. 
      * @param urlParams a JSON string of URL params that were appended to the page.
      * @param componentName a string of the component that is calling this function to filter the Metadata i.e. Login or Self Registration
@@ -40,63 +94,46 @@ public without sharing class SiteUtilities {
         List<Map<String, Object>> resultList = new List<Map<String, Object>>();
 
         try {
-            List<SObject> metadata = new List<SObject>(); 
-            String objectName = (componentName == LOGIN_COMPONENT_NAME) ? 'Custom_Login_Configuration__mdt' : 'Custom_Registration_Configuration__mdt';
-            
-            // Query fields explicitly to avoid getAll() truncation issues with Long Text Areas and sort by Display Order
-            String query = 'SELECT Active__c, Portal_API_Name__c, Display_Order__c, Field_Type__c, Field_Name__c, ' +
-                           'Field_Label__c, Field_Class__c, Minimum_Value__c, Field_Under_Minimum_Range_Message__c, ' +
-                           'Maximum_Value__c, Field_Over_Max_Range_Message__c, Field_Min_Length__c, ' +
-                           'Field_Message_Too_Short__c, Field_Max_Length__c, Field_Label_Variant__c, ' +
-                           'Field_Date_Style__c, Field_Show_Icon__c, Field_Icon_Name__c, Field_Icon_Class__c, ' +
-                           'Field_Parent_Class__c, Field_Toggle_Icon_Name__c, Field_Toggle_Type__c, ' +
-                           'Field_Allow_Auto_Complete__c, Field_Message_Too_Long__c, Field_Picklist_Options__c, ' +
-                           'Field_Placeholder__c, Field_Message__c, Field_Validation_REGEX__c, ' +
-                           'Field_Required__c, Field_Required_Message__c, Field_Help_Text__c ' +
-                           'FROM ' + objectName + 
-                           ' WHERE Active__c = true AND (Portal_API_Name__c = :siteName OR Portal_API_Name__c = \'ALL\')' +
-                           ' ORDER BY Display_Order__c ASC';
-            
-            metadata = Database.query(query);
+            List<CustomConfigurationWrapper> metadataWrappers = getMetadataWrappers(componentName);
 
-            for (SObject mapping : metadata) {
+            for (CustomConfigurationWrapper mapping : metadataWrappers) {
                 Map<String, Object> fieldMap = new Map<String, Object>();
                 
-                fieldMap.put('fieldType', mapping.get('Field_Type__c'));
-                fieldMap.put('fieldName', mapping.get('Field_Name__c'));
-                fieldMap.put('fieldLabel', mapping.get('Field_Label__c'));
-                fieldMap.put('fieldClass', mapping.get('Field_Class__c'));
-                fieldMap.put('fieldMinValue', mapping.get('Minimum_Value__c'));
-                fieldMap.put('fieldMessageUnder', mapping.get('Field_Under_Minimum_Range_Message__c'));
-                fieldMap.put('fieldMaxValue', mapping.get('Maximum_Value__c'));
-                fieldMap.put('fieldMessageOver', mapping.get('Field_Over_Max_Range_Message__c'));
-                fieldMap.put('fieldMinLength', mapping.get('Field_Min_Length__c'));
-                fieldMap.put('fieldMinLengthMessage', mapping.get('Field_Message_Too_Short__c'));
-                fieldMap.put('fieldMaxLength', mapping.get('Field_Max_Length__c'));
-                fieldMap.put('fieldLabelVariant', mapping.get('Field_Label_Variant__c'));
-                fieldMap.put('fieldDateStyle', mapping.get('Field_Date_Style__c'));
+                fieldMap.put('fieldType', mapping.fieldType);
+                fieldMap.put('fieldName', mapping.fieldName);
+                fieldMap.put('fieldLabel', mapping.fieldLabel);
+                fieldMap.put('fieldClass', mapping.fieldClass);
+                fieldMap.put('fieldMinValue', mapping.minimumValue);
+                fieldMap.put('fieldMessageUnder', mapping.fieldUnderMinimumRangeMessage);
+                fieldMap.put('fieldMaxValue', mapping.maximumValue);
+                fieldMap.put('fieldMessageOver', mapping.fieldOverMaximumRangeMessage);
+                fieldMap.put('fieldMinLength', mapping.fieldMinLength);
+                fieldMap.put('fieldMinLengthMessage', mapping.fieldMessageTooShort);
+                fieldMap.put('fieldMaxLength', mapping.fieldMaxLength);
+                fieldMap.put('fieldLabelVariant', mapping.fieldLabelVariant);
+                fieldMap.put('fieldDateStyle', mapping.fieldDateStyle);
                 
                 //Settings to control icon visibility
-                fieldMap.put('fieldShowIcon', convertToBoolean(mapping.get('Field_Show_Icon__c')));
-                fieldMap.put('fieldIconName', mapping.get('Field_Icon_Name__c'));
-                fieldMap.put('fieldIconClass', mapping.get('Field_Icon_Class__c'));
-                fieldMap.put('fieldParentClass', mapping.get('Field_Parent_Class__c'));
-                fieldMap.put('fieldToggleIconName', mapping.get('Field_Toggle_Icon_Name__c'));
-                fieldMap.put('fieldToggleFieldType', mapping.get('Field_Toggle_Type__c'));
+                fieldMap.put('fieldShowIcon', convertToBoolean(mapping.fieldShowIcon));
+                fieldMap.put('fieldIconName', mapping.fieldIconName);
+                fieldMap.put('fieldIconClass', mapping.fieldIconClass);
+                fieldMap.put('fieldParentClass', mapping.fieldParentClass);
+                fieldMap.put('fieldToggleIconName', mapping.fieldToggleIconName);
+                fieldMap.put('fieldToggleFieldType', mapping.fieldToggleType);
 
-                String autocomplete = convertToBoolean(mapping.get('Field_Allow_Auto_Complete__c')) ? 'on' : 'off';
+                String autocomplete = convertToBoolean(mapping.fieldAllowAutoComplete) ? 'on' : 'off';
                 fieldMap.put('fieldAutocomplete', autocomplete);
 
                 //NOTE: Odd behaviour of this property... See Usage Considerations: https://developer.salesforce.com/docs/component-library/bundle/lightning-input/documentation
                 //https://salesforce.stackexchange.com/questions/348093/lwc-lightning-input-custom-validation-for-max-length-no-error-message-comes-on
-                fieldMap.put('fieldMaxLengthMessage', mapping.get('Field_Message_Too_Long__c'));
+                fieldMap.put('fieldMaxLengthMessage', mapping.fieldMessageTooLong);
                 
                 //TODO: We could add fields to control the default values from custom metadata if needed.
                 fieldMap.put('fieldChecked', false);
                 fieldMap.put('fieldValue', '');
 
                 for(String key : urlParameters.keySet()) {
-                    if(mapping.get('Field_Name__c') == key) {
+                    if(mapping.fieldName == key) {
                         if(convertToBoolean(urlParameters.get(key))) {
                             fieldMap.put('fieldChecked', urlParameters.get(key));
                         }
@@ -106,9 +143,9 @@ public without sharing class SiteUtilities {
                     }
                 }
 
-                if(mapping.get('Field_Type__c') == 'picklist') {
+                if(mapping.fieldType == 'picklist') {
                     fieldMap.put('showAsPicklist', true);
-                    String picklistOptions = (String)mapping.get('Field_Picklist_Options__c');
+                    String picklistOptions = mapping.fieldPicklistOptions;
                     if (String.isNotBlank(picklistOptions)) {
                         try {
                             fieldMap.put('picklistOptions', JSON.deserializeUntyped(picklistOptions));
@@ -123,22 +160,22 @@ public without sharing class SiteUtilities {
                     }
                 }
 
-                if(String.isNotBlank(convertToString(mapping.get('Field_Placeholder__c')))) {
-                    fieldMap.put('fieldPlaceholder', mapping.get('Field_Placeholder__c'));
+                if(String.isNotBlank(convertToString(mapping.fieldPlaceholder))) {
+                    fieldMap.put('fieldPlaceholder', mapping.fieldPlaceholder);
                 }
 
-                if(String.isNotBlank(convertToString(mapping.get('Field_Message__c'))) && String.isNotBlank(convertToString(mapping.get('Field_Validation_REGEX__c')))) {
-                    fieldMap.put('fieldMessage', mapping.get('Field_Message__c'));
-                    fieldMap.put('fieldRegex', mapping.get('Field_Validation_REGEX__c'));
+                if(String.isNotBlank(convertToString(mapping.fieldMessage)) && String.isNotBlank(convertToString(mapping.fieldValidationRegex))) {
+                    fieldMap.put('fieldMessage', mapping.fieldMessage);
+                    fieldMap.put('fieldRegex', mapping.fieldValidationRegex);
                 }
 
-                if(convertToBoolean(mapping.get('Field_Required__c')) && String.isNotBlank(convertToString(mapping.get('Field_Required_Message__c')))) {
-                    fieldMap.put('fieldRequired', convertToString(mapping.get('Field_Required__c')));
-                    fieldMap.put('fieldRequiredMessage', mapping.get('Field_Required_Message__c'));
+                if(convertToBoolean(mapping.fieldRequired) && String.isNotBlank(convertToString(mapping.fieldRequiredMessage))) {
+                    fieldMap.put('fieldRequired', convertToString(mapping.fieldRequired));
+                    fieldMap.put('fieldRequiredMessage', mapping.fieldRequiredMessage);
                 }
 
-                if(String.isNotBlank(convertToString(mapping.get('Field_Help_Text__c')))) {
-                    fieldMap.put('fieldHelpText', mapping.get('Field_Help_Text__c'));
+                if(String.isNotBlank(convertToString(mapping.fieldHelpText))) {
+                    fieldMap.put('fieldHelpText', mapping.fieldHelpText);
                 }
                 
                 resultList.add(fieldMap);
@@ -260,17 +297,13 @@ public without sharing class SiteUtilities {
      * @param componentName - the name of the component that is calling this function
      */
     public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName){
-       try {
-            if(loggingEnabled) {
-                Experience_Cloud_Event__e newLog = new Experience_Cloud_Event__e();
-                newLog.Message__c = message;
-                newLog.Log_Type__c = logType;
-                newLog.Component_Name__c = componentName;
-                Eventbus.publish(newLog);
-            } 
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
+        if(loggingEnabled) {
+            Experience_Cloud_Event__e newLog = new Experience_Cloud_Event__e();
+            newLog.Message__c = message;
+            newLog.Log_Type__c = logType;
+            newLog.Component_Name__c = componentName;
+            Eventbus.publish(newLog);
+        } 
     }
 
     /**
@@ -279,14 +312,13 @@ public without sharing class SiteUtilities {
     * @return true/false depending on setting value.
     */
     @AuraEnabled(cacheable=true)
-    public static Boolean isLoggingEnabled(String settingName) {        
-        List<Custom_Experience_Cloud_Setting__mdt> logSetting = new List<Custom_Experience_Cloud_Setting__mdt>();
-        try {
-            logSetting = [SELECT Id, Enable__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
+    public static Boolean isLoggingEnabled(String settingName) {
+        // If mock data is set in tests, use it
+        if (mockLoggingSettings != null && mockLoggingSettings.containsKey(settingName)) {
+            return mockLoggingSettings.get(settingName);
         }
-        catch(Exception ex) {
-            return false;
-        }
+        
+        List<Custom_Experience_Cloud_Setting__mdt> logSetting = [SELECT Id, Enable__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
         
         if(!logSetting.isEmpty() && logSetting.size() == 1) {
             return true;
@@ -352,6 +384,10 @@ public without sharing class SiteUtilities {
      * @return List of NetworkMember records
      */
     public static List<NetworkMember> validateUsername(String username, String networkId) {
+        // If mock data is set in tests, use it
+        if (mockNetworkMemberList != null) {
+            return mockNetworkMemberList;
+        }
         
         //SF assigns a username by taking the submitted value then appending everything after the "@" automatically and randomly to keep unique.
         //Formula field is used to calculate value we are interested i.e. the submitted value with no domain that we can query with '='. 
@@ -427,6 +463,11 @@ public without sharing class SiteUtilities {
      * @return returns the verification code identifier value to be passed to the verify function later.
      */
     public static String sendVerificationCode(Auth.VerificationMethod method, User user, String componentName) { 
+        // Simulate exception in tests if flag is set
+        if (simulateSendVerificationCodeException) {
+            throw new CalloutException('Simulated exception for testing sendVerificationCode');
+        }
+        
         if(componentName == SELF_REG_COMPONENT_NAME) {
             return Test.isRunningTest() ? '123456' : UserManagement.initSelfRegistration(method, user);
         }   
@@ -487,5 +528,117 @@ public without sharing class SiteUtilities {
         messages.add('Verification was successful. Redirecting user to: ' + url);
         createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName); 
         return jsonBuilder('registerResult', itemsToAdd);    
+    }
+
+    /**
+     * @description Wrapper class for Custom Metadata configuration to allow mocking in tests
+     * Based on pattern from: https://crsinfosolutions.com/custom-metadata-unit-test/
+     */
+    @TestVisible
+    private class CustomConfigurationWrapper {
+        public String fieldType;
+        public String fieldName;
+        public String fieldLabel;
+        public String fieldClass;
+        public Decimal minimumValue;
+        public String fieldUnderMinimumRangeMessage;
+        public Decimal maximumValue;
+        public String fieldOverMaximumRangeMessage;
+        public Decimal fieldMinLength;
+        public String fieldMessageTooShort;
+        public Decimal fieldMaxLength;
+        public String fieldLabelVariant;
+        public String fieldDateStyle;
+        public Boolean fieldShowIcon;
+        public String fieldIconName;
+        public String fieldIconClass;
+        public String fieldParentClass;
+        public String fieldToggleIconName;
+        public String fieldToggleType;
+        public Boolean fieldAllowAutoComplete;
+        public String fieldMessageTooLong;
+        public String fieldPicklistOptions;
+        public String fieldPlaceholder;
+        public String fieldMessage;
+        public String fieldValidationRegex;
+        public Boolean fieldRequired;
+        public String fieldRequiredMessage;
+        public String fieldHelpText;
+        public Boolean active;
+        public String portalApiName;
+        public Decimal displayOrder;
+
+        public CustomConfigurationWrapper(SObject metadata) {
+            this.fieldType = (String)metadata.get('Field_Type__c');
+            this.fieldName = (String)metadata.get('Field_Name__c');
+            this.fieldLabel = (String)metadata.get('Field_Label__c');
+            this.fieldClass = (String)metadata.get('Field_Class__c');
+            this.minimumValue = (Decimal)metadata.get('Minimum_Value__c');
+            this.fieldUnderMinimumRangeMessage = (String)metadata.get('Field_Under_Minimum_Range_Message__c');
+            this.maximumValue = (Decimal)metadata.get('Maximum_Value__c');
+            this.fieldOverMaximumRangeMessage = (String)metadata.get('Field_Over_Max_Range_Message__c');
+            this.fieldMinLength = (Decimal)metadata.get('Field_Min_Length__c');
+            this.fieldMessageTooShort = (String)metadata.get('Field_Message_Too_Short__c');
+            this.fieldMaxLength = (Decimal)metadata.get('Field_Max_Length__c');
+            this.fieldLabelVariant = (String)metadata.get('Field_Label_Variant__c');
+            this.fieldDateStyle = (String)metadata.get('Field_Date_Style__c');
+            this.fieldShowIcon = (Boolean)metadata.get('Field_Show_Icon__c');
+            this.fieldIconName = (String)metadata.get('Field_Icon_Name__c');
+            this.fieldIconClass = (String)metadata.get('Field_Icon_Class__c');
+            this.fieldParentClass = (String)metadata.get('Field_Parent_Class__c');
+            this.fieldToggleIconName = (String)metadata.get('Field_Toggle_Icon_Name__c');
+            this.fieldToggleType = (String)metadata.get('Field_Toggle_Type__c');
+            this.fieldAllowAutoComplete = (Boolean)metadata.get('Field_Allow_Auto_Complete__c');
+            this.fieldMessageTooLong = (String)metadata.get('Field_Message_Too_Long__c');
+            this.fieldPicklistOptions = (String)metadata.get('Field_Picklist_Options__c');
+            this.fieldPlaceholder = (String)metadata.get('Field_Placeholder__c');
+            this.fieldMessage = (String)metadata.get('Field_Message__c');
+            this.fieldValidationRegex = (String)metadata.get('Field_Validation_REGEX__c');
+            this.fieldRequired = (Boolean)metadata.get('Field_Required__c');
+            this.fieldRequiredMessage = (String)metadata.get('Field_Required_Message__c');
+            this.fieldHelpText = (String)metadata.get('Field_Help_Text__c');
+            this.active = (Boolean)metadata.get('Active__c');
+            this.portalApiName = (String)metadata.get('Portal_API_Name__c');
+            this.displayOrder = (Decimal)metadata.get('Display_Order__c');
+        }
+
+        // Test-visible constructor for creating mock wrappers in tests
+        @TestVisible
+        public CustomConfigurationWrapper(
+            String fieldType, String fieldName, String fieldLabel, String fieldPlaceholder,
+            String fieldMessage, String fieldValidationRegex, Boolean fieldRequired,
+            String fieldRequiredMessage, String fieldHelpText, String fieldPicklistOptions) {
+            this.fieldType = fieldType;
+            this.fieldName = fieldName;
+            this.fieldLabel = fieldLabel;
+            this.fieldClass = 'test-class';
+            this.minimumValue = null;
+            this.fieldUnderMinimumRangeMessage = null;
+            this.maximumValue = null;
+            this.fieldOverMaximumRangeMessage = null;
+            this.fieldMinLength = null;
+            this.fieldMessageTooShort = null;
+            this.fieldMaxLength = null;
+            this.fieldLabelVariant = null;
+            this.fieldDateStyle = null;
+            this.fieldShowIcon = false;
+            this.fieldIconName = null;
+            this.fieldIconClass = null;
+            this.fieldParentClass = null;
+            this.fieldToggleIconName = null;
+            this.fieldToggleType = null;
+            this.fieldAllowAutoComplete = false;
+            this.fieldMessageTooLong = null;
+            this.fieldPicklistOptions = fieldPicklistOptions;
+            this.fieldPlaceholder = fieldPlaceholder;
+            this.fieldMessage = fieldMessage;
+            this.fieldValidationRegex = fieldValidationRegex;
+            this.fieldRequired = fieldRequired;
+            this.fieldRequiredMessage = fieldRequiredMessage;
+            this.fieldHelpText = fieldHelpText;
+            this.active = true;
+            this.portalApiName = 'ALL';
+            this.displayOrder = 1;
+        }
     }
 }

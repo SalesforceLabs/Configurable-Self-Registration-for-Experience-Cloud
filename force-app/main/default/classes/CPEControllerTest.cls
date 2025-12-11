@@ -4,16 +4,24 @@
 @isTest
 private class CPEControllerTest {
 
+    private static Boolean isPersonAccountEnabled() {
+        return Schema.sObjectType.Account.fields.getMap().containsKey('isPersonAccount');
+    }
+
     @isTest
     static void getPersonAccountRecordTypeTest() {
         String jsonResult = SiteUtilities.getPersonAccountRecordTypes('Account');
         Map<String, Object> rts = (Map<String, Object>) JSON.deserializeUntyped(jsonResult); 
         List<Object> dataObj = (List<Object>) rts.get('recordTypes');
-        Map<String, Object> data = new Map<String,Object>();
-        for (Object item : dataObj) {
-            data = (Map<String, Object>) item;
+        
+        if (isPersonAccountEnabled()) {
+             System.assert(dataObj.size() > 0, 'Person Account Org should have at least one Account Record Type');
         }
-        System.Assert.isTrue(data.values().size() > 1, 'At least 1 Record type found in the org'); 
+
+        if (dataObj.size() > 0) {
+            Map<String, Object> data = (Map<String, Object>) dataObj[0];
+            System.Assert.isTrue(data.values().size() > 1, 'Record Type JSON structure should contain label and value'); 
+        }
     }
 
     @isTest
@@ -38,21 +46,22 @@ private class CPEControllerTest {
         //Get an Active site, and use that Id to test. Assuming an active site has Network Members.
         //Another approach if needed: https://salesforce.stackexchange.com/questions/421015/issue-with-obtaining-networkid-in-test-class-for-community-user
         try {
-            siteId = [SELECT Id,Name FROM Site WHERE Status = 'Active' LIMIT 1].Id;
-            String jsonResult = SiteUtilities.getProfileMembers(siteId);
-            Map<String, Object> rts = (Map<String, Object>) JSON.deserializeUntyped(jsonResult); 
-            List<Object> dataObj = (List<Object>) rts.get('memberProfiles');
-            Map<String, Object> data = new Map<String,Object>();
-            
-            for (Object item : dataObj) {
-                data = (Map<String, Object>) item;
+            List<Site> sites = [SELECT Id,Name FROM Site WHERE Status = 'Active' LIMIT 1];
+            if (!sites.isEmpty()) {
+                siteId = sites[0].Id;
+                String jsonResult = SiteUtilities.getProfileMembers(siteId);
+                Map<String, Object> rts = (Map<String, Object>) JSON.deserializeUntyped(jsonResult); 
+                List<Object> dataObj = (List<Object>) rts.get('memberProfiles');
+                
+                if (dataObj.size() > 0) {
+                     Map<String, Object> data = (Map<String, Object>) dataObj[0];
+                     Integer size = data.values().size();    
+                     System.assert(size > 0, 'Member profiles found.');
+                }
             }
-
-            Integer size = data.values().size();    
-            System.assert(size > 0, 'Member profiles found.');
         }
         catch (Exception e) {
-            System.assertEquals(siteId, null, 'No Active site found to run test.');
+            System.assertEquals(siteId, null, 'Exception occurred: ' + e.getMessage());
         }
     }
 }

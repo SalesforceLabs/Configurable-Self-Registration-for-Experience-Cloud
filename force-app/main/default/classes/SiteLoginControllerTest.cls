@@ -15,6 +15,10 @@ private class SiteLoginControllerTest {
 	public static final String USERNAME_INVALID_PASSWORD = 'testuserinvalidpassword@mail.com';
 	public static final String USERNAME_FROZEN = 'testuserblocked@mail.com';
     
+    private static Boolean isPersonAccountEnabled() {
+        return Schema.sObjectType.Account.fields.getMap().containsKey('isPersonAccount');
+    }
+
     //Setup some users for testing the logins via standard and passwordless login.
     @TestSetup
     private static void createTestData(){
@@ -39,22 +43,43 @@ private class SiteLoginControllerTest {
             LIMIT 1
         ].Id;
 
-        
-        Id recordAccTypeId = Schema.sObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
-        
-        //Create a Person Account for each user in the list above
-        List<SObject> a = new List<SObject>();
-        Schema.SObjectType targetType = Schema.getGlobalDescribe().get('Account');
-        for (String user : usernameList) {
-            SObject newObject = targetType.newSObject(); 
-            Account acc = (Account)newObject;
-            acc.put('RecordTypeId', recordAccTypeId);
-            acc.put('FirstName', 'test');
-            acc.put('LastName', 'user');
-            acc.put('PersonEmail', user);
-            a.add(acc);
+        if (isPersonAccountEnabled()) {
+            Id recordAccTypeId = Schema.sObjectType.Account.getRecordTypeInfosByName().get('Person Account').getRecordTypeId();
+            
+            //Create a Person Account for each user in the list above
+            List<SObject> a = new List<SObject>();
+            Schema.SObjectType targetType = Schema.getGlobalDescribe().get('Account');
+            for (String user : usernameList) {
+                SObject newObject = targetType.newSObject(); 
+                Account acc = (Account)newObject;
+                acc.put('RecordTypeId', recordAccTypeId);
+                acc.put('FirstName', 'test');
+                acc.put('LastName', 'user');
+                acc.put('PersonEmail', user);
+                a.add(acc);
+            }
+            insert a;
+        } else {
+             List<Account> accounts = new List<Account>();
+             List<Contact> contacts = new List<Contact>();
+             
+             for (String user : usernameList) {
+                 Account acc = new Account(Name = 'Test Account ' + user);
+                 accounts.add(acc);
+             }
+             insert accounts;
+
+             for (Integer i = 0; i < usernameList.size(); i++) {
+                 Contact con = new Contact(
+                     FirstName = 'test',
+                     LastName = 'user',
+                     Email = usernameList[i],
+                     AccountId = accounts[i].Id
+                 );
+                 contacts.add(con);
+             }
+             insert contacts;
         }
-        insert a;
 
         //Select an admin user that is active in the system.
         User adminUser = [
@@ -69,23 +94,37 @@ private class SiteLoginControllerTest {
             List<User> u = new List<User>();
             for (String user : usernameList) { //Create a user for each of our 'test' user email addresses.
                 String userEmail = user;
+                Id contactId;
 
-                List<SObject> acc2 = Database.query('SELECT Id,PersonContactId FROM Account WHERE PersonEmail = :userEmail LIMIT 1'); //Limited to 7 queries, 1 for each test user so not bothered with bulkifying this.
-                User tempUser = new User(  
-                    FirstName = 'Test',  
-                    LastName = 'User',  
-                    Email = user,  
-                    Username = user,
-                    CommunityNickname = 'SiteUser' + System.now().getTime(),
-                    EmailEncodingKey = 'ISO-8859-1',  
-                    Alias = 'tuser',  
-                    TimeZoneSidKey = 'GMT',  
-                    LocaleSidKey = 'en_US',  
-                    LanguageLocaleKey = 'en_US', 
-                    ContactId = (Id)acc2[0].get('PersonContactId'),
-                    ProfileId = profile 
-                );  
-                u.add(tempUser);
+                if (isPersonAccountEnabled()) {
+                    List<SObject> acc2 = Database.query('SELECT Id,PersonContactId FROM Account WHERE PersonEmail = :userEmail LIMIT 1'); 
+                    if(!acc2.isEmpty()) {
+                         contactId = (Id)acc2[0].get('PersonContactId');
+                    }
+                } else {
+                    List<Contact> cons = [SELECT Id FROM Contact WHERE Email = :userEmail LIMIT 1];
+                    if(!cons.isEmpty()) {
+                        contactId = cons[0].Id;
+                    }
+                }
+                
+                if (contactId != null) {
+                    User tempUser = new User(  
+                        FirstName = 'Test',  
+                        LastName = 'User',  
+                        Email = user,  
+                        Username = user,
+                        CommunityNickname = 'SiteUser' + System.now().getTime() + String.valueOf(Crypto.getRandomInteger()),
+                        EmailEncodingKey = 'ISO-8859-1',  
+                        Alias = 'tuser' + String.valueOf(Crypto.getRandomInteger()).substring(0,2),  
+                        TimeZoneSidKey = 'GMT',  
+                        LocaleSidKey = 'en_US',  
+                        LanguageLocaleKey = 'en_US', 
+                        ContactId = contactId,
+                        ProfileId = profile 
+                    );  
+                    u.add(tempUser);
+                }
             }
             try {
                 System.debug('Users: ' + u);
@@ -120,13 +159,22 @@ private class SiteLoginControllerTest {
     //Retrieve and test custom settings to enable logging for the Login component.
     @isTest
     private static void isLoggingEnabled() {
-        Boolean result =  SiteUtilities.isLoggingEnabled('Login_Logging');
-        if(result) {
-            System.assertEquals(true, result, 'Retrieved custom settings - logging enabled');
-        }
-        else {
-            System.assertEquals(false, result, 'Retrieved custom settings - logging disabled');
-        }
+        // Test with mock - logging enabled
+        SiteUtilities.mockLoggingSettings = new Map<String, Boolean>{'Login_Logging' => true};
+        Boolean result = SiteUtilities.isLoggingEnabled('Login_Logging');
+        System.assertEquals(true, result, 'Mock logging enabled should return true');
+        
+        // Test with mock - logging disabled
+        SiteUtilities.mockLoggingSettings.put('Login_Logging', false);
+        result = SiteUtilities.isLoggingEnabled('Login_Logging');
+        System.assertEquals(false, result, 'Mock logging disabled should return false');
+        
+        // Clean up
+        SiteUtilities.mockLoggingSettings = null;
+        
+        // Test with real metadata (if it exists)
+        Boolean realResult = SiteUtilities.isLoggingEnabled('Login_Logging');
+        System.assertNotEquals(null, realResult, 'Should return a boolean value');
     }
 
     //Mock a login via Passwordless. NOTE: Verifying the code to returned is already covered in registration so no need to it again here as it is mocked anyway.

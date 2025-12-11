@@ -452,6 +452,7 @@ public with sharing class SiteRegistrationController {
      * @param configurationOptions a map of the configuration options from the LWC property panel
      * @param objectMetadata a map of the metadata for a specified object 
      */
+    @TestVisible
     private static Map<String, Object> convertFormDataToCorrectDataType(Map<String, Object> formInputs, Map<String, Object> configurationOptions, Map<String, Schema.SObjectField> objectMetadata) {
     
         for(String fieldName : formInputs.keySet()) {
@@ -493,6 +494,7 @@ public with sharing class SiteRegistrationController {
      * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
      * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
      */
+    @TestVisible
     private static Id getObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
         List<sObject> recordList = new List<sObject>();
 
