@@ -21,12 +21,27 @@
         Registration component only.</description>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience_Cloud_Log__c.AccountId__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience_Cloud_Log__c.Component_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience_Cloud_Log__c.ContactId__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience_Cloud_Log__c.Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Cloud_Log__c.UserId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

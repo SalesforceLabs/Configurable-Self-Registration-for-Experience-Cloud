@@ -271,6 +271,20 @@ public without sharing class SiteUtilities {
     }
     
     /**
+     * @description Extracts the dial code portion from a value stored as "code_Country".
+     * @param rawCountryCode the raw country code value from the form/configuration.
+     * @return the code segment before the underscore, or blank if not present.
+     */
+    public static String extractCountryCode(Object rawCountryCode) {
+        String countryCodeRaw = convertToString(rawCountryCode);
+        if(String.isNotBlank(countryCodeRaw)) {
+            List<String> countryParts = countryCodeRaw.split('_');
+            return !countryParts.isEmpty() ? countryParts[0] : '';
+        }
+        return '';
+    }
+    
+    /**
      * @description pass in attributes to build up a simple JSON String to return to the LWC to parse
      * @param  key is a key for the top level JSON structure
      * @param  itemsToAdd map of string, string to pass the key and value of each JSON element
@@ -295,15 +309,32 @@ public without sharing class SiteUtilities {
      * @param message - a list of messages to store on the Platform Event
      * @param logType - the type of error to log, either SiteUtilities.INFORMATION_LOG_TYPE or SiteUtilities.ERROR_LOG_TYPE
      * @param componentName - the name of the component that is calling this function
+     * @param accountId - the Account Id of the record identified or created (optional)
+     * @param userId - the User Id of the user identified or created (optional)
+     * @param contactId - the Contact Id (PersonAccountId in Person Account enabled orgs, ContactId in BusinessAccount and Contact only orgs) (optional)
      */
-    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName){
+    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName, Id accountId, Id userId, Id contactId){
         if(loggingEnabled) {
             Experience_Cloud_Event__e newLog = new Experience_Cloud_Event__e();
             newLog.Message__c = message;
             newLog.Log_Type__c = logType;
             newLog.Component_Name__c = componentName;
+            newLog.AccountId__c = accountId;
+            newLog.UserId__c = userId;
+            newLog.ContactId__c = contactId;
             Eventbus.publish(newLog);
         } 
+    }
+    
+    /** 
+     * @description Overloaded method for backward compatibility. Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Custom Metadata Types.
+     * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
+     * @param message - a list of messages to store on the Platform Event
+     * @param logType - the type of error to log, either SiteUtilities.INFORMATION_LOG_TYPE or SiteUtilities.ERROR_LOG_TYPE
+     * @param componentName - the name of the component that is calling this function
+     */
+    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName){
+        createLogEntry(loggingEnabled, message, logType, componentName, null, null, null);
     }
 
     /**
@@ -414,10 +445,10 @@ public without sharing class SiteUtilities {
         List<User> u;
         
         if(String.isNotBlank(username)) {
-            u = [SELECT Id,Name,Email,Username FROM User WHERE Username = :username];
+            u = [SELECT Id,Name,Email,Username,ContactId,Contact.AccountId FROM User WHERE Username = :username];
         }
         if(String.isNotBlank(mobilePhone)) {
-            u = [SELECT Id, MobilePhone, IsActive FROM User WHERE MobilePhone = :mobilePhone AND IsActive = true ORDER BY CreatedDate DESC LIMIT 1];
+            u = [SELECT Id, MobilePhone, IsActive, ContactId, Contact.AccountId FROM User WHERE MobilePhone = :mobilePhone AND IsActive = true ORDER BY CreatedDate DESC LIMIT 1];
         }
         return u;        
     }
@@ -451,7 +482,7 @@ public without sharing class SiteUtilities {
                 delete new Contact (Id = recordId);
             }            
         } catch(Exception e) {
-            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName);
+            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName, null, null, null);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
     }
@@ -499,15 +530,38 @@ public without sharing class SiteUtilities {
         String mobilePhone;
         String username = String.isNotBlank(convertToString(formJson.get('Username'))) ? convertToString(formJson.get('Username')) : convertToString(formJson.get('Email'));
         
-        if(String.isNotBlank(convertToString(formJson.get('countryCode')))) {
-            mobilePhone = UserManagement.formatPhoneNumber(convertToString(formJson.get('countryCode')), convertToString(formJson.get('MobilePhone'))); //Format the phone number with the user management class otherwise user isn't found!!
+        //Do this to ensure the country code is formatted correctly. The value is stored as a string in the format "countryCode_Country" because codes are shared in some countries e.g. Canada/United States which should show as separate options, but give weird behaviour in picklists if the value is the same.
+        String countryCode = extractCountryCode(formJson.get('countryCode'));
+        if(String.isNotBlank(countryCode)) {
+            mobilePhone = UserManagement.formatPhoneNumber(countryCode, convertToString(formJson.get('MobilePhone'))); //Format the phone number with the user management class otherwise user isn't found!!
         }
+        
+        // Variables to track IDs for logging
+        Id accountIdForLogging = null;
+        Id userIdForLogging = null;
+        Id contactIdForLogging = null;
         
         if(componentName == SELF_REG_COMPONENT_NAME) {
             res = UserManagement.verifySelfRegistration(method, identifier, code, startUrl);
-        }
-        else {
+            
+            // Populate logging IDs for successful self-registration verification
+            List<User> registeredUsers = getUserIdWithUsername(username, mobilePhone);
+            if(!registeredUsers.isEmpty()) {
+                userIdForLogging = registeredUsers[0].Id;
+                if(registeredUsers[0].ContactId != null) {
+                    contactIdForLogging = registeredUsers[0].ContactId;
+                    accountIdForLogging = registeredUsers[0].Contact != null ? registeredUsers[0].Contact.AccountId : null;
+                }
+            }
+        } else {
             List<User> user = getUserIdWithUsername(username, mobilePhone);
+            if(!user.isEmpty()) {
+                userIdForLogging = user[0].Id;
+                if(user[0].ContactId != null) {
+                    contactIdForLogging = user[0].ContactId;
+                    accountIdForLogging = user[0].Contact != null ? user[0].Contact.AccountId : null;
+                }
+            }
             res = UserManagement.verifyPasswordlessLogin(user[0].Id, method, identifier, code, startUrl);
         }
         
@@ -515,7 +569,7 @@ public without sharing class SiteUtilities {
         
         if(res.success == false) { 
             messages.add('Unable to validate the verification code. Error was: ' + res.message);    
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName);    
+            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging);    
             throw new AuraHandledException(convertToString(lwcSettings.get('failedCodeVerificationMessage')));
         }
 
@@ -526,7 +580,7 @@ public without sharing class SiteUtilities {
         itemsToAdd.put(identifier, '{"pageUrl":"' +  url + '","verificationSuccess":'+  res.success + '}');
 
         messages.add('Verification was successful. Redirecting user to: ' + url);
-        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName); 
+        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging); 
         return jsonBuilder('registerResult', itemsToAdd);    
     }
 

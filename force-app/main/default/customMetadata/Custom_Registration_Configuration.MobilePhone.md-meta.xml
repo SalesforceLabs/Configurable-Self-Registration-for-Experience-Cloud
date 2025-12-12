@@ -100,7 +100,7 @@
     </values>
     <values>
         <field>Field_Toggle_Type__c</field>
-        <value xsi:type="xsd:string">text</value>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Field_Type__c</field>

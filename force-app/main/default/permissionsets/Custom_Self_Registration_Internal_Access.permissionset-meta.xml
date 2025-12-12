@@ -39,12 +39,32 @@
     <description>Assign to internal System Admin Users when using the Custom Self Registration &amp; Login managed package to grant access to relevant features.</description>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience_Cloud_Log__c.AccountId__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience_Cloud_Log__c.Component_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience_Cloud_Log__c.ContactId__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Experience_Cloud_Log__c.Log_Type_Formula__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience_Cloud_Log__c.Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Cloud_Log__c.UserId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

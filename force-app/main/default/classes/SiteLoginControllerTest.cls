@@ -225,4 +225,14 @@ private class SiteLoginControllerTest {
             }
         }
     }
+
+    // Ensure Contact.AccountId is available from getUserIdWithUsername to avoid extra queries.
+    @isTest
+    private static void getUserIncludesContactAccountId() {
+        List<User> users = SiteUtilities.getUserIdWithUsername(USERNAME_SUCCESSFUL, null);
+        System.assertEquals(1, users.size(), 'Expected a single user for the test username');
+        System.assertNotEquals(null, users[0].ContactId, 'ContactId should be populated on the user');
+        System.assertNotEquals(null, users[0].Contact, 'Contact relationship should be loaded from the query');
+        System.assertNotEquals(null, users[0].Contact.AccountId, 'Contact.AccountId should be populated for logging');
+    }
 }
