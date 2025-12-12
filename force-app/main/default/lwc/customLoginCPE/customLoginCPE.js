@@ -87,17 +87,17 @@ export default class CustomLogin extends LightningElement {
         isLoggingEnabled({settingName: 'Login_Logging'}).then((enabled) => {
             this.configurationOptions['loggingEnabled'] = enabled;
         }).catch(error=>{
-            console.log(error); 
+            console.error(error); 
         })
 
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
         getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: 'Login'}).then(result=>{
             this.results = JSON.parse(result);
-            for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
+            for (let i = 0; i < this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
             }
         }).catch(error=>{
-            console.log(error);
+            console.error(error);
         })
 	}
 
@@ -155,7 +155,7 @@ export default class CustomLogin extends LightningElement {
             if(this.enablePasswordlessLogin && this.showVerificationCode) { //Verify the code received and login.
                 verifyUser({formInputs: JSON.stringify(this.formInputs), configurationOptions: JSON.stringify(this.configurationOptions), componentName: 'Login'}).then((result) => {
                     this.registerResults = JSON.parse(result);
-                    console.log('registerResults:' +this.registerResults);
+                    //console.log('registerResults:' +this.registerResults);
                     this.pageUrl = this.registerResults.registerResult[0].pageUrl;
                     window.location.href = this.pageUrl; 
                 }).catch((error) => {

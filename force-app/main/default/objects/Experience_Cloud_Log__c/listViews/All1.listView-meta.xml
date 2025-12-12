@@ -2,10 +2,18 @@
 <ListView xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>All1</fullName>
     <columns>NAME</columns>
-    <columns>Log_Type__c</columns>
-    <columns>Message__c</columns>
+    <columns>Log_Type_Formula__c</columns>
     <columns>Component_Name__c</columns>
+    <columns>UserId__c</columns>
+    <columns>ContactId__c</columns>
+    <columns>AccountId__c</columns>
+    <columns>Message__c</columns>
     <columns>CREATED_DATE</columns>
     <filterScope>Everything</filterScope>
+    <filters>
+        <field>CREATED_DATE</field>
+        <operation>equals</operation>
+        <value>TODAY</value>
+    </filters>
     <label>All</label>
 </ListView>

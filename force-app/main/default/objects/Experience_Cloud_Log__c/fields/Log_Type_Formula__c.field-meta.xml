@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Log_Type_Formula__c</fullName>
+    <externalId>false</externalId>
+    <formula>CASE( TEXT(Log_Type__c),
+  &quot;Error&quot;, IMAGE(&quot;/img/func_icons/remove12_on.gif&quot;, &quot;Error&quot;) &amp; &quot; Error&quot;,
+  &quot;Information&quot;, IMAGE(&quot;/img/msg_icons/info16.png&quot;, &quot;Information&quot;) &amp; &quot; Information&quot;,
+  &quot;&quot;
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Log Type</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

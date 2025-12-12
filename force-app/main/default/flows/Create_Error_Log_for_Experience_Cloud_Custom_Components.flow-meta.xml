@@ -31,9 +31,21 @@ Subscribes to a Platform Event for Custom Logging and creates an Error Log recor
         <locationX>176</locationX>
         <locationY>170</locationY>
         <inputAssignments>
+            <field>AccountId__c</field>
+            <value>
+                <elementReference>$Record.AccountId__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
             <field>Component_Name__c</field>
             <value>
                 <elementReference>$Record.Component_Name__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>ContactId__c</field>
+            <value>
+                <elementReference>$Record.ContactId__c</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -46,6 +58,12 @@ Subscribes to a Platform Event for Custom Logging and creates an Error Log recor
             <field>Message__c</field>
             <value>
                 <elementReference>$Record.Message__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>UserId__c</field>
+            <value>
+                <elementReference>$Record.UserId__c</elementReference>
             </value>
         </inputAssignments>
         <object>Experience_Cloud_Log__c</object>

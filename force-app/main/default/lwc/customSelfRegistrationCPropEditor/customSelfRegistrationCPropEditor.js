@@ -80,11 +80,11 @@ export default class customSelfRegistration extends LightningElement {
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
         getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters)}).then(result=>{
             this.results = JSON.parse(result);
-            for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
+            for (let i = 0; i < this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
             }
         }).catch(error=>{
-            console.log(error);
+            console.error('Error loading custom configuration: ' + error.body);
         })
 
         if(this.propertyPanelSettings) {
@@ -114,7 +114,7 @@ export default class customSelfRegistration extends LightningElement {
                             this._setComponentError(true, 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.'); 
                         } 
                     }).catch(error=>{
-                        console.log(error); 
+                        console.error(error); 
                     })
                 }
             }
@@ -154,7 +154,7 @@ export default class customSelfRegistration extends LightningElement {
                         this._setComponentError(true, 'Person Accounts are not enabled on this org.'); 
                     } 
                 }).catch(error=>{
-                    console.log(error); 
+                    console.error(error); 
                 })
             }
             
@@ -167,7 +167,7 @@ export default class customSelfRegistration extends LightningElement {
             isLoggingEnabled({settingName: 'Self_Registration_Logging'}).then((enabled) => {
                 this.parsedSettings['loggingEnabled'] = enabled;
             }).catch(error=>{
-                console.log(error); 
+                console.error(error); 
             })
         }
     }
@@ -212,15 +212,26 @@ export default class customSelfRegistration extends LightningElement {
 
     handleOnChange(event) {        
         this.formInputs[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value.trim();        
-        //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
-        if(event.target.className.includes('passwordCmp')) { 
-            let valueToCompare = this.template.querySelector('.confirmPasswordCmp');
-            this.comparePasswordValues(event, valueToCompare);
-        }
+    }
 
-        if(event.target.className.includes('confirmPasswordCmp')) {
-            let valueToCompare = this.template.querySelector('.passwordCmp');
-            this.comparePasswordValues(event, valueToCompare);
+    handleOnBlur(event) {
+        //Password validation to compare Password > Confirm Password to make sure they match, otherwise display an error.
+        if(event.target.className.includes('passwordCmp') || event.target.className.includes('confirmPasswordCmp')) { 
+            let passwordCmp = this.template.querySelector('.passwordCmp');
+            let confirmPasswordCmp = this.template.querySelector('.confirmPasswordCmp');
+            
+            //Only validate if both fields are populated
+            if(passwordCmp.value != null && passwordCmp.value != '' && confirmPasswordCmp.value != null && confirmPasswordCmp.value != '') {
+                if(passwordCmp.value !== confirmPasswordCmp.value){
+                    passwordCmp.setCustomValidity(this.parsedSettings.passwordMatchError);
+                    confirmPasswordCmp.setCustomValidity(this.parsedSettings.passwordMatchError);
+                } else {
+                    passwordCmp.setCustomValidity('');
+                    confirmPasswordCmp.setCustomValidity('');
+                }
+                passwordCmp.reportValidity();
+                confirmPasswordCmp.reportValidity();
+            }
         }
     }
 
