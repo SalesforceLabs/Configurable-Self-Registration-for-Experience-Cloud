@@ -6,7 +6,7 @@ User Guide is available here: https://salesforce.quip.com/M0o9AYupf991
 
 Release notes are available here: https://salesforce.quip.com/Af8CAQSB5eEA
 
-Latest version is v1.89.
+Latest version is v1.91.
 
 #NOTES:
 
