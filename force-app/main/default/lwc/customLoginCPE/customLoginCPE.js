@@ -93,7 +93,7 @@ export default class CustomLogin extends LightningElement {
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration
         getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: 'Login'}).then(result=>{
             this.results = JSON.parse(result);
-            for (let i = 0; i <= this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
+            for (let i = 0; i < this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
             }
         }).catch(error=>{
