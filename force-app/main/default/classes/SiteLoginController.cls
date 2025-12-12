@@ -1,6 +1,7 @@
 /***************************************************************************************************************
- * AUTHOR         : Jamie Lowe (Salesforce)
+ * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 05/02/2024
+ * LAST MODIFIED  : 12/12/2025 - v1.9.1
  * @description Apex controller to support custom built UI Custom Login for Experience Cloud
  ***************************************************************************************************************/
 public with sharing class SiteLoginController {

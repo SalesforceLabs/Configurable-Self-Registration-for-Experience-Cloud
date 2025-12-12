@@ -1,6 +1,7 @@
 /***************************************************************************************************************
- * AUTHOR         : Jamie Lowe (Salesforce)
+ * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 13/04/2024
+ * LAST MODIFIED  : 12/12/2025 - v1.9.1
  * @description Apex controller to provide common functions between SiteRegistration, SiteLogin and others in the future
  ***************************************************************************************************************/
 public without sharing class SiteUtilities {

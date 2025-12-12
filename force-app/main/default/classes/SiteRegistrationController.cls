@@ -1,6 +1,7 @@
 /***************************************************************************************************************
- * AUTHOR         : Jamie Lowe (Salesforce)
+ * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 15/05/2023
+ * LAST MODIFIED  : 12/12/2025 - v1.9.1
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
 
