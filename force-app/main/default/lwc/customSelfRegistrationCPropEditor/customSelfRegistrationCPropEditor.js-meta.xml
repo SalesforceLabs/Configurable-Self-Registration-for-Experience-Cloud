@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>61.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
-    <masterLabel>Custom Self Registration</masterLabel>
+    <masterLabel>SF Labs: Custom Self Registration</masterLabel>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
@@ -12,6 +12,7 @@
             <property name="propertyPanelSettings" type="c__layoutProps"
                 label="Self Registration Settings"
                 default="{
+                    &quot;customQuery&quot;:&quot;&quot;,
                     &quot;accessLevelMode&quot;:&quot;System&quot;,
                     &quot;registerButtonSignUpMessage&quot;:&quot;Sign Up&quot;,
                     &quot;registerButtonWaitingMessage&quot;:&quot;Registering... Please Wait.&quot;,
