@@ -1,7 +1,7 @@
 /*****************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce)
  * CREATE DATE    : 05/05/2023
- * LAST CHANGED   : 08/10/2024
+ * LAST CHANGED   : 24/03/2026 Updated to use the new Lightning Type Bundle in place of the deprecated Experience Property Type Bundle.
  * PURPOSE        : Self Registration LWC for Experience Builder pages
  *****************************************************************************************************/
 
@@ -17,7 +17,7 @@ import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
 //The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
 //import setExperienceId from '@salesforce/apex/SiteUtilities.setExperienceId';
 
-export default class customSelfRegistration extends LightningElement {
+export default class customSelfRegistrationCPropEditor extends LightningElement {
     @api propertyPanelSettings;
     parsedSettings;
     
@@ -67,6 +67,11 @@ export default class customSelfRegistration extends LightningElement {
         //Add keypress "enter" listener to the last element on the page to allow for submitting the form with the keyboard
         if(this.template.querySelector('lightning-input[data-last=true]')) {
             this.template.querySelector('lightning-input[data-last=true]').addEventListener("keydown", (e) => {this.handleEnter(e)});
+        }
+
+        //Add keypress "enter" listener to the verification code field to allow for submitting the form with the keyboard, this is the last field when in passwordless mode.
+        if(this.template.querySelector('lightning-input[data-id=verificationCode]')) {
+            this.template.querySelector('lightning-input[data-id=verificationCode]').addEventListener("keydown", (e) => {this.handleEnter(e)});
         }
 
         //Dispatch a change event on the Id field so it is submitted back to Salesforce.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>57.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Used for Custom Experience Cloud Components. 
 Subscribes to a Platform Event for Custom Logging and creates an Error Log record.</description>
     <environments>Default</environments>

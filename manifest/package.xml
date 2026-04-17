@@ -43,9 +43,13 @@
         <members>ExperienceCloudLogging/kLxmcSIqDvcNNBPSwUtAEFhlibySXQ</members>
         <name>Dashboard</name>
     </types>
-    <types>
+    <!-- <types>
         <members>layoutProps</members>
         <name>ExperiencePropertyTypeBundle</name>
+    </types> -->
+    <types>
+        <members>registrationLayoutProps</members>
+        <name>LightningTypeBundle</name>
     </types>
     <types>
         <members>Experience_Cloud_Logging_Home_Page</members>
@@ -109,5 +113,5 @@
         <members>Experience_Cloud_Log__c</members>
         <name>CustomTab</name>
     </types>
-    <version>62.0</version>
+    <version>65.0</version>
 </Package>
