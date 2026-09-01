@@ -3,6 +3,7 @@
     <fullName>All1</fullName>
     <columns>NAME</columns>
     <columns>Log_Type_Formula__c</columns>
+    <columns>Outcome__c</columns>
     <columns>Component_Name__c</columns>
     <columns>UserId__c</columns>
     <columns>ContactId__c</columns>

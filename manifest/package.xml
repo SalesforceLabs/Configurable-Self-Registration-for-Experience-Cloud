@@ -61,6 +61,7 @@
         <name>Flow</name>
     </types>
     <types>
+        <members>Log_Outcome</members>
         <members>Log_Type</members>
         <name>GlobalValueSet</name>
     </types>
@@ -107,6 +108,19 @@
         <members>ExperienceCloudLogging/Error_Logs_Login_QrP</members>
         <members>ExperienceCloudLogging/Error_Logs_Self_Registration_HLT</members>
         <members>ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</members>
+        <members>ExperienceCloudLogging/Errors_by_Component_Last_30</members>
+        <members>ExperienceCloudLogging/Failed_Logins_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Failed_Self_Reg_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Login_Mix_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Logs_Missing_Related_Records</members>
+        <members>ExperienceCloudLogging/Logs_Type_Component_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Logs_by_Day_and_Type_Last_30</members>
+        <members>ExperienceCloudLogging/Outcomes_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Recent_Errors</members>
+        <members>ExperienceCloudLogging/Repeat_Login_Failures_30d</members>
+        <members>ExperienceCloudLogging/Self_Reg_Outcomes_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Successful_Logins_Last_30_Days</members>
+        <members>ExperienceCloudLogging/Successful_Self_Reg_Last_30_Days</members>
         <name>Report</name>
     </types>
     <types>

@@ -1,7 +1,7 @@
 /***************************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 15/05/2023
- * LAST MODIFIED  : 24/03/2026 - v1.9.2 Updated to use the new Lightning Type Bundle in place of the deprecated Experience Property Type Bundle.
+ * LAST MODIFIED  : 28/08/2026 - Added Outcome to Experience Cloud logging for reportable login and registration results.
  * @description Apex controller to support custom built UI Custom Self Registration for Experience Cloud
  ***************************************************************************************************************/
 
@@ -72,7 +72,7 @@ public with sharing class SiteRegistrationController {
         
         if(userList.size() >= 1) {
             SiteUtilities.messages.add('User with username ' + username + ' already exists on Site: ' + SiteUtilities.siteName + ' with NetworkId: ' + networkId + '. Username NOT valid.');
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);    
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_USERNAME_EXISTS);    
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('usernameTakenMessage'))); 
         }
 
@@ -94,7 +94,7 @@ public with sharing class SiteRegistrationController {
         }
         catch (Exception ex) {
            SiteUtilities.messages.add('An error occurred whilst trying to validate the password:' + ex.getMessage() + '\n' + 'Form Inputs: ' + sanitiseJson(formJson));
-           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+           SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_PASSWORD_VALIDATION_FAILED);
            throw new AuraHandledException(ex.getMessage()); //This is deliberate as the Site.Validate function returns useful information about the password failure
         }
     }
@@ -186,7 +186,7 @@ public with sharing class SiteRegistrationController {
                     SiteUtilities.messages.add('Record was successfully deleted with Id: ' + recordId);
                 }
                                 
-                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, accountId, userIdForLogging, contactId);
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, accountId, userIdForLogging, contactId, SiteUtilities.OUTCOME_VERIFICATION_SEND_FAILED);
                 throw new AuraHandledException(SiteUtilities.convertToString(lwcSettings.get('portalErrorSendVerificationCode'))); 
             }
         }
@@ -211,7 +211,8 @@ public with sharing class SiteRegistrationController {
                 pageUrl = loginUser(user.Username, SiteUtilities.convertToString(formJson.get('password')), lwcSettings);
             }
         }
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, accountId, userIdForLogging, contactId);
+        String outcome = isPasswordless ? SiteUtilities.OUTCOME_VERIFICATION_SENT : SiteUtilities.OUTCOME_REGISTRATION_SUCCESS;
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, accountId, userIdForLogging, contactId, outcome);
         
         Map<String, String> itemsToAdd = new Map<String, String>();
         itemsToAdd.put(identifier, '{"pageUrl":"' +  pageUrl + '","verificationId":"'+  identifier + '","showVerificationCode":'+ SiteUtilities.convertToString(showVerificationCode) +' }');
@@ -263,12 +264,12 @@ public with sharing class SiteRegistrationController {
             }
             else {
                SiteUtilities.messages.add('Failed to create a new Contact record. API Error: ' + srList.getErrors());
-               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_RECORD_CREATE_FAILED);
                throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate'))); 
             } 
         } catch (Exception e) {
             SiteUtilities.messages.add('Failed to create new a Contact record. API Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_RECORD_CREATE_FAILED);
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
@@ -326,12 +327,12 @@ public with sharing class SiteRegistrationController {
             }
             else {
                SiteUtilities.messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + srList.getErrors());
-               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+               SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_RECORD_CREATE_FAILED);
                throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate'))); 
             }
         } catch (Exception e) {
             SiteUtilities.messages.add('Failed to create new Person Account record for registered user with submitted values. API Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_RECORD_CREATE_FAILED);
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('errorOnCreate')));
         }
     }
@@ -351,7 +352,7 @@ public with sharing class SiteRegistrationController {
         }
         else { //Object to create was set to blank which is not valid 
             SiteUtilities.messages.add('No record found for specified query. Create If Not found setting enabled but Object Type to Create is blank. Please check settings and change to Person Account or Contact.');
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_CONFIGURATION_ERROR);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
     }
@@ -415,7 +416,7 @@ public with sharing class SiteRegistrationController {
         }
         catch (Site.ExternalUserCreateException e) { //The site class ony throws one type of exception so we have to manually handle error messages here.
             SiteUtilities.messages.add('Failed to create external user for portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_USER_CREATE_FAILED);
             
             /* Horrible error message. Show a configuration message instead from the property panel. Captures 2 known errors:
             * 'portal user already exists for contact': If the matched contact (using the custom query) is already a portal user and therefore can't register again.
@@ -455,7 +456,7 @@ public with sharing class SiteRegistrationController {
             }
         } catch (Exception e) {
             SiteUtilities.messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_LOGIN_FAILED);        
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('portalLoginError')));
         }
         SiteUtilities.messages.add('User successfully registered and was logged in.');
@@ -539,7 +540,7 @@ public with sharing class SiteRegistrationController {
         }
         catch(Exception e) {
             SiteUtilities.messages.add('There was a problem executing the specific query in the Custom Query property. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_QUERY_ERROR);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.'); 
         }
         
@@ -552,7 +553,7 @@ public with sharing class SiteRegistrationController {
                     }
                     catch(SObjectException e) {
                         SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_CONFIGURATION_ERROR);
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
                     }
                 }
@@ -562,7 +563,7 @@ public with sharing class SiteRegistrationController {
                     }
                     catch(SObjectException e) {
                        SiteUtilities.messages.add('AccountId was not present in the query, and is required when selecting records from the Contact object. Query used: ' + SiteUtilities.convertToString(configurationOptions.get('customQuery') + '. Error: ' + e.getMessage()));
-                       SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);
+                       SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_CONFIGURATION_ERROR);
                        throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');         
                     }
                 }
@@ -573,7 +574,7 @@ public with sharing class SiteRegistrationController {
         }
         else if(recordList.size() > 1) { //More than one record found on specified query
             SiteUtilities.messages.add('Multiple records found for specified query. Please check your custom query configuration. External Message: ' + configurationOptions.get('multipleRecordsFoundError') + ' Form Values: ' + formInputs);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_MULTIPLE_RECORDS_FOUND);        
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('multipleRecordsFoundError'))); 
         }
         else if (SiteUtilities.convertToBoolean(configurationOptions.get('createNotFound'))) { //CreateIfNotFound = True, thus return Null here so we can go on to create a new record.
@@ -581,7 +582,7 @@ public with sharing class SiteRegistrationController {
         }
         else { //No record found on specified query and CreateIfNotFound = False 
             SiteUtilities.messages.add('No record found for specified query. Create If Not found setting not enabled. External Message: ' + configurationOptions.get('noRecordFoundError') + ' Form Values: ' + formInputs);
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, null, null, null, SiteUtilities.OUTCOME_NO_RECORD_FOUND);        
             throw new AuraHandledException(SiteUtilities.convertToString(configurationOptions.get('noRecordFoundError'))); 
         }
     }

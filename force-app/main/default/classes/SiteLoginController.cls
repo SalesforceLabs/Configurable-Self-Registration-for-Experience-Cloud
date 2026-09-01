@@ -1,7 +1,7 @@
 /***************************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 05/02/2024
- * LAST MODIFIED  : 24/03/2026 - v1.9.2 Updated to use the new Lightning Type Bundle in place of the deprecated Experience Property Type Bundle.
+ * LAST MODIFIED  : 28/08/2026 - Added Outcome to Experience Cloud logging for reportable login results.
  * @description Apex controller to support custom built UI Custom Login for Experience Cloud
  ***************************************************************************************************************/
 public with sharing class SiteLoginController {
@@ -145,32 +145,41 @@ public with sharing class SiteLoginController {
 
                //TODO: Handle more types of Login History Status if needed... https://stackoverflow.com/questions/11581806/is-it-possible-to-check-if-a-user-is-locked-out
                String error = '';
+               String outcome = SiteUtilities.OUTCOME_LOGIN_FAILED;
                switch on status { 
                     when 'User is Frozen' {
                          error = SiteUtilities.convertToString(configurationOptions.get('blockUserErrorMessage'));
+                         outcome = SiteUtilities.OUTCOME_USER_FROZEN;
                     }
-                    when 'Invalid Password', 'Username Not Found' {
+                    when 'Invalid Password' {
                         error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
+                        outcome = SiteUtilities.OUTCOME_INVALID_PASSWORD;
+                    }
+                    when 'Username Not Found' {
+                        error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
+                        outcome = SiteUtilities.OUTCOME_USERNAME_NOT_FOUND;
                     }
                     when 'Password Lockout' {
                         error = SiteUtilities.convertToString(configurationOptions.get('userLockedOutErrorMessage'));
+                        outcome = SiteUtilities.OUTCOME_PASSWORD_LOCKOUT;
                     }
                     when else {
                         SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging); 
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED); 
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
                     }
                 }               
                 SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging);
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, outcome);
                 throw new AuraHandledException(error); 
             }
             SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED);        
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
+        String successOutcome = showVerificationCode ? SiteUtilities.OUTCOME_VERIFICATION_SENT : SiteUtilities.OUTCOME_LOGIN_SUCCESS;
         SiteUtilities.messages.add(username + ' successfully logged into the portal.');
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging);     
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, successOutcome);     
         return result;
     }
 }

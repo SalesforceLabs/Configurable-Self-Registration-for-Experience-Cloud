@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Report xmlns="http://soap.sforce.com/2006/04/metadata">
     <columns>
-        <field>CUST_NAME</field>
+        <field>CUST_CREATED_DATE</field>
     </columns>
     <columns>
-        <field>Experience_Cloud_Log__c.Log_Type__c</field>
+        <field>Experience_Cloud_Log__c.Component_Name__c</field>
     </columns>
     <columns>
         <field>Experience_Cloud_Log__c.Outcome__c</field>
@@ -21,6 +21,9 @@
     <columns>
         <field>Experience_Cloud_Log__c.Message__c</field>
     </columns>
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
     <filter>
         <criteriaItems>
             <column>Experience_Cloud_Log__c.Log_Type__c</column>
@@ -29,32 +32,23 @@
             <operator>equals</operator>
             <value>Error</value>
         </criteriaItems>
-        <criteriaItems>
-            <column>Experience_Cloud_Log__c.Component_Name__c</column>
-            <columnToColumn>false</columnToColumn>
-            <isUnlocked>true</isUnlocked>
-            <operator>equals</operator>
-            <value>Self Registration</value>
-        </criteriaItems>
     </filter>
-    <format>Summary</format>
-    <groupingsDown>
-        <dateGranularity>Day</dateGranularity>
-        <field>CUST_CREATED_DATE</field>
-        <sortOrder>Asc</sortOrder>
-    </groupingsDown>
-    <name>Errors - Self Reg (Last 30 Days)</name>
+    <format>Tabular</format>
+    <name>Recent Errors</name>
     <params>
         <name>co</name>
         <value>1</value>
     </params>
     <reportType>CustomEntity$Experience_Cloud_Log__c</reportType>
+    <rowLimit>10</rowLimit>
     <scope>organization</scope>
     <showDetails>true</showDetails>
     <showGrandTotal>true</showGrandTotal>
     <showSubTotals>true</showSubTotals>
+    <sortColumn>CUST_CREATED_DATE</sortColumn>
+    <sortOrder>Desc</sortOrder>
     <timeFrameFilter>
         <dateColumn>CUST_CREATED_DATE</dateColumn>
-        <interval>INTERVAL_LAST30</interval>
+        <interval>INTERVAL_LAST7</interval>
     </timeFrameFilter>
 </Report>

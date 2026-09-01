@@ -1,7 +1,7 @@
 /***************************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 13/04/2024
- * LAST MODIFIED  : 24/03/2026 - v1.9.2 Updated to use the new Lightning Type Bundle in place of the deprecated Experience Property Type Bundle.
+ * LAST MODIFIED  : 28/08/2026 - Added Outcome to Experience Cloud logging for reportable login and registration results.
  * @description Apex controller to provide common functions between SiteRegistration, SiteLogin and others in the future
  ***************************************************************************************************************/
 public without sharing class SiteUtilities {
@@ -11,6 +11,26 @@ public without sharing class SiteUtilities {
     public static final String SMS_LICENCE_NAME = 'setting/force.com/orgValue.IdentityVerificationCredits';
     public static final String INFORMATION_LOG_TYPE = 'Information';
     public static final String ERROR_LOG_TYPE = 'Error';
+    public static final String OUTCOME_LOGIN_SUCCESS = 'Login Success';
+    public static final String OUTCOME_LOGIN_FAILED = 'Login Failed';
+    public static final String OUTCOME_REGISTRATION_SUCCESS = 'Registration Success';
+    public static final String OUTCOME_USERNAME_EXISTS = 'Username Exists';
+    public static final String OUTCOME_USERNAME_NOT_FOUND = 'Username Not Found';
+    public static final String OUTCOME_INVALID_PASSWORD = 'Invalid Password';
+    public static final String OUTCOME_USER_FROZEN = 'User Frozen';
+    public static final String OUTCOME_PASSWORD_LOCKOUT = 'Password Lockout';
+    public static final String OUTCOME_PASSWORD_VALIDATION_FAILED = 'Password Validation Failed';
+    public static final String OUTCOME_RECORD_CREATE_FAILED = 'Record Create Failed';
+    public static final String OUTCOME_USER_CREATE_FAILED = 'User Create Failed';
+    public static final String OUTCOME_RECORD_DELETE_FAILED = 'Record Delete Failed';
+    public static final String OUTCOME_QUERY_ERROR = 'Query Error';
+    public static final String OUTCOME_CONFIGURATION_ERROR = 'Configuration Error';
+    public static final String OUTCOME_NO_RECORD_FOUND = 'No Record Found';
+    public static final String OUTCOME_MULTIPLE_RECORDS_FOUND = 'Multiple Records Found';
+    public static final String OUTCOME_VERIFICATION_SENT = 'Verification Sent';
+    public static final String OUTCOME_VERIFICATION_SEND_FAILED = 'Verification Send Failed';
+    public static final String OUTCOME_VERIFICATION_FAILED = 'Verification Failed';
+    public static final String OUTCOME_VERIFICATION_SUCCESS = 'Verification Success';
 
     public static Map<String, Auth.VerificationMethod> methods = new Map<String, Auth.VerificationMethod>{'Email' => Auth.VerificationMethod.EMAIL, 'SMS' => Auth.VerificationMethod.SMS};
     public static List<String> messages = new List<String>();
@@ -313,8 +333,9 @@ public without sharing class SiteUtilities {
      * @param accountId - the Account Id of the record identified or created (optional)
      * @param userId - the User Id of the user identified or created (optional)
      * @param contactId - the Contact Id (PersonAccountId in Person Account enabled orgs, ContactId in BusinessAccount and Contact only orgs) (optional)
+     * @param outcome - short reportable result of the attempt (optional). Use SiteUtilities.OUTCOME_* constants.
      */
-    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName, Id accountId, Id userId, Id contactId){
+    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName, Id accountId, Id userId, Id contactId, String outcome){
         if(loggingEnabled) {
             Experience_Cloud_Event__e newLog = new Experience_Cloud_Event__e();
             newLog.Message__c = message;
@@ -323,8 +344,23 @@ public without sharing class SiteUtilities {
             newLog.AccountId__c = accountId;
             newLog.UserId__c = userId;
             newLog.ContactId__c = contactId;
+            newLog.Outcome__c = outcome;
             Eventbus.publish(newLog);
         } 
+    }
+
+    /** 
+     * @description Overloaded method that includes related record Ids but no outcome.
+     */
+    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName, Id accountId, Id userId, Id contactId){
+        createLogEntry(loggingEnabled, message, logType, componentName, accountId, userId, contactId, null);
+    }
+
+    /** 
+     * @description Overloaded method that includes an outcome but no related record Ids.
+     */
+    public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName, String outcome){
+        createLogEntry(loggingEnabled, message, logType, componentName, null, null, null, outcome);
     }
     
     /** 
@@ -335,7 +371,7 @@ public without sharing class SiteUtilities {
      * @param componentName - the name of the component that is calling this function
      */
     public static void createLogEntry(Boolean loggingEnabled, String message, String logType, String componentName){
-        createLogEntry(loggingEnabled, message, logType, componentName, null, null, null);
+        createLogEntry(loggingEnabled, message, logType, componentName, null, null, null, null);
     }
 
     /**
@@ -483,7 +519,7 @@ public without sharing class SiteUtilities {
                 delete new Contact (Id = recordId);
             }            
         } catch(Exception e) {
-            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName, null, null, null);
+            SiteUtilities.createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName, null, null, null, SiteUtilities.OUTCOME_RECORD_DELETE_FAILED);
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
     }
@@ -570,7 +606,7 @@ public without sharing class SiteUtilities {
         
         if(res.success == false) { 
             messages.add('Unable to validate the verification code. Error was: ' + res.message);    
-            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging);    
+            createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_VERIFICATION_FAILED);    
             throw new AuraHandledException(convertToString(lwcSettings.get('failedCodeVerificationMessage')));
         }
 
@@ -581,7 +617,7 @@ public without sharing class SiteUtilities {
         itemsToAdd.put(identifier, '{"pageUrl":"' +  url + '","verificationSuccess":'+  res.success + '}');
 
         messages.add('Verification was successful. Redirecting user to: ' + url);
-        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging); 
+        createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_VERIFICATION_SUCCESS); 
         return jsonBuilder('registerResult', itemsToAdd);    
     }
 

@@ -15,7 +15,7 @@ package.xml
 **./lwc/customPropertyEditorQuery/**
 
 # Old ExperiencePropertyTypeBundle replaced by LightningTypeBundle (registrationLayoutProps). Kept in repo for reference.
-**/experiencePropertyTypeBundles/**
+#**/experiencePropertyTypeBundles/**
 
 # LWC configuration files
 **/jsconfig.json

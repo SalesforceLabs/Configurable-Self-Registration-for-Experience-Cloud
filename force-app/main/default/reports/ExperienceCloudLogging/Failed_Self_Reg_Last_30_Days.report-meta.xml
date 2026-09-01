@@ -4,12 +4,6 @@
         <field>CUST_NAME</field>
     </columns>
     <columns>
-        <field>Experience_Cloud_Log__c.Log_Type__c</field>
-    </columns>
-    <columns>
-        <field>Experience_Cloud_Log__c.Outcome__c</field>
-    </columns>
-    <columns>
         <field>Experience_Cloud_Log__c.UserId__c</field>
     </columns>
     <columns>
@@ -23,18 +17,18 @@
     </columns>
     <filter>
         <criteriaItems>
-            <column>Experience_Cloud_Log__c.Log_Type__c</column>
-            <columnToColumn>false</columnToColumn>
-            <isUnlocked>true</isUnlocked>
-            <operator>equals</operator>
-            <value>Error</value>
-        </criteriaItems>
-        <criteriaItems>
             <column>Experience_Cloud_Log__c.Component_Name__c</column>
             <columnToColumn>false</columnToColumn>
             <isUnlocked>true</isUnlocked>
             <operator>equals</operator>
             <value>Self Registration</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>Experience_Cloud_Log__c.Log_Type__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>equals</operator>
+            <value>Error</value>
         </criteriaItems>
     </filter>
     <format>Summary</format>
@@ -43,7 +37,12 @@
         <field>CUST_CREATED_DATE</field>
         <sortOrder>Asc</sortOrder>
     </groupingsDown>
-    <name>Errors - Self Reg (Last 30 Days)</name>
+    <groupingsDown>
+        <dateGranularity>Day</dateGranularity>
+        <field>Experience_Cloud_Log__c.Outcome__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <name>Failed Self-Reg (Last 30 Days)</name>
     <params>
         <name>co</name>
         <value>1</value>
