@@ -112,7 +112,7 @@ public with sharing class SiteRegistrationController {
         String result = '';
         Id recordId = null;
         String userId;
-        String identifier;
+        String identifier = '';
         Boolean showVerificationCode = false;
         Boolean recordCreated = false; 
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
@@ -215,7 +215,7 @@ public with sharing class SiteRegistrationController {
         SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.SELF_REG_COMPONENT_NAME, accountId, userIdForLogging, contactId, outcome);
         
         Map<String, String> itemsToAdd = new Map<String, String>();
-        itemsToAdd.put(identifier, '{"pageUrl":"' +  pageUrl + '","verificationId":"'+  identifier + '","showVerificationCode":'+ SiteUtilities.convertToString(showVerificationCode) +' }');
+        itemsToAdd.put('registerResult', '{"pageUrl":"' +  pageUrl + '","verificationId":"'+  identifier + '","showVerificationCode":'+ SiteUtilities.convertToString(showVerificationCode) +' }');
         return SiteUtilities.jsonBuilder('registerResult', itemsToAdd);
     }
 
