@@ -12,16 +12,17 @@ public with sharing class SiteLoginController {
     public class CustomLoginException extends Exception{}
     
     /**
-     * @description Attempts to login the newly registered user. Redirects to the home page on success.
-     * @param username - Passes in the submitted username field from the self registration form.
-     * @param password - Passes in the submitted password field from the self registration form. 
-     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
-     * @return String PageURL to redirect to upon successful login.
+     * @description Attempts to login the user. Redirects to the startURL query parameter when present and safe, otherwise the configured Portal Redirect.
+     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Login' so the guest user cannot influence it.
+     * @param formInputs - JSON String of the submitted login form values.
+     * @param startUrl - optional relative or same-site URL from the Experience Cloud startURL query parameter.
+     * @return String JSON of the login result to redirect to upon successful login.
      */
     @AuraEnabled(cacheable=true)
-    public static String loginUser(String formInputs, Map<String, Object> configurationOptions) {
+    public static String loginUser(String formInputs, String startUrl) {
         String pageUrl = null;
 
+        Map<String, Object> settings = SiteUtilities.getComponentSettings(SiteUtilities.LOGIN_COMPONENT_NAME);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         String username = String.isNotBlank(SiteUtilities.convertToString(formJson.get('Username'))) ? SiteUtilities.convertToString(formJson.get('Username')) : SiteUtilities.convertToString(formJson.get('Email'));
         String password = String.isNotBlank(SiteUtilities.convertToString(formJson.get('password'))) ? SiteUtilities.convertToString(formJson.get('password')) : '';
@@ -29,10 +30,8 @@ public with sharing class SiteLoginController {
         String countryCode = SiteUtilities.extractCountryCode(formJson.get('countryCode'));
         String mobilePhone = String.isNotBlank(SiteUtilities.convertToString(formJson.get('MobilePhone'))) && String.isNotBlank(countryCode) ? UserManagement.formatPhoneNumber(countryCode, SiteUtilities.convertToString(formJson.get('MobilePhone'))) : ''; //Format the phone number with the user management class otherwise user isn't found!!;
         
-        String identifier;
+        String identifier = '';
         Boolean showVerificationCode = false;
-        String result = '';
-        String jsonPart = '{"loginResult":[';
         
         // Variables to track IDs for logging
         Id accountIdForLogging = null;
@@ -41,14 +40,14 @@ public with sharing class SiteLoginController {
 
         try {
 
-            if(SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ) {
-                Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod')));
+            if(SiteUtilities.convertToBoolean(settings.get('enablePasswordlessLogin')) ) {
+                Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(settings.get('passwordlessMethod')));
                 SiteUtilities.messages.add('Looking for existing user: ' + formJson);
                 List<User> user = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
                 
                 //Only send a code if the user is NOT found!
                 if(user.isEmpty()) {
-                    SiteUtilities.messages.add('Error sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: '+ formJson +' . User not found.');
+                    SiteUtilities.messages.add('Error sending verification code via ' + SiteUtilities.convertToString(settings.get('passwordlessMethod'))  + ' to User: '+ formJson +' . User not found.');
                     throw new CustomLoginException('Your login attempt has failed. Make sure the username and password are correct.');
                 }
                 
@@ -59,7 +58,7 @@ public with sharing class SiteLoginController {
                     accountIdForLogging = user[0].Contact != null ? user[0].Contact.AccountId : null;
                 }
                 
-                SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: ' + formJson);
+                SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(settings.get('passwordlessMethod'))  + ' to User: ' + formJson);
                 identifier = SiteUtilities.sendVerificationCode(method, user[0], SiteUtilities.LOGIN_COMPONENT_NAME);                
                 showVerificationCode = true;
             }
@@ -74,9 +73,8 @@ public with sharing class SiteLoginController {
                     }
                 }
                 
-                ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalLoginRedirect')));
-                String startUrl = homePageRef.getUrl();
-                ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
+                String resolvedStartUrl = SiteUtilities.buildLoginStartUrl(startUrl, SiteUtilities.convertToString(settings.get('portalRedirect')));
+                ApexPages.PageReference startPageRef = Site.login(username, password, resolvedStartUrl);
 
                 //If we are running in a Test, check the test user and throw a custom exception to mimic failed logins.
                 //NOTE: Cannot reference the constants from the test class in a 'switch' statement.
@@ -101,12 +99,6 @@ public with sharing class SiteLoginController {
                     pageUrl = pageRef.getUrl();
                 }
             }
-
-            jsonPart += '{';
-            jsonPart += '"pageUrl":"' + pageUrl + '",';
-            jsonPart += '"showVerificationCode":' + showVerificationCode + ',';
-            jsonPart += '"verificationId":"' + identifier + '"}]}';
-            result += jsonPart;
         } catch (Exception e) {
 
             String status = 'Username Not Found';
@@ -148,38 +140,41 @@ public with sharing class SiteLoginController {
                String outcome = SiteUtilities.OUTCOME_LOGIN_FAILED;
                switch on status { 
                     when 'User is Frozen' {
-                         error = SiteUtilities.convertToString(configurationOptions.get('blockUserErrorMessage'));
+                         error = SiteUtilities.convertToString(settings.get('blockUserErrorMessage'));
                          outcome = SiteUtilities.OUTCOME_USER_FROZEN;
                     }
                     when 'Invalid Password' {
-                        error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
+                        error = SiteUtilities.convertToString(settings.get('incorrectUserCredentialsErrorMessage'));
                         outcome = SiteUtilities.OUTCOME_INVALID_PASSWORD;
                     }
                     when 'Username Not Found' {
-                        error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
+                        error = SiteUtilities.convertToString(settings.get('incorrectUserCredentialsErrorMessage'));
                         outcome = SiteUtilities.OUTCOME_USERNAME_NOT_FOUND;
                     }
                     when 'Password Lockout' {
-                        error = SiteUtilities.convertToString(configurationOptions.get('userLockedOutErrorMessage'));
+                        error = SiteUtilities.convertToString(settings.get('userLockedOutErrorMessage'));
                         outcome = SiteUtilities.OUTCOME_PASSWORD_LOCKOUT;
                     }
                     when else {
                         SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED); 
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED); 
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
                     }
                 }               
                 SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, outcome);
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, outcome);
                 throw new AuraHandledException(error); 
             }
             SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED);        
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
         String successOutcome = showVerificationCode ? SiteUtilities.OUTCOME_VERIFICATION_SENT : SiteUtilities.OUTCOME_LOGIN_SUCCESS;
         SiteUtilities.messages.add(username + ' successfully logged into the portal.');
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, successOutcome);     
-        return result;
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, successOutcome);     
+
+        Map<String, String> itemsToAdd = new Map<String, String>();
+        itemsToAdd.put('loginResult', '{"pageUrl":"' + pageUrl + '","showVerificationCode":' + SiteUtilities.convertToString(showVerificationCode) + ',"verificationId":"' + identifier + '"}');
+        return SiteUtilities.jsonBuilder('loginResult', itemsToAdd);
     }
 }

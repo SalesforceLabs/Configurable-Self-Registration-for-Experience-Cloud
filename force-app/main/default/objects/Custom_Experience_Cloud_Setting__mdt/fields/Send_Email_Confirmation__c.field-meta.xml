@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Send_Email_Confirmation__c</fullName>
+    <defaultValue>false</defaultValue>
+    <deprecated>false</deprecated>
+    <description>Self Registration only. Send an email confirmation on successful registration of a user. Consider switching off if using another solution for sending email communications such as Marketing Cloud, or if Welcome Emails are switched on for your site.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Self Registration only. Send an email confirmation when a user successfully registers.</inlineHelpText>
+    <label>Send Email Confirmation</label>
+    <type>Checkbox</type>
+</CustomField>

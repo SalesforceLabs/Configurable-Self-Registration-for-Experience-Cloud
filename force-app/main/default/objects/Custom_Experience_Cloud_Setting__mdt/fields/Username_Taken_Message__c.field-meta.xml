@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Username_Taken_Message__c</fullName>
+    <defaultValue>&quot;The specified username is already taken. Please choose a unique username.&quot;</defaultValue>
+    <description>Self Registration only. Error message shown if the chosen username is already taken on this site.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Self Registration only. Shown if the chosen username is already taken.</inlineHelpText>
+    <label>Username Taken Message</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

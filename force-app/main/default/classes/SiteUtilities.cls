@@ -44,9 +44,13 @@ public without sharing class SiteUtilities {
     @TestVisible
     public static List<NetworkMember> mockNetworkMemberList;
     
-    // Test-visible mock for Custom_Experience_Cloud_Setting__mdt to allow mocking in tests
+    // Test-visible mock for Custom_Experience_Cloud_Setting__mdt to allow mocking in tests. Keyed by Type__c i.e. 'Login' or 'Self Registration'.
     @TestVisible
     public static Map<String, Boolean> mockLoggingSettings;
+
+    // Test-visible mock for the component settings map returned by getComponentSettings. Uses the unified camelCase keys.
+    @TestVisible
+    public static Map<String, Object> mockComponentSettings;
     
     // Test-visible flag to simulate exception in sendVerificationCode
     @TestVisible
@@ -64,6 +68,234 @@ public without sharing class SiteUtilities {
         }
     }*/
     
+    /**
+     * @description Thrown when the Custom Experience Cloud Setting record for a component cannot be found or is misconfigured.
+     */
+    public class ComponentSettingsException extends Exception {}
+
+    /**
+     * @description Loads the behavioural settings for a component from Custom_Experience_Cloud_Setting__mdt.
+     * NOTE: Deliberately NOT @AuraEnabled. These settings contain the custom query, Account Id and access level mode which must never be
+     * discoverable by the guest user. Apex loads them server side and ignores anything sent up from the client.
+     * @param componentType the Type__c picklist value identifying the record. Use LOGIN_COMPONENT_NAME or SELF_REG_COMPONENT_NAME.
+     * @return a map of the settings using the unified camelCase keys shared by both components.
+     */
+    public static Map<String, Object> getComponentSettings(String componentType) {
+        if (mockComponentSettings != null) {
+            return mockComponentSettings;
+        }
+
+        List<Custom_Experience_Cloud_Setting__mdt> settings = [
+            SELECT Type__c, Enable__c, Button_Label__c, Button_Waiting_Message__c, Button_Awaiting_Code_Message__c,
+                   Portal_Redirect__c, Enable_Passwordless_Login__c, Passwordless_Method__c, Passwordless_Profile_Id__c,
+                   Failed_Code_Verification_Message__c, Portal_Error_Send_Verification_Code__c, Block_User_Error_Message__c,
+                   Incorrect_User_Credentials_Error__c, User_Locked_Out_Error_Message__c, Custom_Query__c, Access_Level_Mode__c,
+                   Send_Email_Confirmation__c, Password_Match_Error__c, Username_Taken_Message__c, No_Record_Found_Error__c,
+                   Multiple_Records_Found_Error__c, Error_On_Create__c, Portal_Login_Error__c, Portal_Registration_Error__c,
+                   Portal_Registration_User_Exists__c, Create_Not_Found__c, Object_Create_Type__c, Person_Account_Record_Type__c,
+                   Account_Id__c
+            FROM Custom_Experience_Cloud_Setting__mdt
+            WHERE Type__c = :componentType
+            WITH SECURITY_ENFORCED
+            LIMIT 1
+        ];
+
+        if (settings.isEmpty()) {
+            throw new ComponentSettingsException('No Custom Experience Cloud Setting record was found with a Type of "' + componentType + '".');
+        }
+
+        Custom_Experience_Cloud_Setting__mdt setting = settings[0];
+        Map<String, Object> componentSettings = new Map<String, Object>();
+
+        componentSettings.put('loggingEnabled', setting.Enable__c);
+        componentSettings.put('buttonLabel', setting.Button_Label__c);
+        componentSettings.put('buttonWaitingMessage', setting.Button_Waiting_Message__c);
+        componentSettings.put('buttonAwaitingCodeMessage', setting.Button_Awaiting_Code_Message__c);
+        componentSettings.put('portalRedirect', setting.Portal_Redirect__c);
+        componentSettings.put('enablePasswordlessLogin', setting.Enable_Passwordless_Login__c);
+        componentSettings.put('passwordlessMethod', setting.Passwordless_Method__c);
+        componentSettings.put('passwordlessProfileId', setting.Passwordless_Profile_Id__c);
+        componentSettings.put('failedCodeVerificationMessage', setting.Failed_Code_Verification_Message__c);
+        componentSettings.put('portalErrorSendVerificationCode', setting.Portal_Error_Send_Verification_Code__c);
+        componentSettings.put('blockUserErrorMessage', setting.Block_User_Error_Message__c);
+        componentSettings.put('incorrectUserCredentialsErrorMessage', setting.Incorrect_User_Credentials_Error__c);
+        componentSettings.put('userLockedOutErrorMessage', setting.User_Locked_Out_Error_Message__c);
+        componentSettings.put('customQuery', setting.Custom_Query__c);
+        componentSettings.put('accessLevelMode', setting.Access_Level_Mode__c);
+        componentSettings.put('sendEmailConfirmation', setting.Send_Email_Confirmation__c);
+        componentSettings.put('passwordMatchError', setting.Password_Match_Error__c);
+        componentSettings.put('usernameTakenMessage', setting.Username_Taken_Message__c);
+        componentSettings.put('noRecordFoundError', setting.No_Record_Found_Error__c);
+        componentSettings.put('multipleRecordsFoundError', setting.Multiple_Records_Found_Error__c);
+        componentSettings.put('errorOnCreate', setting.Error_On_Create__c);
+        componentSettings.put('portalLoginError', setting.Portal_Login_Error__c);
+        componentSettings.put('portalRegistrationError', setting.Portal_Registration_Error__c);
+        componentSettings.put('portalRegistrationUserExists', setting.Portal_Registration_User_Exists__c);
+        componentSettings.put('createNotFound', setting.Create_Not_Found__c);
+        componentSettings.put('objectCreateType', setting.Object_Create_Type__c);
+        componentSettings.put('personAccountRecordTypeId', setting.Person_Account_Record_Type__c);
+        componentSettings.put('accountId', setting.Account_Id__c);
+        componentSettings.put('objectToQuery', getObjectToQuery(setting.Custom_Query__c));
+
+        return componentSettings;
+    }
+
+    /**
+     * @description Returns the subset of the component settings that the browser needs to render the form, so the components read every
+     * value from Custom Metadata rather than from the deprecated Experience Builder properties.
+     * NOTE: This deliberately excludes the custom query, Account Id, profile and record type. Those must never be discoverable by the
+     * guest user, which is why getComponentSettings itself is not exposed to the client.
+     * @param componentName the Type__c of the settings record to load i.e. 'Login' or 'Self Registration'.
+     * @return a JSON string of the display values only.
+     */
+    @AuraEnabled(cacheable=true)
+    public static String getDisplaySettings(String componentName) {
+        String componentType = (componentName == LOGIN_COMPONENT_NAME) ? LOGIN_COMPONENT_NAME : SELF_REG_COMPONENT_NAME;
+
+        try {
+            Map<String, Object> settings = getComponentSettings(componentType);
+            return JSON.serialize(new Map<String, Object>{
+                'buttonLabel' => settings.get('buttonLabel'),
+                'buttonWaitingMessage' => settings.get('buttonWaitingMessage'),
+                'buttonAwaitingCodeMessage' => settings.get('buttonAwaitingCodeMessage'),
+                'passwordMatchError' => settings.get('passwordMatchError')
+            });
+        }
+        catch(ComponentSettingsException ex) {
+            throw new AuraHandledException(ex.getMessage());
+        }
+    }
+
+    /**
+     * @description Derives the object being queried from the configured SOQL so it does not need to be stored or calculated in the browser.
+     * @param customQuery the SOQL configured on the Self Registration settings record.
+     * @return the sObject name that follows the FROM keyword, or a blank string if it cannot be determined.
+     */
+    public static String getObjectToQuery(String customQuery) {
+        if(String.isBlank(customQuery)) {
+            return '';
+        }
+        Matcher queryMatcher = Pattern.compile('(?i)\\bFROM\\s+([A-Za-z0-9_]+)').matcher(customQuery);
+        return queryMatcher.find() ? queryMatcher.group(1) : '';
+    }
+
+    /**
+     * @description Validates the Self Registration settings that the component cannot safely check in the browser now the query lives server side.
+     * @param settings the settings map returned by getComponentSettings.
+     * @return a message describing the first configuration problem found, or null when the configuration is valid.
+     */
+    public static String validateSelfRegistrationSettings(Map<String, Object> settings) {
+        String customQuery = convertToString(settings.get('customQuery'));
+        if(String.isBlank(customQuery)) {
+            return 'A Custom Query is required to use this component.';
+        }
+
+        String objectToQuery = convertToString(settings.get('objectToQuery'));
+        if(objectToQuery != 'Contact' && objectToQuery != 'Account' && objectToQuery != 'Case') {
+            return 'Only Contact, Account or Case objects are supported with a Custom Query on this component.';
+        }
+
+        if(objectToQuery == 'Account' && !SiteRegistrationController.isPersonAccountEnabled()) {
+            return 'Person Accounts are not enabled on this org so you cannot use Accounts in a Custom Query.';
+        }
+
+        //The profile is used to build the unsaved User during passwordless self registration, whether or not a record is created.
+        if(convertToBoolean(settings.get('enablePasswordlessLogin'))) {
+            try {
+                getProfileId(convertToString(settings.get('passwordlessProfileId')));
+            }
+            catch(ComponentSettingsException ex) {
+                return ex.getMessage();
+            }
+        }
+
+        if(!convertToBoolean(settings.get('createNotFound'))) {
+            return null;
+        }
+
+        String objectCreateType = convertToString(settings.get('objectCreateType'));
+        if(String.isBlank(objectCreateType)) {
+            return 'Object Create Type must be set when Create Record If Not Found is enabled.';
+        }
+
+        if(objectCreateType == 'Contact') {
+            String accountId = convertToString(settings.get('accountId'));
+            if(String.isBlank(accountId)) {
+                return 'Please specify an Account Id on the Self Registration settings record when creating a Contact.';
+            }
+            if(accountId.length() != 15 && accountId.length() != 18) {
+                return 'Account Id must be a Salesforce 15 or 18 character reference.';
+            }
+            if(!accountId.startsWith('001')) {
+                return 'Account Id must start with 001 (Account Object Type).';
+            }
+        }
+
+        if(objectCreateType == 'Person Account') {
+            if(!SiteRegistrationController.isPersonAccountEnabled()) {
+                return 'Person Accounts are not enabled on this org.';
+            }
+
+            //Resolve the record type here so a name that no longer exists is reported to the admin when the page loads,
+            //rather than surfacing as a generic record creation failure to the first person who tries to register.
+            try {
+                getPersonAccountRecordTypeId(convertToString(settings.get('personAccountRecordTypeId')));
+            }
+            catch(ComponentSettingsException ex) {
+                return ex.getMessage();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @description Resolves the Person Account record type configured on the settings record to its Id.
+     * NOTE: Matches on DeveloperName first because record type labels can be renamed and are translated per user language.
+     * Falls back to the label so existing configurations that stored one keep working.
+     * @param recordTypeName the DeveloperName or label of an Account record type.
+     * @return the record type Id.
+     * @throws ComponentSettingsException when the setting is blank or names a record type that does not exist.
+     */
+    public static Id getPersonAccountRecordTypeId(String recordTypeName) {
+        if(String.isBlank(recordTypeName)) {
+            throw new ComponentSettingsException('Please set a Person Account Record Type to create a Person Account during registration.');
+        }
+
+        Schema.DescribeSObjectResult accountDescribe = Schema.SObjectType.Account;
+        Schema.RecordTypeInfo recordType = accountDescribe.getRecordTypeInfosByDeveloperName().get(recordTypeName);
+
+        if(recordType == null) {
+            recordType = accountDescribe.getRecordTypeInfosByName().get(recordTypeName);
+        }
+
+        if(recordType == null) {
+            throw new ComponentSettingsException('No Account record type called "' + recordTypeName + '" exists. Check the Person Account Record Type on the Self Registration Settings record.');
+        }
+
+        return recordType.getRecordTypeId();
+    }
+
+    /**
+     * @description Resolves the profile configured on the settings record to its Id.
+     * @param profileName the Name of a Profile. The profile must also be a member of the site or user creation fails later on.
+     * @return the profile Id.
+     * @throws ComponentSettingsException when the setting is blank or names a profile that does not exist.
+     */
+    public static Id getProfileId(String profileName) {
+        if(String.isBlank(profileName)) {
+            throw new ComponentSettingsException('Please set a Passwordless Profile on the Self Registration Settings record. The profile must be a member of the site.');
+        }
+
+        List<Profile> profiles = [SELECT Id FROM Profile WHERE Name = :profileName LIMIT 1];
+
+        if(profiles.isEmpty()) {
+            throw new ComponentSettingsException('No profile called "' + profileName + '" exists. Check the Passwordless Profile on the Self Registration Settings record.');
+        }
+
+        return profiles[0].Id;
+    }
+
     /**
      * @description Get metadata wrappers - uses mock data in tests if available, otherwise queries real metadata
      * Based on pattern from: https://crsinfosolutions.com/custom-metadata-unit-test/
@@ -104,6 +336,8 @@ public without sharing class SiteUtilities {
 
     /**
      * @description Retrieve Custom Metadata Types which contain custom field configuration for the Login & Self Registration forms. 
+     * Also confirms that the Custom Experience Cloud Setting record for the component exists and is valid before the form is rendered.
+     * NOTE: The settings themselves are never returned to the client, only a message describing any configuration problem.
      * @param urlParams a JSON string of URL params that were appended to the page.
      * @param componentName a string of the component that is calling this function to filter the Metadata i.e. Login or Self Registration
      * @return Returns a JSON string of retrieved records
@@ -113,6 +347,21 @@ public without sharing class SiteUtilities {
     public static String getCustomConfiguration(String urlParams, String componentName) {
         Map<String, Object> urlParameters = (Map<String, Object>) JSON.deserializeUntyped(urlParams);
         List<Map<String, Object>> resultList = new List<Map<String, Object>>();
+        String componentType = (componentName == LOGIN_COMPONENT_NAME) ? LOGIN_COMPONENT_NAME : SELF_REG_COMPONENT_NAME;
+
+        try {
+            Map<String, Object> settings = getComponentSettings(componentType);
+
+            if(componentType == SELF_REG_COMPONENT_NAME) {
+                String configurationError = validateSelfRegistrationSettings(settings);
+                if(String.isNotBlank(configurationError)) {
+                    throw new ComponentSettingsException(configurationError);
+                }
+            }
+        }
+        catch(ComponentSettingsException ex) {
+            throw new AuraHandledException(ex.getMessage());
+        }
 
         try {
             List<CustomConfigurationWrapper> metadataWrappers = getMetadataWrappers(componentName);
@@ -325,8 +574,8 @@ public without sharing class SiteUtilities {
     }
 
     /** 
-     * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Custom Metadata Types.
-     * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
+     * @description Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on with the Enable Logging field on the Custom Experience Cloud Setting record.
+     * @param loggingEnabled - the 'loggingEnabled' value from the component settings, sourced from Enable__c on Custom_Experience_Cloud_Setting__mdt
      * @param message - a list of messages to store on the Platform Event
      * @param logType - the type of error to log, either SiteUtilities.INFORMATION_LOG_TYPE or SiteUtilities.ERROR_LOG_TYPE
      * @param componentName - the name of the component that is calling this function
@@ -364,8 +613,8 @@ public without sharing class SiteUtilities {
     }
     
     /** 
-     * @description Overloaded method for backward compatibility. Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on in the Custom Metadata Types.
-     * @param loggingEnabled - Passes in the LWC property panel setting to turn logging on or off in a custom object called 'Self Registration Log'
+     * @description Overloaded method for backward compatibility. Create a Platform Event (Error Log) which a Flow subscribes. The platform event contains a list of messages to log in a custom object. Off by default, turn on with the Enable Logging field on the Custom Experience Cloud Setting record.
+     * @param loggingEnabled - the 'loggingEnabled' value from the component settings, sourced from Enable__c on Custom_Experience_Cloud_Setting__mdt
      * @param message - a list of messages to store on the Platform Event
      * @param logType - the type of error to log, either SiteUtilities.INFORMATION_LOG_TYPE or SiteUtilities.ERROR_LOG_TYPE
      * @param componentName - the name of the component that is calling this function
@@ -375,40 +624,38 @@ public without sharing class SiteUtilities {
     }
 
     /**
-    * @description Checks to see if the Logging setting is activated.
-    * @param settingName - pass in the settingName which is related to the component
+    * @description Checks to see if the Logging setting is activated for a component.
+    * NOTE: Apex should prefer the 'loggingEnabled' key on the settings map it has already loaded via getComponentSettings.
+    * @param componentType - the Type__c value of the settings record i.e. 'Login' or 'Self Registration'
     * @return true/false depending on setting value.
     */
     @AuraEnabled(cacheable=true)
-    public static Boolean isLoggingEnabled(String settingName) {
+    public static Boolean isLoggingEnabled(String componentType) {
         // If mock data is set in tests, use it
-        if (mockLoggingSettings != null && mockLoggingSettings.containsKey(settingName)) {
-            return mockLoggingSettings.get(settingName);
+        if (mockLoggingSettings != null && mockLoggingSettings.containsKey(componentType)) {
+            return mockLoggingSettings.get(componentType);
         }
         
-        List<Custom_Experience_Cloud_Setting__mdt> logSetting = [SELECT Id, Enable__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
+        List<Custom_Experience_Cloud_Setting__mdt> logSetting = [SELECT Id, Enable__c, Type__c FROM Custom_Experience_Cloud_Setting__mdt WHERE (Type__c = :componentType AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
         
-        if(!logSetting.isEmpty() && logSetting.size() == 1) {
-            return true;
-        }
-        return false;
+        return !logSetting.isEmpty();
     }
 
     /**
      * @description sets the ProfileId on the non-persisted User Object
      * NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
      * @param  user pass in the user object which is currently not persisted until the user is verified
-     * @param  profileId the profileId to set on the user object as configured in the property panel with Exp. Builder.
+     * @param  profileName the name of the Profile configured on the Custom Experience Cloud Setting record.
      */
     public void setProfileId(User user, String profileName){
-        user.ProfileId = [SELECT Id,Name FROM Profile WHERE Name = :profileName].Id;
+        user.ProfileId = getProfileId(profileName);
     }
 
     /**
      * @description sets the ContactId on the non-persisted User Object
      * NOTE: This method lives here because it needs to run in a 'without sharing' context as it is accessed by the guest user during Passwordless Self Registration.
      * @param  user pass in the user object which is currently not persisted until the user is verified
-     * @param  contactId the profileId to set on the user object as configured in the property panel with Exp. Builder.
+     * @param  contactId the contactId to set on the user object.
      */
     public void setContactId(User user, Id contactId){
         user.ContactId = contactId;
@@ -430,7 +677,7 @@ public without sharing class SiteUtilities {
     /**
     * @description Query records using the specified custom query
     * @param formInputs Map of the submitted form values 
-    * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+    * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
     * @return Specified records as a generic sObject list
     */
     public static List<sObject> getRecords(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
@@ -543,25 +790,100 @@ public without sharing class SiteUtilities {
     }
 
     /**
+     * @description Chooses a safe post-login redirect. Prefers a relative startURL from the login page query string when present;
+     * otherwise uses the configured Portal Redirect. Rejects protocol-relative and external absolute URLs to prevent open redirects.
+     * @param requestedStartUrl the startURL/startUrl query parameter from the browser (untrusted).
+     * @param configuredPortalRedirect the Portal_Redirect__c value from Custom Metadata (trusted fallback).
+     * @return a relative path or same-site absolute URL suitable for Site.login / UserManagement verification.
+     */
+    public static String resolveStartUrl(String requestedStartUrl, String configuredPortalRedirect) {
+        String fallback = String.isNotBlank(configuredPortalRedirect) ? configuredPortalRedirect : '/';
+
+        if(String.isBlank(requestedStartUrl)) {
+            return fallback;
+        }
+
+        String candidate = requestedStartUrl.trim();
+
+        // Experience Cloud typically supplies a site-relative path e.g. /s/article/My-Article
+        if(candidate.startsWith('/') && !candidate.startsWith('//')) {
+            return candidate;
+        }
+
+        // Absolute URL only when it remains on this Experience Cloud site
+        String baseUrl = Site.getBaseSecureUrl();
+        if(String.isNotBlank(baseUrl) && candidate.startsWith(baseUrl)) {
+            return candidate;
+        }
+
+        messages.add('Requested startURL was rejected as unsafe. Using configured portal redirect instead. Requested: ' + requestedStartUrl);
+        return fallback;
+    }
+
+    /**
+     * @description Builds the startUrl value passed to Site.login from a resolved relative or absolute path.
+     * Experience Cloud startURL values already include the site path prefix (e.g. /lwctest/s/test-page).
+     * Prepending Site.getBaseSecureUrl() in that case doubles the prefix and produces an invalid URL.
+     * @param requestedStartUrl the startURL/startUrl query parameter from the browser (untrusted).
+     * @param configuredPortalRedirect the Portal_Redirect__c value from Custom Metadata (trusted fallback).
+     * @return the URL string to pass as the startUrl argument to Site.login.
+     */
+    public static String buildLoginStartUrl(String requestedStartUrl, String configuredPortalRedirect) {
+        String resolved = resolveStartUrl(requestedStartUrl, configuredPortalRedirect);
+        if(resolved.startsWith('http://') || resolved.startsWith('https://')) {
+            return new PageReference(resolved).getUrl();
+        }
+
+        String resolvedPath = resolved.startsWith('/') ? resolved : '/' + resolved;
+        String baseUrl = Site.getBaseSecureUrl();
+        if(String.isBlank(baseUrl)) {
+            return new PageReference(resolvedPath).getUrl();
+        }
+
+        // If the path already starts with the community/site path from getBaseSecureUrl(), pass it through.
+        // Example: base https://host/lwctest/s + startURL /lwctest/s/test-page must NOT become .../lwctest/s/lwctest/s/test-page
+        String basePath = normalizeUrlPath(new System.Url(baseUrl).getPath());
+        String normalizedResolved = normalizeUrlPath(resolvedPath);
+        if(String.isNotBlank(basePath) && basePath != '/'
+            && (normalizedResolved == basePath || normalizedResolved.startsWith(basePath + '/'))) {
+            return resolvedPath;
+        }
+
+        // Short configured redirects such as "/" still need the site base URL.
+        return new PageReference(baseUrl + resolvedPath).getUrl();
+    }
+
+    /**
+     * @description Strips a trailing slash from a URL path for prefix comparisons, leaving "/" unchanged.
+     */
+    @TestVisible
+    private static String normalizeUrlPath(String path) {
+        if(String.isBlank(path) || path == '/') {
+            return path;
+        }
+        return path.endsWith('/') ? path.substring(0, path.length() - 1) : path;
+    }
+
+    /**
      * @description verify the code submitted by the user, and return a JSON string with the redirect URL if verification is successful.
-     * @param method the method by which a code will be sent. Configured in the property panel in Exp. Builder.
-     * @param identifier the identifier is generated when requesting a new verification code and submitted back in via the form.
-     * @param code this is the generated code submitted by the user and received by the specified method
-     * @param startUrl this is the URL that a user is redirected to upon successful verification. Configured via the property panel in Exp. builder.
-     * @param lwcSettings the property panel settings configured in Exp builder.
-     * @param formJson the submitted form values
+     * The verification method and redirect URL are read from the Custom Experience Cloud Setting record matching the component type.
+     * When startUrl is supplied (from the login page query string), it takes precedence over the configured Portal Redirect if it is a safe relative or same-site URL.
+     * @param formInputs the submitted form values as a JSON string, including the identifier and the code entered by the user.
+     * @param componentName the Type__c of the settings record to load i.e. 'Login' or 'Self Registration'.
+     * @param startUrl optional relative or same-site URL from the Experience Cloud startURL query parameter.
+     * @return a JSON string containing the URL to redirect the verified user to.
      * NOTE: Not covered in Apex tests due to limitation on User Management class in test context. This method is mocked instead.
      */
     @AuraEnabled
-    public static String verifyUser(String configurationOptions, String formInputs, String componentName) {
+    public static String verifyUser(String formInputs, String componentName, String startUrl) {
         
         String url;
         Auth.VerificationResult res;
         
-        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        Map<String, Object> lwcSettings = getComponentSettings(componentName);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         Auth.VerificationMethod method = methods.get(convertToString(lwcSettings.get('passwordlessMethod')));
-        String startUrl = convertToString(formJson.get('portalRegistrationRedirect'));
+        String resolvedStartUrl = resolveStartUrl(startUrl, convertToString(lwcSettings.get('portalRedirect')));
         String identifier = convertToString(formJson.get('identifier'));
         String code = convertToString(formJson.get('verificationCode'));
         String mobilePhone;
@@ -579,7 +901,7 @@ public without sharing class SiteUtilities {
         Id contactIdForLogging = null;
         
         if(componentName == SELF_REG_COMPONENT_NAME) {
-            res = UserManagement.verifySelfRegistration(method, identifier, code, startUrl);
+            res = UserManagement.verifySelfRegistration(method, identifier, code, resolvedStartUrl);
             
             // Populate logging IDs for successful self-registration verification
             List<User> registeredUsers = getUserIdWithUsername(username, mobilePhone);
@@ -599,7 +921,7 @@ public without sharing class SiteUtilities {
                     accountIdForLogging = user[0].Contact != null ? user[0].Contact.AccountId : null;
                 }
             }
-            res = UserManagement.verifyPasswordlessLogin(user[0].Id, method, identifier, code, startUrl);
+            res = UserManagement.verifyPasswordlessLogin(user[0].Id, method, identifier, code, resolvedStartUrl);
         }
         
         messages.add('Validating verification code for user. Submitted data: ' + formJson);
@@ -614,7 +936,7 @@ public without sharing class SiteUtilities {
         url = page.getUrl();
 
         Map<String, String> itemsToAdd = new Map<String, String>();
-        itemsToAdd.put(identifier, '{"pageUrl":"' +  url + '","verificationSuccess":'+  res.success + '}');
+        itemsToAdd.put('registerResult', '{"pageUrl":"' +  url + '","verificationSuccess":'+  res.success + '}');
 
         messages.add('Verification was successful. Redirecting user to: ' + url);
         createLogEntry(convertToBoolean(lwcSettings.get('loggingEnabled')), String.join(messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, componentName, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_VERIFICATION_SUCCESS); 

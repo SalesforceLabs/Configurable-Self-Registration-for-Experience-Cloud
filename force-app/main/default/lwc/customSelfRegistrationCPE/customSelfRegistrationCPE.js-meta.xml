@@ -9,8 +9,11 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
+            <!-- DEPRECATED. This property is retained for managed package compatibility only and no longer controls component behaviour.
+                 Configure the component on the "Self Registration Settings" record of the Custom Experience Cloud Setting metadata type instead. -->
             <property name="propertyPanelSettings" type="c__layoutProperty"
-                label="Self Registration Settings"/>
+                label="DEPRECATED SETTINGS"
+                description="DEPRECATED/IGNORED, please configure Custom Metadata Settings instead."/>
         </targetConfig> 
     </targetConfigs>
 </LightningComponentBundle>

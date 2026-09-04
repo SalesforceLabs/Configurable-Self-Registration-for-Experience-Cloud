@@ -18,8 +18,8 @@
         <name>ApexClass</name>
     </types>
     <types>
-        <members>Custom_Experience_Cloud_Setting.Login_Logging</members>
-        <members>Custom_Experience_Cloud_Setting.Self_Registration_Logging</members>
+        <members>Custom_Experience_Cloud_Setting.Login_Settings</members>
+        <members>Custom_Experience_Cloud_Setting.Self_Registration_Settings</members>
         <members>Custom_Login_Configuration.Country_Code</members>
         <members>Custom_Login_Configuration.Email</members>
         <members>Custom_Login_Configuration.Identifier</members>
@@ -67,13 +67,14 @@
     </types>
     <types>
         <members>Custom_Experience_Cloud_Setting__mdt-Custom Experience Cloud Setting Layout</members>
-        <members>Custom_Login_Configuration__mdt-Custom Login Configuration Layout</members>
-        <members>Custom_Registration_Configuration__mdt-Custom Registration Configuration Layout</members>
+        <members>Custom_Login_Configuration__mdt-Custom Login Configuration Fields Layout</members>
+        <members>Custom_Registration_Configuration__mdt-Custom Registration Configuration Fields Layout</members>
         <members>Experience_Cloud_Log__c-Experience Cloud Log Layout</members>
         <name>Layout</name>
     </types>
     <types>
         <members>customLoginCPE</members>
+        <members>customLoginCmdt</members>
         <members>customPropertyEditorAccessLevelMode</members>
         <members>customPropertyEditorCreateType</members>
         <members>customPropertyEditorProfiles</members>
@@ -81,6 +82,7 @@
         <members>customPropertyEditorRecordTypes</members>
         <members>customPropertyEditorVerificationMethods</members>
         <members>customSelfRegistrationCPropEditor</members>
+        <members>customSelfRegistrationCmdt</members>
         <name>LightningComponentBundle</name>
     </types>
     <types>

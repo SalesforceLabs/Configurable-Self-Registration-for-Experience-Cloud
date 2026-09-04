@@ -55,7 +55,7 @@ public with sharing class SiteRegistrationController {
     /**
      * @description isValidUsername Checks to see if the username supplied by the user on the registration form is available
      * @param formInputs - JSON String of the submitted form values
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return Boolean true if username is taken, otherwise false.
      */ 
     public static Boolean isValidUsername(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
@@ -83,7 +83,7 @@ public with sharing class SiteRegistrationController {
     /**
      * @description Validates that the submitted password matches the Org's password policy.
      * @param formJson - JSON String of the submitted form values
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel 
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      */
     public static void validatePassword(Map<String, Object> formJson, Map<String, Object> configurationOptions, User user) {
 
@@ -101,21 +101,21 @@ public with sharing class SiteRegistrationController {
 
     /**
      * @description Attempts to register a new user. Looks for existing record first based on configured query. If configured and record not found, new record is created. If record found, registered user is linked to existing Contact/Person Account.
+     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Self Registration' so the guest user cannot influence it.
      * @param formInputs - JSON String of the submitted form values 
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+     * @param startUrl - optional relative or same-site URL from the Experience Cloud startURL query parameter, used after registration login.
      * @return String Page URL if login is successful.
      */
     @AuraEnabled
-    public static String registerUser(String formInputs, String configurationOptions) { 
+    public static String registerUser(String formInputs, String startUrl) { 
 
         String pageUrl = null;
-        String result = '';
         Id recordId = null;
         String userId;
         String identifier = '';
         Boolean showVerificationCode = false;
         Boolean recordCreated = false; 
-        Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        Map<String, Object> lwcSettings = SiteUtilities.getComponentSettings(SiteUtilities.SELF_REG_COMPONENT_NAME);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         Boolean isPasswordless = SiteUtilities.convertToBoolean(lwcSettings.get('enablePasswordlessLogin'));
         String objectCreateType = SiteUtilities.convertToString(lwcSettings.get('objectCreateType'));
@@ -208,7 +208,7 @@ public with sharing class SiteRegistrationController {
             if(String.isNotBlank(userId)) {
                 userIdForLogging = Test.isRunningTest() ? null : userId; //NOTE: This is a hack to get the test to pass.
                 SiteUtilities.messages.add('External User Id created was: ' + userId);
-                pageUrl = loginUser(user.Username, SiteUtilities.convertToString(formJson.get('password')), lwcSettings);
+                pageUrl = loginUser(user.Username, SiteUtilities.convertToString(formJson.get('password')), lwcSettings, startUrl);
             }
         }
         String outcome = isPasswordless ? SiteUtilities.OUTCOME_VERIFICATION_SENT : SiteUtilities.OUTCOME_REGISTRATION_SUCCESS;
@@ -222,7 +222,7 @@ public with sharing class SiteRegistrationController {
     /**
      * @description createContact description
      * @param formInputs - JSON String of the submitted form values 
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return returns a new ContactId on successful creation
      */
     public static Id createContact(Map<String, Object> formInputs, Map<String, Object> configurationOptions){
@@ -277,7 +277,7 @@ public with sharing class SiteRegistrationController {
     /**
      * @description createPersonAccount description
      * @param formInputs - JSON String of the submitted form values 
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return returns the Account Id (PersonAccount Id) on successful creation
      */
     public static Id createPersonAccount(Map<String, Object> formInputs, Map<String, Object> configurationOptions){
@@ -286,7 +286,7 @@ public with sharing class SiteRegistrationController {
         try {
             List<Account> newPersonAccounts = new List<Account>();
             Account newPersonAccount = new Account();
-            newPersonAccount.put('RecordTypeId', Schema.SObjectType.Account.getRecordTypeInfosByName().get(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))).getRecordTypeId());
+            newPersonAccount.put('RecordTypeId', SiteUtilities.getPersonAccountRecordTypeId(SiteUtilities.convertToString(configurationOptions.get('personAccountRecordTypeId'))));
             Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject('Account');
             formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
             
@@ -338,9 +338,9 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description Creates a record of type Contact or Person Account based on settings in Experience Builder. Passes in form values.
+     * @description Creates a record of type Contact or Person Account based on the Object Create Type setting. Passes in form values.
      * @param formInputs - JSON String of the submitted form values 
-     * @param configurationOptions - JSON String of the LWC property values from the Experience Builder configration panel
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return Id of the newly created record. Either Contact.AccountId if type is a Contact or Id if Person Account
      */
     public static Id createObject(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {    
@@ -360,7 +360,7 @@ public with sharing class SiteRegistrationController {
     /**
      * @description Creates a non-persisted User object for an external user which is linked to a Contact/Person Account that is found/created in other methods. Committed when the user verifies via a code.
      * @param formInputs - JSON String of the submitted form values 
-     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return User object
      */
     public static User createUnsavedUser(Map<String, Object> formInputs, Map<String, Object> configurationOptions) {
@@ -405,7 +405,7 @@ public with sharing class SiteRegistrationController {
      * @description Attempts to create an external user which is linked to a Contact/Person Account that is found/created in other methods.
      * @param formInputs - JSON String of the submitted form values 
      * @param accountId - this is the AccountId that the External User is linked to.
-     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return String of External User Id created
      */
     public static String createExternalUser(Map<String, Object> formInputs, Id accountId, User user, Map<String, Object> configurationOptions) {
@@ -433,26 +433,36 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description Attempts to login the newly registered user. Redirects to the home page on success.
+     * @description Attempts to login the newly registered user. Redirects to the configured page on success.
      * @param username - Passes in the submitted username field from the self registration form.
      * @param password - Passes in the submitted password field from the self registration form. 
-     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return String PageURL to redirect to upon successful login.
      */
     public static String loginUser(String username, String password, Map<String, Object> configurationOptions) {
+        return loginUser(username, password, configurationOptions, null);
+    }
+
+    /**
+     * @description Attempts to login the newly registered user. Prefers a safe startURL from the page query string when supplied.
+     * @param username - Passes in the submitted username field from the self registration form.
+     * @param password - Passes in the submitted password field from the self registration form. 
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
+     * @param startUrl - optional relative or same-site URL from the Experience Cloud startURL query parameter.
+     * @return String PageURL to redirect to upon successful login.
+     */
+    public static String loginUser(String username, String password, Map<String, Object> configurationOptions, String startUrl) {
         String pageUrl = null;
 
         //TODO: Get the Site.ExperienceId and add to query params on startURL to retain the value?
         try {
-            ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalRegistrationRedirect')));
-            String startUrl = homePageRef.getUrl();
-            ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
+            String resolvedStartUrl = SiteUtilities.buildLoginStartUrl(startUrl, SiteUtilities.convertToString(configurationOptions.get('portalRedirect')));
+            ApexPages.PageReference startPageRef = Site.login(username, password, resolvedStartUrl);
             
             if(startPageRef != null) {
                 pageUrl = startPageRef.getUrl();
             } else {
-                ApexPages.PageReference pageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalRegistrationRedirect')));
-                pageUrl = pageRef.getUrl();
+                pageUrl = resolvedStartUrl;
             }
         } catch (Exception e) {
             SiteUtilities.messages.add('There was a problem logging the user into the portal.' + ' Error: ' + e.getMessage());
@@ -480,7 +490,7 @@ public with sharing class SiteRegistrationController {
      *  Times: https://developer.salesforce.com/forums/?id=9062I000000IY7KQAW
      *  Get Datatype: https://salesforce.stackexchange.com/questions/223323/get-the-type-data-type-of-a-field-in-apex
      * @param  formInputs a map of the form fields submitted from the registration form.
-     * @param configurationOptions a map of the configuration options from the LWC property panel
+     * @param configurationOptions the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @param objectMetadata a map of the metadata for a specified object 
      */
     @TestVisible
@@ -519,9 +529,9 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description Looks for existing record matching the query configured in Experience Builder. Can use values from the form using Bind Variables in the query.
+     * @description Looks for an existing record matching the Custom Query on the Self Registration settings record. Can use values from the form using Bind Variables in the query.
      * @param formInputs - Map of the submitted form values 
-     * @param configurationOptions - Map of the LWC property values from the Experience Builder configration panel
+     * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account
      * @see https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_bind_var_soql.htm&release=242&type=5 
      */
@@ -532,7 +542,7 @@ public with sharing class SiteRegistrationController {
         Map<String, Schema.SObjectField> objectMetadata = getMetadataForObject(SiteUtilities.convertToString(configurationOptions.get('objectToQuery')));
         formInputs = convertFormDataToCorrectDataType(formInputs, configurationOptions, objectMetadata);
         
-        //Configurable via the component config panel. May affect what record is found based on org settings.
+        //Configurable via the Access Level Mode setting. May affect what record is found based on org settings.
         //Default is 'System' which ignores FLS/Object settings. Use 'User' to enforce FLS/Object Sharing Settings for the Guest User within the Org.
         //See: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_AccessLevel.htm
         try {

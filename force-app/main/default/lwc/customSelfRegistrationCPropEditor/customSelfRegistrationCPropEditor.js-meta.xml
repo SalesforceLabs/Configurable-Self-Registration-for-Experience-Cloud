@@ -2,15 +2,18 @@
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
-    <masterLabel>SF Labs: Custom Self Registration</masterLabel>
+    <masterLabel>@deprecated - Custom Self Registration - DO NOT USE THIS COMPONENT</masterLabel>
+    <description>DEPRECATED. Replaced by the "SF Labs: Custom Self Registration" component, which is configured on the "Self Registration Settings" record of the Custom Experience Cloud Setting metadata type.</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
     </targets>
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
+            <!-- DEPRECATED. These properties are retained for managed package compatibility only and no longer control component behaviour.
+                 Configure the component on the "Self Registration Settings" record of the Custom Experience Cloud Setting metadata type instead. -->
             <property name="propertyPanelSettings" type="c__layoutProps"
-                label="Self Registration Settings"
+                label="DEPRECATED SETTINGS"
                 default="{
                     &quot;customQuery&quot;:&quot;&quot;,
                     &quot;accessLevelMode&quot;:&quot;System&quot;,

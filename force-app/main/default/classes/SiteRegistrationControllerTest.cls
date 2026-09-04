@@ -12,6 +12,23 @@ private class SiteRegistrationControllerTest {
     }
 
     /**
+     * @description Apex now loads Self Registration behaviour from the Custom Experience Cloud Setting record rather than trusting the
+     * client, so tests seed the server side settings instead of passing configuration up from the component.
+     * @param configurationOptions a JSON string using the unified setting keys.
+     */
+    private static void mockSelfRegistrationSettings(String configurationOptions) {
+        SiteUtilities.mockComponentSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+    }
+
+    /**
+     * @description A valid Self Registration configuration for tests that only exercise the field metadata rather than the behaviour settings.
+     * Apex validates the settings record before returning the form fields, so a configuration is always required.
+     */
+    private static void mockValidSelfRegistrationSettings() {
+        mockSelfRegistrationSettings('{"loggingEnabled":"true", "objectToQuery":"Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System"}');
+    }
+
+    /**
      * @description Helper method to create mock Custom Metadata wrapper for testing
      * Based on pattern from: https://crsinfosolutions.com/custom-metadata-unit-test/
      */
@@ -55,6 +72,7 @@ private class SiteRegistrationControllerTest {
         List<SiteUtilities.CustomConfigurationWrapper> mockMetadata = new List<SiteUtilities.CustomConfigurationWrapper>();
         mockMetadata.add(createMockMetadataWrapper('text', 'FirstName', 'First Name', null, null, null, false, null, null, null));
         SiteUtilities.mockMetadataList = mockMetadata;
+        mockValidSelfRegistrationSettings();
         
         String urlParams = '{"FirstName":"Test"}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
@@ -74,24 +92,24 @@ private class SiteRegistrationControllerTest {
         SiteUtilities.mockMetadataList = null;
     }
 
-    //Retrieve and test custom settings to enable logging for the Self Registration component.
+    //Retrieve and test custom settings to enable logging for the Self Registration component. Resolved by the Type field, not the DeveloperName.
     @isTest
     private static void isLoggingEnabledSelfRegistration() {
         // Test with mock - logging enabled
-        SiteUtilities.mockLoggingSettings = new Map<String, Boolean>{'Self_Registration_Logging' => true};
-        Boolean result = SiteUtilities.isLoggingEnabled('Self_Registration_Logging');
+        SiteUtilities.mockLoggingSettings = new Map<String, Boolean>{SiteUtilities.SELF_REG_COMPONENT_NAME => true};
+        Boolean result = SiteUtilities.isLoggingEnabled(SiteUtilities.SELF_REG_COMPONENT_NAME);
         System.assertEquals(true, result, 'Mock logging enabled should return true');
         
         // Test with mock - logging disabled
-        SiteUtilities.mockLoggingSettings.put('Self_Registration_Logging', false);
-        result = SiteUtilities.isLoggingEnabled('Self_Registration_Logging');
+        SiteUtilities.mockLoggingSettings.put(SiteUtilities.SELF_REG_COMPONENT_NAME, false);
+        result = SiteUtilities.isLoggingEnabled(SiteUtilities.SELF_REG_COMPONENT_NAME);
         System.assertEquals(false, result, 'Mock logging disabled should return false');
         
         // Clean up
         SiteUtilities.mockLoggingSettings = null;
         
         // Test with real metadata (if it exists)
-        Boolean realResult = SiteUtilities.isLoggingEnabled('Self_Registration_Logging');
+        Boolean realResult = SiteUtilities.isLoggingEnabled(SiteUtilities.SELF_REG_COMPONENT_NAME);
         System.assertNotEquals(null, realResult, 'Should return a boolean value');
     }
     
@@ -101,8 +119,8 @@ private class SiteRegistrationControllerTest {
         // We can't easily simulate a query exception, but we can test the method handles missing settings
         SiteUtilities.mockLoggingSettings = new Map<String, Boolean>();
         // Don't add the setting, so it will fall through to real query
-        Boolean result = SiteUtilities.isLoggingEnabled('NonExistent_Setting');
-        System.assertEquals(false, result, 'Non-existent setting should return false');
+        Boolean result = SiteUtilities.isLoggingEnabled('NonExistent_Type');
+        System.assertEquals(false, result, 'Non-existent type should return false');
         
         // Clean up
         SiteUtilities.mockLoggingSettings = null;
@@ -110,20 +128,136 @@ private class SiteRegistrationControllerTest {
     
     @isTest
     private static void testIsLoggingEnabledMultipleSettings() {
-        // Test multiple different logging settings
+        // Test both component types resolved by the Type field
         SiteUtilities.mockLoggingSettings = new Map<String, Boolean>{
-            'Self_Registration_Logging' => true,
-            'Login_Logging' => false,
-            'Another_Setting' => true
+            SiteUtilities.SELF_REG_COMPONENT_NAME => true,
+            SiteUtilities.LOGIN_COMPONENT_NAME => false
         };
         
-        System.assertEquals(true, SiteUtilities.isLoggingEnabled('Self_Registration_Logging'), 'Self Registration logging should be enabled');
-        System.assertEquals(false, SiteUtilities.isLoggingEnabled('Login_Logging'), 'Login logging should be disabled');
-        System.assertEquals(true, SiteUtilities.isLoggingEnabled('Another_Setting'), 'Another setting should be enabled');
-        System.assertEquals(false, SiteUtilities.isLoggingEnabled('NonExistent'), 'Non-existent setting should return false');
+        System.assertEquals(true, SiteUtilities.isLoggingEnabled(SiteUtilities.SELF_REG_COMPONENT_NAME), 'Self Registration logging should be enabled');
+        System.assertEquals(false, SiteUtilities.isLoggingEnabled(SiteUtilities.LOGIN_COMPONENT_NAME), 'Login logging should be disabled');
+        System.assertEquals(false, SiteUtilities.isLoggingEnabled('NonExistent'), 'Non-existent type should return false');
         
         // Clean up
         SiteUtilities.mockLoggingSettings = null;
+    }
+
+    //Enable__c on the settings record is what drives the loggingEnabled key used throughout Apex.
+    @isTest
+    private static void enableFieldDrivesLoggingEnabledTest() {
+        Map<String, Object> settings = SiteUtilities.getComponentSettings(SiteUtilities.SELF_REG_COMPONENT_NAME);
+        System.assert(settings.containsKey('loggingEnabled'), 'loggingEnabled should be present on the settings map');
+        System.assertEquals(
+            SiteUtilities.isLoggingEnabled(SiteUtilities.SELF_REG_COMPONENT_NAME),
+            SiteUtilities.convertToBoolean(settings.get('loggingEnabled')),
+            'loggingEnabled should match the Enable__c value resolved by Type'
+        );
+    }
+
+    //The object being queried is derived from the SOQL rather than stored, so it never has to be calculated in the browser.
+    @isTest
+    private static void getObjectToQueryTest() {
+        System.assertEquals('Contact', SiteUtilities.getObjectToQuery('SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1'), 'Contact should be derived from the query');
+        System.assertEquals('Account', SiteUtilities.getObjectToQuery('select Id from Account where PersonEmail = :Email'), 'Object should be derived regardless of keyword case');
+        System.assertEquals('', SiteUtilities.getObjectToQuery(''), 'A blank query should return a blank object name');
+        System.assertEquals('', SiteUtilities.getObjectToQuery(null), 'A null query should return a blank object name');
+    }
+
+    //Configuration problems are reported by Apex so the custom query never has to be sent to the browser to be checked.
+    @isTest
+    private static void validateSelfRegistrationSettingsTest() {
+        Map<String, Object> settings = new Map<String, Object>{'customQuery' => '', 'objectToQuery' => ''};
+        System.assertEquals('A Custom Query is required to use this component.', SiteUtilities.validateSelfRegistrationSettings(settings), 'A blank query should be rejected');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id FROM Lead LIMIT 1', 'objectToQuery' => 'Lead'};
+        System.assertEquals('Only Contact, Account or Case objects are supported with a Custom Query on this component.', SiteUtilities.validateSelfRegistrationSettings(settings), 'Unsupported objects should be rejected');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => true, 'objectCreateType' => ''};
+        System.assertEquals('Object Create Type must be set when Create Record If Not Found is enabled.', SiteUtilities.validateSelfRegistrationSettings(settings), 'A blank create type should be rejected');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => true, 'objectCreateType' => 'Contact', 'accountId' => ''};
+        System.assertEquals('Please specify an Account Id on the Self Registration settings record when creating a Contact.', SiteUtilities.validateSelfRegistrationSettings(settings), 'A blank Account Id should be rejected when creating Contacts');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => true, 'objectCreateType' => 'Contact', 'accountId' => '001'};
+        System.assertEquals('Account Id must be a Salesforce 15 or 18 character reference.', SiteUtilities.validateSelfRegistrationSettings(settings), 'A short Account Id should be rejected');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => true, 'objectCreateType' => 'Contact', 'accountId' => '003000000000000'};
+        System.assertEquals('Account Id must start with 001 (Account Object Type).', SiteUtilities.validateSelfRegistrationSettings(settings), 'A non-Account prefix should be rejected');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => false};
+        System.assertEquals(null, SiteUtilities.validateSelfRegistrationSettings(settings), 'A valid configuration should not report a problem');
+
+        //A profile that does not exist must be reported when the page loads, not when someone tries to register.
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => false,
+                                           'enablePasswordlessLogin' => true, 'passwordlessProfileId' => 'Not A Real Profile'};
+        System.assert(SiteUtilities.validateSelfRegistrationSettings(settings).contains('Not A Real Profile'), 'An unknown passwordless profile should be rejected');
+
+        settings = new Map<String, Object>{'customQuery' => 'SELECT Id,AccountId FROM Contact LIMIT 1', 'objectToQuery' => 'Contact', 'createNotFound' => false,
+                                           'enablePasswordlessLogin' => true, 'passwordlessProfileId' => ''};
+        System.assert(SiteUtilities.validateSelfRegistrationSettings(settings).contains('Please set a Passwordless Profile'), 'A blank passwordless profile should be rejected');
+    }
+
+    //The settings hold a profile name rather than an Id, so a typo must produce a configuration message instead of a raw query exception.
+    @isTest
+    private static void getProfileIdTest() {
+        Profile existing = [SELECT Id, Name FROM Profile LIMIT 1];
+        System.assertEquals(existing.Id, SiteUtilities.getProfileId(existing.Name), 'A valid profile name should resolve to its Id');
+
+        try {
+            SiteUtilities.getProfileId('Not A Real Profile');
+            System.assert(false, 'An unknown profile name should throw');
+        }
+        catch (SiteUtilities.ComponentSettingsException e) {
+            System.assert(e.getMessage().contains('Not A Real Profile'), 'The message should name the profile that was not found');
+        }
+
+        try {
+            SiteUtilities.getProfileId('');
+            System.assert(false, 'A blank profile name should throw');
+        }
+        catch (SiteUtilities.ComponentSettingsException e) {
+            System.assert(e.getMessage().contains('Passwordless Profile'), 'The message should point the admin at the setting');
+        }
+    }
+
+    //The settings hold a record type name rather than an Id. Developer Name is preferred but the label must keep working for existing configurations.
+    @isTest
+    private static void getPersonAccountRecordTypeIdTest() {
+        List<RecordType> accountRecordTypes = [SELECT Id, Name, DeveloperName FROM RecordType WHERE SobjectType = 'Account' AND IsActive = true LIMIT 1];
+
+        if(!accountRecordTypes.isEmpty()) {
+            RecordType existing = accountRecordTypes[0];
+            System.assertEquals(existing.Id, SiteUtilities.getPersonAccountRecordTypeId(existing.DeveloperName), 'A Developer Name should resolve to the record type Id');
+            System.assertEquals(existing.Id, SiteUtilities.getPersonAccountRecordTypeId(existing.Name), 'A label should still resolve for existing configurations');
+        }
+
+        try {
+            SiteUtilities.getPersonAccountRecordTypeId('Not A Real Record Type');
+            System.assert(false, 'An unknown record type should throw');
+        }
+        catch (SiteUtilities.ComponentSettingsException e) {
+            System.assert(e.getMessage().contains('Not A Real Record Type'), 'The message should name the record type that was not found');
+        }
+
+        try {
+            SiteUtilities.getPersonAccountRecordTypeId('');
+            System.assert(false, 'A blank record type should throw');
+        }
+        catch (SiteUtilities.ComponentSettingsException e) {
+            System.assert(e.getMessage().contains('Person Account Record Type'), 'The message should point the admin at the setting');
+        }
+    }
+
+    //A missing settings record must surface as a component error rather than falling back to unconfigured behaviour.
+    @isTest
+    private static void getCustomConfigurationMissingSettingsTest() {
+        try {
+            SiteUtilities.getComponentSettings('Not A Real Type');
+            System.assert(false, 'An exception should be thrown when no settings record matches the Type');
+        }
+        catch (SiteUtilities.ComponentSettingsException e) {
+            System.assert(e.getMessage().contains('Not A Real Type'), 'The exception should name the Type that was not found');
+        }
     }
 
 
@@ -144,7 +278,8 @@ private class SiteRegistrationControllerTest {
              formInputs = '{"FirstName":"Test", "LastName":"User", "Username":"testusernotexist@mail.com", "Email":"testusernotexist@mail.com", "Mobile":"07747687234", "password":"Testing123!", "confirmPassword":"Testing123!"}';
         }
  
-        SiteRegistrationController.registerUser(formInputs, configurationOptions);
+        mockSelfRegistrationSettings(configurationOptions);
+        SiteRegistrationController.registerUser(formInputs, null);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
     }
@@ -160,7 +295,8 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user@test.com", "Email":"user@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
-        SiteRegistrationController.registerUser(formInputs, configurationOptions);
+        mockSelfRegistrationSettings(configurationOptions);
+        SiteRegistrationController.registerUser(formInputs, null);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
     }
@@ -184,8 +320,9 @@ private class SiteRegistrationControllerTest {
              configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id + '", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         }
 
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-             SiteRegistrationController.registerUser(formInputs, configurationOptions);
+             SiteRegistrationController.registerUser(formInputs, null);
         }
         catch(AuraHandledException ex) {
             System.assertEquals(null, null, 'Failed: Invalid fields on the person account object or invalid record type.');
@@ -213,10 +350,11 @@ private class SiteRegistrationControllerTest {
         insert cons;
          
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"usercontact@test.com", "Email":"usercontact@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email", "accessLevelMode":"System", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false","errorMultipleRecordsFound":"Multiple records found", "portalLoginError":"There was a problem logging in"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email", "accessLevelMode":"System", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false","multipleRecordsFoundError":"Multiple records found", "portalLoginError":"There was a problem logging in"}';
 
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-            SiteRegistrationController.registerUser(formInputs, configurationOptions);
+            SiteRegistrationController.registerUser(formInputs, null);
         }
         catch(AuraHandledException ex) {
             System.assertEquals(null, null, 'Failed: More than one record was found with custom query.');
@@ -234,7 +372,8 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"Username":"user_create_contact_success@test.com", "Email":"user_create_contact_success@test.com","password":"Testing123!", "confirmPassword":"Testing123!"}';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
  
-        SiteRegistrationController.registerUser(formInputs, configurationOptions);
+        mockSelfRegistrationSettings(configurationOptions);
+        SiteRegistrationController.registerUser(formInputs, null);
 
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
     }
@@ -250,8 +389,9 @@ private class SiteRegistrationControllerTest {
         String formInputs = '{"FirstName":"Test", "LastName":"Contact", "Username":"user_create_contact_fail@test.com", "Email":"user_create_contact_fail@test.com","password":"Testing123!", "confirmPassword":"Testing123!", "SomeFieldThatDoesntExist__c":"testvalue" }';
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"User", "accountId":"' + acc.Id  +'", "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
 
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-            SiteRegistrationController.registerUser(formInputs, configurationOptions); 
+            SiteRegistrationController.registerUser(formInputs, null); 
         }
         catch(AuraHandledException ex) {
            System.assertEquals(null, null, 'Failed: Could not create a Contact due to invalid fields');  
@@ -266,12 +406,13 @@ private class SiteRegistrationControllerTest {
         String configurationOptions;
 
         if (isPersonAccountEnabled()) {
-            configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+            configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         } else {
-            configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+            configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         }
 
-        SiteRegistrationController.registerUser(formInputs, configurationOptions);
+        mockSelfRegistrationSettings(configurationOptions);
+        SiteRegistrationController.registerUser(formInputs, null);
         System.assertEquals(null, null, 'Site.createExternalUser() always returns null in tests.');
         
     }
@@ -284,13 +425,14 @@ private class SiteRegistrationControllerTest {
         String configurationOptions;
 
         if (isPersonAccountEnabled()) {
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"false", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         } else {
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         }
 
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-             SiteRegistrationController.registerUser(formInputs, configurationOptions);
+             SiteRegistrationController.registerUser(formInputs, null);
         }
         catch(AuraHandledException ex) {
             System.assertEquals(null, null, 'Failed: No record found and create mdoe was switched off.');
@@ -304,13 +446,14 @@ private class SiteRegistrationControllerTest {
         String configurationOptions;
 
         if (isPersonAccountEnabled()) {
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         } else {
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "createNotFound":"true", "objectCreateType":"", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "createNotFound":"true", "objectCreateType":"", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         }
 
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-             SiteRegistrationController.registerUser(formInputs, configurationOptions);
+             SiteRegistrationController.registerUser(formInputs, null);
         }
         catch(AuraHandledException ex) {
             System.assertEquals(null, null, 'Failed: Record Not Found & Create If Not Found is switched off.');
@@ -322,7 +465,7 @@ private class SiteRegistrationControllerTest {
     private static void deleteRecordTest() {
         // The query in config needs to be valid for the org
         String customQuery = isPersonAccountEnabled() ? 'SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1' : 'SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"", "customQuery":"'+ customQuery +'", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in", "portalErrorSendVerificationCode": "testfailure"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"", "customQuery":"'+ customQuery +'", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in", "portalErrorSendVerificationCode": "testfailure"}';
         Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
 
         Account acc = new Account();
@@ -407,14 +550,15 @@ private class SiteRegistrationControllerTest {
         String configurationOptions;
 
         if (isPersonAccountEnabled()) {
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRegistrationRedirect":"/"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRedirect":"/"}';
         } else {
              Account acc = new Account(Name = 'Test Account Parent');
              insert acc;
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id + '", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRegistrationRedirect":"/"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id + '", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRedirect":"/"}';
         }
 
-        String testRequestCode = SiteRegistrationController.registerUser(formInputs, configurationOptions);
+        mockSelfRegistrationSettings(configurationOptions);
+        String testRequestCode = SiteRegistrationController.registerUser(formInputs, null);
         Map<String, Object> testRequestCodeParsed = (Map<String, Object>) JSON.deserializeUntyped(testRequestCode);
         List<Object> dataObj = (List<Object>) testRequestCodeParsed.get('registerResult');
     
@@ -429,7 +573,7 @@ private class SiteRegistrationControllerTest {
         
         formInputs = '{"Email":"user@test.com", "identifier":"'+ verificationId +'", "verificationCode":"123456"}';
         UserManagementWrapper mockUM = (UserManagementWrapper)Test.createStub(UserManagementWrapper.class, new MockProvider());
-        String verifyUserResponse = mockUM.verifyUser(formInputs, configurationOptions, SiteUtilities.SELF_REG_COMPONENT_NAME);
+        String verifyUserResponse = mockUM.verifyUser(formInputs, SiteUtilities.SELF_REG_COMPONENT_NAME);
 
         Map<String, Object> verifyUserResponseJSON = (Map<String, Object>) JSON.deserializeUntyped(verifyUserResponse);
         List<Object> dataVerifyUser = (List<Object>) verifyUserResponseJSON.get('registerResult');
@@ -469,12 +613,12 @@ private class SiteRegistrationControllerTest {
         Id accountId = null;
 
         if (isPersonAccountEnabled()) {
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRegistrationRedirect":"/", "portalErrorSendVerificationCode":"Error sending verification code"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "objectCreateType":"Person Account", "createNotFound":"true", "customQuery":"SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1", "accessLevelMode":"System", "personAccountRecordTypeId":"Person Account", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRedirect":"/", "portalErrorSendVerificationCode":"Error sending verification code"}';
         } else {
              Account acc = new Account(Name = 'Test Account Parent');
              insert acc;
              accountId = acc.Id;
-             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id + '", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRegistrationRedirect":"/", "portalErrorSendVerificationCode":"Error sending verification code"}';
+             configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"' + acc.Id + '", "enablePasswordlessLogin": true, "passwordlessMethod":"Email", "passwordlessProfileId":"'+profile+'", "portalRedirect":"/", "portalErrorSendVerificationCode":"Error sending verification code"}';
         }
 
         // Clear messages before test
@@ -483,8 +627,9 @@ private class SiteRegistrationControllerTest {
         // Set flag to simulate exception in sendVerificationCode
         SiteUtilities.simulateSendVerificationCodeException = true;
         
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-            SiteRegistrationController.registerUser(formInputs, configurationOptions);
+            SiteRegistrationController.registerUser(formInputs, null);
             System.assert(false, 'Should have thrown AuraHandledException');
         } catch (AuraHandledException e) {
             // Verify the exception message matches the configured error message
@@ -589,7 +734,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void loginNonExistantUserTest() {
         String customQuery = isPersonAccountEnabled() ? 'SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1' : 'SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"N/A", "customQuery":"'+ customQuery +'", "accessLevelMode":"System", "errorNoRecordFound":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Account", "createNotFound":"true", "objectCreateType":"N/A", "customQuery":"'+ customQuery +'", "accessLevelMode":"System", "noRecordFoundError":"No record found" , "errorOnCreate": "There was a problem creating a record", "sendEmailConfirmation":"false", "portalLoginError":"There was a problem logging in"}';
         Map<String, Object> lwcSettings = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
         
         UserManagementWrapper mockUM = (UserManagementWrapper)Test.createStub(UserManagementWrapper.class, new MockProvider());
@@ -676,7 +821,7 @@ private class SiteRegistrationControllerTest {
         
         String formInputs = '{"Email":"exception@test.com"}';
         // Note: Intentionally omitting AccountId from query to trigger exception when type is Contact
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"false", "customQuery":"SELECT Id,Email FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found"}';
         
         Map<String, Object> inputsMap = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         Map<String, Object> configMap = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
@@ -700,7 +845,7 @@ private class SiteRegistrationControllerTest {
         insert c;
         
         String formInputs = '{"Subject":"TestCase"}';
-        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Case", "objectCreateType":"Case", "createNotFound":"false", "customQuery":"SELECT Id,ContactId,AccountId FROM Case WHERE Subject = :Subject LIMIT 1", "accessLevelMode":"System", "errorNoRecordFound":"No record found"}';
+        String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Case", "objectCreateType":"Case", "createNotFound":"false", "customQuery":"SELECT Id,ContactId,AccountId FROM Case WHERE Subject = :Subject LIMIT 1", "accessLevelMode":"System", "noRecordFoundError":"No record found"}';
         
         Map<String, Object> inputsMap = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         Map<String, Object> configMap = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
@@ -719,8 +864,9 @@ private class SiteRegistrationControllerTest {
         // Missing accountId in config
         String configurationOptions = '{"loggingEnabled":"true", "objectToQuery": "Contact", "objectCreateType":"Contact", "createNotFound":"true", "customQuery":"SELECT Id FROM Contact WHERE Email = :Email LIMIT 1", "accessLevelMode":"System", "accountId":"", "errorOnCreate": "Creation Failed"}';
         
+        mockSelfRegistrationSettings(configurationOptions);
         try {
-            SiteRegistrationController.registerUser(formInputs, configurationOptions);
+            SiteRegistrationController.registerUser(formInputs, null);
             // If it succeeds (e.g. org allows orphan contacts), this assert will fail, but usually they are private.
         } catch (AuraHandledException e) {
              System.assertEquals('Script-thrown exception', e.getMessage(), 'Should catch exception from createContact');
@@ -898,7 +1044,7 @@ private class SiteRegistrationControllerTest {
     private static void testLoginUserException() {
         Map<String, Object> configOptions = new Map<String, Object>{
             'loggingEnabled' => 'true',
-            'portalRegistrationRedirect' => '/test',
+            'portalRedirect' => '/test',
             'portalLoginError' => 'Login error'
         };
         
@@ -1037,14 +1183,37 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void testSiteUtilitiesVerifyUserLogin() {
         // Test verifyUser for Login component (not Self Registration) via wrapper
-        String configurationOptions = '{"loggingEnabled":"true", "passwordlessMethod":"Email", "failedCodeVerificationMessage":"Verification failed"}';
-        String formInputs = '{"Email":"test@test.com", "identifier":"123456", "verificationCode":"123456", "portalRegistrationRedirect":"/"}';
+        String formInputs = '{"Email":"test@test.com", "identifier":"123456", "verificationCode":"123456", "portalRedirect":"/"}';
         
         // Mock the UserManagement calls via wrapper
         UserManagementWrapper mockUM = (UserManagementWrapper)Test.createStub(UserManagementWrapper.class, new MockProvider());
-        String result = mockUM.verifyUser(configurationOptions, formInputs, SiteUtilities.LOGIN_COMPONENT_NAME);
+        String result = mockUM.verifyUser(formInputs, SiteUtilities.LOGIN_COMPONENT_NAME);
         
         System.assertNotEquals(null, result, 'Should return verification result');
+    }
+
+    //The wrapper is normally replaced by a stub so the real methods are never executed. Call them directly to prove they delegate correctly.
+    @isTest
+    private static void userManagementWrapperDelegatesTest() {
+        UserManagementWrapper wrapper = new UserManagementWrapper();
+
+        //UserManagement cannot verify a code in a test context, so this only proves the call is delegated to SiteUtilities.
+        mockValidSelfRegistrationSettings();
+        try {
+            wrapper.verifyUser('{"Email":"user@test.com", "identifier":"123456", "verificationCode":"123456"}', SiteUtilities.SELF_REG_COMPONENT_NAME);
+        }
+        catch (Exception e) {
+            System.assertNotEquals(null, e, 'UserManagement cannot verify a code in a test context.');
+        }
+
+        //Site.login() may return an empty PageReference URL in tests, or null (then we fall back to the configured Portal Redirect).
+        Map<String, Object> settings = new Map<String, Object>{'loggingEnabled' => true, 'portalRedirect' => '/', 'portalLoginError' => 'Login error'};
+        String loginResult = wrapper.loginUser('user@test.com', 'Testing123!', settings);
+        String expectedFallback = SiteUtilities.buildLoginStartUrl(null, '/');
+        System.assert(
+            String.isBlank(loginResult) || loginResult == expectedFallback || loginResult == '/',
+            'Expected an empty Site.login result or the configured portal redirect fallback. Actual: ' + loginResult
+        );
     }
 
     @isTest
@@ -1073,6 +1242,7 @@ private class SiteRegistrationControllerTest {
     private static void testSiteUtilitiesGetCustomConfigurationError() {
         // Test error handling in getCustomConfiguration with valid JSON but invalid component name
         // This tests the exception handling path in the try-catch block
+        mockValidSelfRegistrationSettings();
         try {
             // Use valid JSON but test that the method handles errors gracefully
             String result = SiteUtilities.getCustomConfiguration('{}', 'InvalidComponent');
@@ -1094,6 +1264,7 @@ private class SiteRegistrationControllerTest {
         mockMetadata.add(createMockMetadataWrapper('picklist', 'Country', 'Country', null, null, null, false, null, null, '["USA","Canada","UK"]'));
         mockMetadata.add(createMockMetadataWrapper('checkbox', 'SomeField', 'Some Field', null, null, null, false, null, null, null));
         SiteUtilities.mockMetadataList = mockMetadata;
+        mockValidSelfRegistrationSettings();
         
         String urlParams = '{"Email":"test@test.com", "Country":"USA", "SomeField":true}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
@@ -1144,6 +1315,7 @@ private class SiteRegistrationControllerTest {
     @isTest
     private static void testGetCustomConfigurationLoginComponent() {
         // Test Login component path
+        SiteUtilities.mockComponentSettings = new Map<String, Object>{'loggingEnabled' => true, 'portalRedirect' => '/'};
         String urlParams = '{"Email":"test@test.com", "Password":"test123"}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Login');
         List<Object> dataObj = (List<Object>) JSON.deserializeUntyped(result);
@@ -1164,6 +1336,7 @@ private class SiteRegistrationControllerTest {
         mockMetadata.add(createMockMetadataWrapper('checkbox', 'SomeCheckbox', 'Some Checkbox', null, null, null, false, null, null, null));
         mockMetadata.add(createMockMetadataWrapper('text', 'Email', 'Email', null, null, null, false, null, null, null));
         SiteUtilities.mockMetadataList = mockMetadata;
+        mockValidSelfRegistrationSettings();
         
         String urlParams = '{"SomeCheckbox":true, "Email":"test@test.com"}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
@@ -1193,6 +1366,7 @@ private class SiteRegistrationControllerTest {
         mockMetadata.add(createMockMetadataWrapper('picklist', 'Country', 'Country', null, null, null, false, null, null, null));
         mockMetadata.add(createMockMetadataWrapper('picklist', 'State', 'State', null, null, null, false, null, null, ''));
         SiteUtilities.mockMetadataList = mockMetadata;
+        mockValidSelfRegistrationSettings();
         
         String urlParams = '{}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
@@ -1221,6 +1395,7 @@ private class SiteRegistrationControllerTest {
         List<SiteUtilities.CustomConfigurationWrapper> mockMetadata = new List<SiteUtilities.CustomConfigurationWrapper>();
         mockMetadata.add(createMockMetadataWrapper('picklist', 'Country', 'Country', null, null, null, false, null, null, '["USA","Canada","UK","Australia"]'));
         SiteUtilities.mockMetadataList = mockMetadata;
+        mockValidSelfRegistrationSettings();
         
         String urlParams = '{"Country":"USA"}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
@@ -1247,6 +1422,7 @@ private class SiteRegistrationControllerTest {
         List<SiteUtilities.CustomConfigurationWrapper> mockMetadata = new List<SiteUtilities.CustomConfigurationWrapper>();
         mockMetadata.add(createMockMetadataWrapper('text', 'TestField', 'Test Field', null, null, null, false, null, null, null));
         SiteUtilities.mockMetadataList = mockMetadata;
+        mockValidSelfRegistrationSettings();
         
         String urlParams = '{"TestField":"testValue"}';
         String result = SiteUtilities.getCustomConfiguration(urlParams, 'Self Registration');
