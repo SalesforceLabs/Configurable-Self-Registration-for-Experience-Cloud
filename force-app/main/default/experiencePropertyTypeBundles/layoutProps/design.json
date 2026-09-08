@@ -23,7 +23,7 @@
           {
             "definition": "lightning/accordionSectionLayout",
             "attributes": {
-              "label": "DEPRECATED - Base Settings"
+              "label": "Base Settings"
             },
             "children": [
               {
@@ -67,7 +67,7 @@
           {
             "definition": "lightning/accordionSectionLayout",
             "attributes": {
-              "label": "DEPRECATED - Create New Record"
+              "label": "Create New Record"
             },
             "children": [
               {
@@ -99,7 +99,7 @@
           {
             "definition": "lightning/accordionSectionLayout",
             "attributes": {
-              "label": "DEPRECATED - Error Handling"
+              "label": "Error Handling"
             },
             "children": [
               {
@@ -155,7 +155,7 @@
           {
             "definition": "lightning/accordionSectionLayout",
             "attributes": {
-              "label": "DEPRECATED - Passwordless Login"
+              "label": "Passwordless Login"
             },
             "children": [
               {

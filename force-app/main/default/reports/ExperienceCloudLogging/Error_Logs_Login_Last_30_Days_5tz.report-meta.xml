@@ -7,18 +7,6 @@
         <field>Experience_Cloud_Log__c.Log_Type__c</field>
     </columns>
     <columns>
-        <field>Experience_Cloud_Log__c.Outcome__c</field>
-    </columns>
-    <columns>
-        <field>Experience_Cloud_Log__c.UserId__c</field>
-    </columns>
-    <columns>
-        <field>Experience_Cloud_Log__c.AccountId__c</field>
-    </columns>
-    <columns>
-        <field>Experience_Cloud_Log__c.ContactId__c</field>
-    </columns>
-    <columns>
         <field>Experience_Cloud_Log__c.Message__c</field>
     </columns>
     <filter>
@@ -39,7 +27,7 @@
     </filter>
     <format>Summary</format>
     <groupingsDown>
-        <dateGranularity>Day</dateGranularity>
+        <dateGranularity>Week</dateGranularity>
         <field>CUST_CREATED_DATE</field>
         <sortOrder>Asc</sortOrder>
     </groupingsDown>

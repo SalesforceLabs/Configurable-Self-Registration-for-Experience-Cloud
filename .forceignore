@@ -14,17 +14,7 @@ package.xml
 #Old LWC used in v1.87 that didn't fix an issue. Cannot be removed due to packaging constraints. No need to deploy it if unmanaged.
 **./lwc/customPropertyEditorQuery/**
 
-#Superseded Self Registration bundle, already marked '@deprecated - DO NOT USE THIS COMPONENT'. Replaced by customSelfRegistrationCmdt.
-#Cannot be removed due to packaging constraints. Its meta file references the c__layoutProperty type, which only exists in orgs that
-#already have an older package version, so deploying it to a fresh or scratch org fails. No need to deploy it if unmanaged.
-force-app/main/default/lwc/customSelfRegistrationCPE
-
-#NOTE: The customPropertyEditor* bundles only drive the deprecated Experience Builder properties, but they are still referenced by the
-#'editor' attribute in customLoginCPE.js-meta.xml and by registrationLayoutProps/experienceBuilder/editor.json. Ignoring them here would
-#break an unmanaged deployment of those components, so they must stay until those deprecated properties can be removed from the package.
-
 # Old ExperiencePropertyTypeBundle replaced by LightningTypeBundle (registrationLayoutProps). Kept in repo for reference.
-# The Metadata API rejects any update to an ExperiencePropertyTypeBundle that already exists in the org, so this must stay ignored.
 **/experiencePropertyTypeBundles/**
 
 # LWC configuration files

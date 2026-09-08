@@ -18,8 +18,8 @@
         <name>ApexClass</name>
     </types>
     <types>
-        <members>Custom_Experience_Cloud_Setting.Login_Settings</members>
-        <members>Custom_Experience_Cloud_Setting.Self_Registration_Settings</members>
+        <members>Custom_Experience_Cloud_Setting.Login_Logging</members>
+        <members>Custom_Experience_Cloud_Setting.Self_Registration_Logging</members>
         <members>Custom_Login_Configuration.Country_Code</members>
         <members>Custom_Login_Configuration.Email</members>
         <members>Custom_Login_Configuration.Identifier</members>
@@ -61,20 +61,18 @@
         <name>Flow</name>
     </types>
     <types>
-        <members>Log_Outcome</members>
         <members>Log_Type</members>
         <name>GlobalValueSet</name>
     </types>
     <types>
         <members>Custom_Experience_Cloud_Setting__mdt-Custom Experience Cloud Setting Layout</members>
-        <members>Custom_Login_Configuration__mdt-Custom Login Configuration Fields Layout</members>
-        <members>Custom_Registration_Configuration__mdt-Custom Registration Configuration Fields Layout</members>
+        <members>Custom_Login_Configuration__mdt-Custom Login Configuration Layout</members>
+        <members>Custom_Registration_Configuration__mdt-Custom Registration Configuration Layout</members>
         <members>Experience_Cloud_Log__c-Experience Cloud Log Layout</members>
         <name>Layout</name>
     </types>
     <types>
         <members>customLoginCPE</members>
-        <members>customLoginCmdt</members>
         <members>customPropertyEditorAccessLevelMode</members>
         <members>customPropertyEditorCreateType</members>
         <members>customPropertyEditorProfiles</members>
@@ -82,7 +80,6 @@
         <members>customPropertyEditorRecordTypes</members>
         <members>customPropertyEditorVerificationMethods</members>
         <members>customSelfRegistrationCPropEditor</members>
-        <members>customSelfRegistrationCmdt</members>
         <name>LightningComponentBundle</name>
     </types>
     <types>
@@ -110,19 +107,6 @@
         <members>ExperienceCloudLogging/Error_Logs_Login_QrP</members>
         <members>ExperienceCloudLogging/Error_Logs_Self_Registration_HLT</members>
         <members>ExperienceCloudLogging/Errors_Self_Reg_Last_30_Days_Yio</members>
-        <members>ExperienceCloudLogging/Errors_by_Component_Last_30</members>
-        <members>ExperienceCloudLogging/Failed_Logins_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Failed_Self_Reg_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Login_Mix_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Logs_Missing_Related_Records</members>
-        <members>ExperienceCloudLogging/Logs_Type_Component_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Logs_by_Day_and_Type_Last_30</members>
-        <members>ExperienceCloudLogging/Outcomes_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Recent_Errors</members>
-        <members>ExperienceCloudLogging/Repeat_Login_Failures_30d</members>
-        <members>ExperienceCloudLogging/Self_Reg_Outcomes_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Successful_Logins_Last_30_Days</members>
-        <members>ExperienceCloudLogging/Successful_Self_Reg_Last_30_Days</members>
         <name>Report</name>
     </types>
     <types>

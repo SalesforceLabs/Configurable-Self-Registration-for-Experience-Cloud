@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Used by the installed package called Configurable Self Registration &amp; Login For Experience Cloud to configure component behaviour, including logging. One record per component, identified by the Type field (Login or Self Registration). Form fields are configured separately in Custom Login Configuration Fields and Custom Registration Configuration Fields.</description>
+    <description>Used by the installed package called Configurable Self Registration &amp; Login For Experience Cloud</description>
     <label>Custom Experience Cloud Setting</label>
     <pluralLabel>Custom Experience Cloud Settings</pluralLabel>
     <visibility>Public</visibility>

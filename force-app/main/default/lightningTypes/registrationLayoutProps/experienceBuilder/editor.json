@@ -23,7 +23,7 @@
           {
             "definition": "lightning/accordionSectionLayout",
             "attributes": {
-              "label": "DEPRECATED SETTINGS"
+              "label": "Base Settings"
             },
             "children": [
               {
@@ -61,7 +61,15 @@
                 "attributes": {
                   "property": "portalRegistrationRedirect"
                 }
-              },
+              }
+            ]
+          },
+          {
+            "definition": "lightning/accordionSectionLayout",
+            "attributes": {
+              "label": "Create New Record"
+            },
+            "children": [
               {
                 "definition": "lightning/propertyLayout",
                 "attributes": {
@@ -85,7 +93,15 @@
                 "attributes": {
                   "property": "accountId"
                 }
-              },
+              }
+            ]
+          },
+          {
+            "definition": "lightning/accordionSectionLayout",
+            "attributes": {
+              "label": "Error Handling"
+            },
+            "children": [
               {
                 "definition": "lightning/propertyLayout",
                 "attributes": {
@@ -133,7 +149,15 @@
                 "attributes": {
                   "property": "portalRegistrationUserExists"
                 }
-              },
+              }
+            ]
+          },
+          {
+            "definition": "lightning/accordionSectionLayout",
+            "attributes": {
+              "label": "Passwordless Login"
+            },
+            "children": [
               {
                 "definition": "lightning/propertyLayout",
                 "attributes": {

@@ -1,7 +1,7 @@
 /***************************************************************************************************************
  * AUTHOR         : Jamie Lowe (Salesforce). Feedback/Collabration with Mike Cleaver (Github:Mike-Cleaver-LB)
  * CREATE DATE    : 05/02/2024
- * LAST MODIFIED  : 28/08/2026 - Added Outcome to Experience Cloud logging for reportable login results.
+ * LAST MODIFIED  : 24/03/2026 - v1.9.2 Updated to use the new Lightning Type Bundle in place of the deprecated Experience Property Type Bundle.
  * @description Apex controller to support custom built UI Custom Login for Experience Cloud
  ***************************************************************************************************************/
 public with sharing class SiteLoginController {
@@ -12,17 +12,16 @@ public with sharing class SiteLoginController {
     public class CustomLoginException extends Exception{}
     
     /**
-     * @description Attempts to login the user. Redirects to the startURL query parameter when present and safe, otherwise the configured Portal Redirect.
-     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Login' so the guest user cannot influence it.
-     * @param formInputs - JSON String of the submitted login form values.
-     * @param startUrl - optional relative or same-site URL from the Experience Cloud startURL query parameter.
-     * @return String JSON of the login result to redirect to upon successful login.
+     * @description Attempts to login the newly registered user. Redirects to the home page on success.
+     * @param username - Passes in the submitted username field from the self registration form.
+     * @param password - Passes in the submitted password field from the self registration form. 
+     * @param configurationOptions - refers to all parameters configured within the LWC Property Panel within Experience Cloud builder.
+     * @return String PageURL to redirect to upon successful login.
      */
     @AuraEnabled(cacheable=true)
-    public static String loginUser(String formInputs, String startUrl) {
+    public static String loginUser(String formInputs, Map<String, Object> configurationOptions) {
         String pageUrl = null;
 
-        Map<String, Object> settings = SiteUtilities.getComponentSettings(SiteUtilities.LOGIN_COMPONENT_NAME);
         Map<String, Object> formJson = (Map<String, Object>) JSON.deserializeUntyped(formInputs);
         String username = String.isNotBlank(SiteUtilities.convertToString(formJson.get('Username'))) ? SiteUtilities.convertToString(formJson.get('Username')) : SiteUtilities.convertToString(formJson.get('Email'));
         String password = String.isNotBlank(SiteUtilities.convertToString(formJson.get('password'))) ? SiteUtilities.convertToString(formJson.get('password')) : '';
@@ -30,8 +29,10 @@ public with sharing class SiteLoginController {
         String countryCode = SiteUtilities.extractCountryCode(formJson.get('countryCode'));
         String mobilePhone = String.isNotBlank(SiteUtilities.convertToString(formJson.get('MobilePhone'))) && String.isNotBlank(countryCode) ? UserManagement.formatPhoneNumber(countryCode, SiteUtilities.convertToString(formJson.get('MobilePhone'))) : ''; //Format the phone number with the user management class otherwise user isn't found!!;
         
-        String identifier = '';
+        String identifier;
         Boolean showVerificationCode = false;
+        String result = '';
+        String jsonPart = '{"loginResult":[';
         
         // Variables to track IDs for logging
         Id accountIdForLogging = null;
@@ -40,14 +41,14 @@ public with sharing class SiteLoginController {
 
         try {
 
-            if(SiteUtilities.convertToBoolean(settings.get('enablePasswordlessLogin')) ) {
-                Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(settings.get('passwordlessMethod')));
+            if(SiteUtilities.convertToBoolean(configurationOptions.get('enablePasswordlessLogin')) ) {
+                Auth.VerificationMethod method = SiteUtilities.methods.get(SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod')));
                 SiteUtilities.messages.add('Looking for existing user: ' + formJson);
                 List<User> user = SiteUtilities.getUserIdWithUsername(username, mobilePhone);
                 
                 //Only send a code if the user is NOT found!
                 if(user.isEmpty()) {
-                    SiteUtilities.messages.add('Error sending verification code via ' + SiteUtilities.convertToString(settings.get('passwordlessMethod'))  + ' to User: '+ formJson +' . User not found.');
+                    SiteUtilities.messages.add('Error sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: '+ formJson +' . User not found.');
                     throw new CustomLoginException('Your login attempt has failed. Make sure the username and password are correct.');
                 }
                 
@@ -58,7 +59,7 @@ public with sharing class SiteLoginController {
                     accountIdForLogging = user[0].Contact != null ? user[0].Contact.AccountId : null;
                 }
                 
-                SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(settings.get('passwordlessMethod'))  + ' to User: ' + formJson);
+                SiteUtilities.messages.add('Sending verification code via ' + SiteUtilities.convertToString(configurationOptions.get('passwordlessMethod'))  + ' to User: ' + formJson);
                 identifier = SiteUtilities.sendVerificationCode(method, user[0], SiteUtilities.LOGIN_COMPONENT_NAME);                
                 showVerificationCode = true;
             }
@@ -73,8 +74,9 @@ public with sharing class SiteLoginController {
                     }
                 }
                 
-                String resolvedStartUrl = SiteUtilities.buildLoginStartUrl(startUrl, SiteUtilities.convertToString(settings.get('portalRedirect')));
-                ApexPages.PageReference startPageRef = Site.login(username, password, resolvedStartUrl);
+                ApexPages.PageReference homePageRef = new PageReference(Site.getBaseSecureUrl() + SiteUtilities.convertToString(configurationOptions.get('portalLoginRedirect')));
+                String startUrl = homePageRef.getUrl();
+                ApexPages.PageReference startPageRef = Site.login(username, password, startUrl);
 
                 //If we are running in a Test, check the test user and throw a custom exception to mimic failed logins.
                 //NOTE: Cannot reference the constants from the test class in a 'switch' statement.
@@ -99,6 +101,12 @@ public with sharing class SiteLoginController {
                     pageUrl = pageRef.getUrl();
                 }
             }
+
+            jsonPart += '{';
+            jsonPart += '"pageUrl":"' + pageUrl + '",';
+            jsonPart += '"showVerificationCode":' + showVerificationCode + ',';
+            jsonPart += '"verificationId":"' + identifier + '"}]}';
+            result += jsonPart;
         } catch (Exception e) {
 
             String status = 'Username Not Found';
@@ -137,44 +145,32 @@ public with sharing class SiteLoginController {
 
                //TODO: Handle more types of Login History Status if needed... https://stackoverflow.com/questions/11581806/is-it-possible-to-check-if-a-user-is-locked-out
                String error = '';
-               String outcome = SiteUtilities.OUTCOME_LOGIN_FAILED;
                switch on status { 
                     when 'User is Frozen' {
-                         error = SiteUtilities.convertToString(settings.get('blockUserErrorMessage'));
-                         outcome = SiteUtilities.OUTCOME_USER_FROZEN;
+                         error = SiteUtilities.convertToString(configurationOptions.get('blockUserErrorMessage'));
                     }
-                    when 'Invalid Password' {
-                        error = SiteUtilities.convertToString(settings.get('incorrectUserCredentialsErrorMessage'));
-                        outcome = SiteUtilities.OUTCOME_INVALID_PASSWORD;
-                    }
-                    when 'Username Not Found' {
-                        error = SiteUtilities.convertToString(settings.get('incorrectUserCredentialsErrorMessage'));
-                        outcome = SiteUtilities.OUTCOME_USERNAME_NOT_FOUND;
+                    when 'Invalid Password', 'Username Not Found' {
+                        error = SiteUtilities.convertToString(configurationOptions.get('incorrectUserCredentialsErrorMessage'));
                     }
                     when 'Password Lockout' {
-                        error = SiteUtilities.convertToString(settings.get('userLockedOutErrorMessage'));
-                        outcome = SiteUtilities.OUTCOME_PASSWORD_LOCKOUT;
+                        error = SiteUtilities.convertToString(configurationOptions.get('userLockedOutErrorMessage'));
                     }
                     when else {
                         SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED); 
+                        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging); 
                         throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
                     }
                 }               
                 SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + error);
-                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, outcome);
+                SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging);
                 throw new AuraHandledException(error); 
             }
             SiteUtilities.messages.add('There was a problem logging ' + username + ' into the portal.' + ' Error: ' + e.getMessage());
-            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, SiteUtilities.OUTCOME_LOGIN_FAILED);        
+            SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.ERROR_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging);        
             throw new AuraHandledException('An unknown error has occurred, please contact us for further assistance.');
         }
-        String successOutcome = showVerificationCode ? SiteUtilities.OUTCOME_VERIFICATION_SENT : SiteUtilities.OUTCOME_LOGIN_SUCCESS;
         SiteUtilities.messages.add(username + ' successfully logged into the portal.');
-        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(settings.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging, successOutcome);     
-
-        Map<String, String> itemsToAdd = new Map<String, String>();
-        itemsToAdd.put('loginResult', '{"pageUrl":"' + pageUrl + '","showVerificationCode":' + SiteUtilities.convertToString(showVerificationCode) + ',"verificationId":"' + identifier + '"}');
-        return SiteUtilities.jsonBuilder('loginResult', itemsToAdd);
+        SiteUtilities.createLogEntry(SiteUtilities.convertToBoolean(configurationOptions.get('loggingEnabled')), String.join(SiteUtilities.messages,'\n'), SiteUtilities.INFORMATION_LOG_TYPE, SiteUtilities.LOGIN_COMPONENT_NAME, accountIdForLogging, userIdForLogging, contactIdForLogging);     
+        return result;
     }
 }
