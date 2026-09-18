@@ -1,17 +1,22 @@
 # Configurable Self Registration/Login for Experience Cloud
 
-Clone this repository and deploy it to your org as an unmanaged package to make your own changes. Alternatively, install the latest released version from the App Exchange listing: https://appexchange.salesforce.com/appxListingDetail?listingId=c06efea1-214d-4dda-b87b-3e7186319593.
+<a href="https://githubsfdeploy.herokuapp.com?owner=SalesforceLabs&repo=Configurable-Self-Registration-for-Experience-Cloud">
+  <img alt="Deploy to Salesforce" src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/src/main/webapp/resources/img/deploy.png">
+</a>
 
-User Guide is available under the "docs" folder. See "INSTALLATION_GUIDE.md"
+Click **Deploy to Salesforce** to log in to your org and push this repository's metadata as unmanaged source. Choose Production / Developer or Sandbox on the deploy page, then confirm. The tool does not run Apex tests, so use a sandbox or Developer Edition; production deployments that include Apex will be blocked.
+
+Alternatively, install the latest released version from the App Exchange listing: https://appexchange.salesforce.com/appxListingDetail?listingId=c06efea1-214d-4dda-b87b-3e7186319593.
+
+Clone this repository if you want to make your own changes and deploy with Salesforce CLI.
+
+User Guide is available under the "docs" folder. See [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md)
 
 Release notes for v2.0 are below. Older versions are in [docs/PREVIOUS_RELEASE_NOTES.md](docs/PREVIOUS_RELEASE_NOTES.md). Latest version is v2.0 - Winter 27 Release.
 
 #NOTES:
 
 If deploying from the repository as an unmanaged package, ensure that the user you are running the deployment as has a role assigned to them on their User record otherwise Apex Tests will fail with "portal owner must have a role".
-
-With the current unmanaged version, Apex tests fail if Person Accounts are not enabled in your org. The component will still support both Business Accounts/Contacts and Person Accounts, but tests will need to be amended depending on your org configuration.
-
 ---
 
 # RELEASE CHANGES - v2.0 - Winter 27 Release
@@ -83,4 +88,5 @@ Enable Logging is now the **Enable Logging** checkbox on the Login Settings and 
 ## Other changes
 
 * After login (and after registration login), a safe Experience Cloud `startURL` query parameter is honoured when it is a relative path or stays on the same site. Otherwise the **Portal Redirect** value on the settings record is used.
+* Field icons that toggle the input type (for example password show/hide on Login and Self Registration) are keyboard accessible. They render as `lightning-button-icon`, so Tab can focus them and Enter or Space activates them. Screen readers announce an action such as **Show Password** / **Hide Password**. Decorative icons (no toggle icon or type change) stay as non-focusable `lightning-icon`.
 * The installation and setup guide is now in the repository at `docs/INSTALLATION_GUIDE.md`.

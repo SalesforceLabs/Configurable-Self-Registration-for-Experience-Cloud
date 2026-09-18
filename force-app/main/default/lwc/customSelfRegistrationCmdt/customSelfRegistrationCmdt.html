@@ -34,7 +34,7 @@
                                 <!-- Deal with a combobox type for the country code picklist for Mobile passwordless registration & others if added. -->
                                 <template lwc:if={result.value.showAsPicklist}>
                                     <template lwc:if={result.value.fieldShowIcon}>
-                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" class={result.value.fieldIconClass}></lightning-icon>
+                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} class={result.value.fieldIconClass}></lightning-icon>
                                     </template>
                                     <lightning-combobox name={result.value.fieldName} value={result.value.fieldValue} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} field-level-help={result.value.fieldHelpText} placeholder={result.value.fieldPlaceholder} 
                                         options={result.value.picklistOptions} onchange={handleOnChange} required={result.value.fieldRequired} message-when-value-missing={result.value.fieldRequiredMessage}
@@ -42,11 +42,7 @@
                                     </lightning-combobox>
                                 </template>
 
-                                <template lwc:else> 
-                                    <template lwc:if={result.value.fieldShowIcon}>
-                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} title="" data-startingtype={result.value.fieldType} data-toggletype={result.value.fieldToggleFieldType} data-startingicon={result.value.fieldIconName} data-toggleicon={result.value.fieldToggleIconName} onclick={toggleFieldTypeAndIcon} class={result.value.fieldIconClass}></lightning-icon>
-                                    </template>
-
+                                <template lwc:else>
                                     <lightning-input type={result.value.fieldType} variant={result.value.fieldLabelVariant} label={result.value.fieldLabel} name={result.value.fieldName} value={result.value.fieldValue}
                                         class={result.value.fieldClass} required={result.value.fieldRequired} field-level-help={result.value.fieldHelpText}
                                         placeholder={result.value.fieldPlaceholder} message-when-pattern-mismatch={result.value.fieldMessage}
@@ -56,6 +52,13 @@
                                         min={result.value.fieldMinValue} message-when-range-underflow={result.value.fieldMessageUnder} max={result.value.fieldMaxValue}
                                         message-when-range-overflow={result.value.fieldMessageOver} date-style={result.value.fieldDateStyle} data-last={result.last} data-id={result.value.fieldName} autocomplete={result.value.fieldAutocomplete}>
                                     </lightning-input>
+
+                                    <template lwc:if={result.value.fieldIconIsToggle}>
+                                        <lightning-button-icon variant="bare" size="medium" icon-name={result.value.fieldIconName} alternative-text={result.value.fieldIconAlternativeText} title={result.value.fieldIconAlternativeText} class={result.value.fieldIconClass} data-startingtype={result.value.fieldType} data-toggletype={result.value.fieldToggleFieldType} data-startingicon={result.value.fieldIconName} data-toggleicon={result.value.fieldToggleIconName} data-field-label={result.value.fieldLabel} onclick={toggleFieldTypeAndIcon}></lightning-button-icon>
+                                    </template>
+                                    <template lwc:elseif={result.value.fieldShowIcon}>
+                                        <lightning-icon size="x-small" icon-name={result.value.fieldIconName} class={result.value.fieldIconClass}></lightning-icon>
+                                    </template>
                                 </template>
                             </div>
                         </div>

@@ -462,7 +462,6 @@ public without sharing class SiteUtilities {
     * @description Simple method to check for the existance of the Identity Verification Credits licence needed to send SMS code for passwordless login.
     * @return count of the Identity Verification Credits licence. 1 will enable the ability to use SMS codes for PasswordLess login.
     */
-    @AuraEnabled(cacheable=true)
     public static Integer checkSMSLicence(){
         return [SELECT count() FROM TenantUsageEntitlement WHERE Setting = :SMS_LICENCE_NAME];
     }
@@ -472,7 +471,6 @@ public without sharing class SiteUtilities {
      * @param  objectType pass in the object to filter Record Types on.
      * @return returns a JSON string of record type Ids & names for display in a picklist.
      */
-    @AuraEnabled(cacheable=true)
     public static String getPersonAccountRecordTypes(String objectType){        
         List<RecordType> rt = new List<RecordType>([SELECT Id,Name,SobjectType,IsActive FROM RecordType WHERE SobjectType = :objectType AND IsActive = true]);
         Map<String, String> itemsToAdd = new Map<String,String>();
@@ -480,28 +478,6 @@ public without sharing class SiteUtilities {
             itemsToAdd.put(r.Id, '{"label":"' +  r.Name + '","value":"'+  r.Name + '"}');
         }
         return jsonBuilder('recordTypes', itemsToAdd);
-    }
-
-    /**
-     * @description get a list of profiles that are members of a given site
-     * @param networkId pass in the sites networkId to filter the list
-     * @return return JSON string of profiles Names/Ids to populate a picklist
-     */
-    @AuraEnabled(cacheable=true)
-    public static String getProfileMembers(String networkId){
-        Map<String, String> itemsToAdd = new Map<String, String>();
-        List<Id> profIds = new List<Id>();
-        List<NetworkMemberGroup> nmg = [SELECT Id,ParentId FROM NetworkMemberGroup WHERE AssignmentStatus = 'Added'];
-
-        for(NetworkMemberGroup nm : nmg) {
-            profIds.add(nm.ParentId);
-        }
-
-        List<Profile> profs = [SELECT Id,Name FROM Profile WHERE Id IN :profIds];
-        for (Profile p : profs) {
-            itemsToAdd.put(p.Id, '{"label":"' +  p.Name + '","value":"'+  p.Name + '"}');
-        }
-        return jsonBuilder('memberProfiles', itemsToAdd);
     }
 
     /**

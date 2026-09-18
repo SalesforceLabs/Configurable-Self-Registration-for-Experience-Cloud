@@ -56,12 +56,18 @@ export default class CustomLoginCmdt extends LightningElement {
         }
     }
 
-    toggle = true;
     toggleFieldTypeAndIcon(event) {
-        this.toggle = !this.toggle;
-        event.currentTarget.iconName = this.toggle ? event.currentTarget.dataset.startingicon : event.currentTarget.dataset.toggleicon;
-        var fieldType = this.toggle ? event.currentTarget.dataset.startingtype : event.currentTarget.dataset.toggletype;
-        event.currentTarget.parentNode.querySelector('lightning-input').type = fieldType;
+        const icon = event.currentTarget;
+        const showingStartingState = icon.iconName === icon.dataset.startingicon;
+        icon.iconName = showingStartingState ? icon.dataset.toggleicon : icon.dataset.startingicon;
+        icon.alternativeText = this._getFieldIconAlternativeText(icon.dataset.fieldLabel, !showingStartingState);
+        icon.title = icon.alternativeText;
+
+        const fieldType = showingStartingState ? icon.dataset.toggletype : icon.dataset.startingtype;
+        const input = icon.parentNode.querySelector('lightning-input');
+        if(input) {
+            input.type = fieldType;
+        }
     }
 
     renderedCallback() {
@@ -90,7 +96,9 @@ export default class CustomLoginCmdt extends LightningElement {
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration.
         //Also validates the Login Settings record server side, so a missing or invalid configuration surfaces here.
         getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: COMPONENT_NAME}).then(result=>{
-            this.results = JSON.parse(result);
+            const fields = JSON.parse(result);
+            this._prepareFieldIcons(fields);
+            this.results = fields;
             for (let i = 0; i < this.results.length; i++) {  //Ensure that all fields are submitted, even if there are blank values.
                 this.formInputs[this.results[i].fieldName] = this.results[i].fieldType == 'checkbox' ? this.results[i].fieldChecked : this.results[i].fieldValue;
             }
@@ -180,6 +188,20 @@ export default class CustomLoginCmdt extends LightningElement {
             this.handleSubmit(false, this.displaySettings.buttonLabel, false);
             event.preventDefault();
         }
+    }
+
+    _prepareFieldIcons(fields) {
+        fields.forEach(field => {
+            const hasDifferentToggleIcon = field.fieldToggleIconName && field.fieldToggleIconName !== field.fieldIconName;
+            const hasDifferentToggleType = field.fieldToggleFieldType && field.fieldToggleFieldType !== field.fieldType;
+            field.fieldIconIsToggle = Boolean(field.fieldShowIcon && (hasDifferentToggleIcon || hasDifferentToggleType));
+            field.fieldIconAlternativeText = this._getFieldIconAlternativeText(field.fieldLabel, true);
+        });
+    }
+
+    _getFieldIconAlternativeText(fieldLabel, valueIsHidden) {
+        const label = fieldLabel || 'value';
+        return valueIsHidden ? `Show ${label}` : `Hide ${label}`;
     }
 
     // Read at submit time so CurrentPageReference has had a chance to populate (same race as form field URL params).
