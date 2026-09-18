@@ -24,7 +24,11 @@ The Custom Self Registration component requires that Self Registration is enable
 
 **<u>Installation</u>**
 
-From the AppExchange, click Get it Now on the listing. Install in your organisation for Admin Users. Once the package has been installed on your org, two Lightning Web Components will become available to you within the Experience Cloud Builder under **Custom Components**:
+From the AppExchange, click Get it Now on the listing. Install in your organisation for Admin Users.
+
+To deploy unmanaged metadata from GitHub instead (sandbox or Developer Edition), click **Deploy to Salesforce** in the [repository README](https://github.com/SalesforceLabs/Configurable-Self-Registration-for-Experience-Cloud). Log in to your org, choose Production / Developer or Sandbox, and confirm the deployment. Digital Experiences must already be enabled. The deploy tool does not run Apex tests, so it cannot deploy Apex into production.
+
+Once the package has been installed on your org, two Lightning Web Components will become available to you within the Experience Cloud Builder under **Custom Components**:
 
 * **SF Labs: Custom Login** (`customLoginCmdt`)
 * **SF Labs: Custom Self Registration** (`customSelfRegistrationCmdt`)
@@ -79,7 +83,9 @@ Behavioural settings for both components live on the **Custom Experience Cloud S
 
 The **Type** field on the record is what the component uses to load settings. Keep one record with Type = Login and one with Type = Self Registration. Changes to these records take effect without republishing the site.
 
-![image.png](/docs/images/image.png)
+![image10.png](/docs/images/image10.png)
+
+NOTE: There are no settings on the component property panel within Experience Cloud Builder from v2.0 onwards.
 
 **<u>Self Registration Settings</u>**
 
