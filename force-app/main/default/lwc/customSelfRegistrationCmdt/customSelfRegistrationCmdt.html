@@ -8,23 +8,20 @@
  ****************************************************************************-->
 
  <template>
-    <div lwc:if={anyServerError} role="alert">
-        <span class="slds-text-color_destructive">{serverErrorMessage}</span>
-    </div>
+    <div class={formLayoutClass}>
+        <lightning-spinner lwc:if={showSpinner} alternative-text="Loading..."></lightning-spinner>
 
-    <div lwc:if={showComponentError} class="slds-is-relative slds-text-color_error">
-        <lightning-icon icon-name="utility:error" variant="error" alternative-text="Error!" title="Error" size="large"></lightning-icon> 
-        <lightning-formatted-text value={componentErrorMessage}></lightning-formatted-text>
-    </div>
+        <div lwc:if={anyServerError} class="server-error" role="alert">
+            <span class="slds-text-color_destructive">{serverErrorMessage}</span>
+        </div>
 
-    <div lwc:if={showSpinner} class="slds-is-relative">
-        <lightning-spinner alternative-text="Loading..." role="status">
-        </lightning-spinner>
-    </div>
+        <div lwc:if={showComponentError} class="slds-text-color_error">
+            <lightning-icon icon-name="utility:error" variant="error" alternative-text="Error!" title="Error" size="large"></lightning-icon> 
+            <lightning-formatted-text value={componentErrorMessage}></lightning-formatted-text>
+        </div>
 
-    <div if:false={showComponentError}>
-        <!-- Fields created in custom metadata are displayed here when the component renders -->
-        <div>
+        <div if:false={showComponentError} class="form-fields">
+            <!-- Fields created in custom metadata are displayed here when the component renders -->
             <template iterator:result={results}>
                 <div key={result.value.fieldLabel}> 
                    <div class="slds-is-relative">
@@ -64,13 +61,13 @@
                         </div>
                     </div>
                 </div>
-            </template> 
+            </template>
         </div>
-    </div>
 
-    <div if:false={showComponentError} class="slds-col">
-        <div class="slds-align_absolute-center slds-var-m-top_small">
-            <button class="custom-slds-button slds-button slds-button_brand slds-button_stretch" onclick={handleSignUpClick} disabled={isButtonDisabled}>{buttonLabel}</button>
+        <div if:false={showComponentError} class="form-actions">
+            <div class="slds-align_absolute-center slds-var-m-top_small">
+                <button class="custom-slds-button slds-button slds-button_brand slds-button_stretch" onclick={handleSignUpClick} disabled={isButtonDisabled}>{buttonLabel}</button>
+            </div>
         </div>
     </div>
 </template>

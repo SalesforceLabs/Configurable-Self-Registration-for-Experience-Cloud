@@ -96,12 +96,45 @@
 }
 
 :host {
+	display: block;
+	max-width: 100%;
 	--lwc-formLabelFontSize: 16px; /* Override the Form Label Size */	
 	--lwc-heightInput: 40px; /* Override the Input Height */
 	--lwc-fontSize2: 16px; /* Error message font-size override */
 	--lwc-fontSize3: 16px;
 	font-size:  16px;
 	/* --lwc-brandDisabled: rgb(24, 114, 139); When the button is submitted, the background colour is default grey. Override this colour here. */
+}
+
+.form-layout {
+	display: flex;
+	flex-direction: column;
+	width: 20rem;
+	max-width: 100%;
+	margin-inline: auto;
+}
+
+.form-fields,
+.server-error,
+.form-actions {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.form-fields lightning-input,
+.form-fields lightning-combobox {
+	display: block;
+	width: 100%;
+	min-width: 0;
+}
+
+.server-error {
+	overflow-wrap: anywhere;
+}
+
+.is-loading .form-actions {
+	visibility: hidden;
 }
 
 .custom-slds-button {

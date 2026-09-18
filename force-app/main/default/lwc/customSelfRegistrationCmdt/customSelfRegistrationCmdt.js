@@ -35,6 +35,10 @@ export default class CustomSelfRegistrationCmdt extends LightningElement {
     componentErrorMessage = null;
     serverErrorMessage = null;
 
+    get formLayoutClass() {
+        return this.showSpinner ? 'form-layout slds-is-relative is-loading' : 'form-layout slds-is-relative';
+    }
+
     //Get the URL Parameters so we can pass any predefined values through to the form and pre-set values.
     currentPageReference = null;
     urlParameters = null;
@@ -90,6 +94,8 @@ export default class CustomSelfRegistrationCmdt extends LightningElement {
     }
 
     connectedCallback() {
+
+        this.showSpinner = true; //Show the spinner while the component is loading.
 
         //Button labels and the password match message come from the settings record. Only these display values are exposed to the browser;
         //the custom query and the other matching settings stay server side and are validated by Apex.

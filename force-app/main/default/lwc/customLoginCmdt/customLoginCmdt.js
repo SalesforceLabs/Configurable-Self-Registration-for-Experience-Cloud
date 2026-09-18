@@ -29,6 +29,10 @@ export default class CustomLoginCmdt extends LightningElement {
     serverErrorMessage = null;
     showVerificationCode = false;
 
+    get formLayoutClass() {
+        return this.showSpinner ? 'form-layout slds-is-relative is-loading' : 'form-layout slds-is-relative';
+    }
+
     results = null; //Results for custom configuration search
     @track formInputs = {}; //Form values submitted.
     displaySettings = {}; //Button labels loaded from the Login Settings record.
