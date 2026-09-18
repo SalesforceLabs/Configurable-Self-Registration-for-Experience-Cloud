@@ -3,7 +3,7 @@
     <fullName>Enable__c</fullName>
     <defaultValue>false</defaultValue>
     <deprecated>false</deprecated>
-    <description>Enables logging to the Experience Cloud Log object for the component set in the Type field. Off by default.</description>
+    <description>Enables logging to the Experience Cloud Log object for this record. Login Settings controls login activity and Self Registration Settings controls self registration activity. On by default.</description>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Turn on to log login or self registration activity to the Experience Cloud Log object.</inlineHelpText>

@@ -3,7 +3,7 @@
     <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>@deprecated - Custom Login - DO NOT USE THIS COMPONENT</masterLabel>
-    <description>DEPRECATED. Replaced by the "SF Labs: Custom Login" component, which is configured on the "Login Settings" record of the Custom Experience Cloud Setting metadata type.</description>
+    <description>DEPRECATED. Replaced by the "SF Labs: Custom Login" component, which is configured on the "Login Logging" record of the Custom Experience Cloud Setting metadata type.</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
@@ -11,7 +11,7 @@
     <targetConfigs>
         <targetConfig targets="lightningCommunity__Default">
             <!-- DEPRECATED. These properties are retained for managed package compatibility only and no longer control component behaviour.
-                 Configure the component on the "Login Settings" record of the Custom Experience Cloud Setting metadata type instead. -->
+                 Configure the component on the "Login Logging" record of the Custom Experience Cloud Setting metadata type instead. -->
             <property label="DEPRECATED - Login Button Label"
                 name="loginButtonLoginMessage"
                 type="String"

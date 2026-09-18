@@ -173,7 +173,7 @@ private class SiteLoginControllerTest {
         }
     }
 
-    //Retrieve and test custom settings to enable logging for the Login component. Resolved by the Type field, not the DeveloperName.
+    //Retrieve and test custom settings to enable logging for the Login component. Resolved by Type 'Login' and DeveloperName Login_Logging.
     @isTest
     private static void isLoggingEnabled() {
         // Test with mock - logging enabled
@@ -194,7 +194,7 @@ private class SiteLoginControllerTest {
         System.assertNotEquals(null, realResult, 'Should return a boolean value');
     }
 
-    //The packaged Login Settings record should be found by Type and expose the unified keys.
+    //The packaged Login Logging record should be found by Type and DeveloperName and expose the unified keys.
     @isTest
     private static void getComponentSettingsByTypeTest() {
         Map<String, Object> settings = SiteUtilities.getComponentSettings(SiteUtilities.LOGIN_COMPONENT_NAME);
@@ -235,7 +235,7 @@ private class SiteLoginControllerTest {
     @isTest
     private static void getDisplaySettingsDefaultsToSelfRegistrationTest() {
         Custom_Experience_Cloud_Setting__mdt selfRegistration = [
-            SELECT Button_Label__c FROM Custom_Experience_Cloud_Setting__mdt WHERE Type__c = :SiteUtilities.SELF_REG_COMPONENT_NAME LIMIT 1
+            SELECT Button_Label__c FROM Custom_Experience_Cloud_Setting__mdt WHERE Type__c = 'Self Registration' AND DeveloperName = :SiteUtilities.SELF_REG_LOGGING_RECORD LIMIT 1
         ];
 
         Map<String, Object> display = (Map<String, Object>) JSON.deserializeUntyped(SiteUtilities.getDisplaySettings('Not A Real Type'));

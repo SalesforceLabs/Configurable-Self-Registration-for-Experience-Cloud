@@ -4,7 +4,7 @@
     <protected>false</protected>
     <values>
         <field>Access_Level_Mode__c</field>
-        <value xsi:type="xsd:string">System</value>
+        <value xsi:type="xsd:string">User</value>
     </values>
     <values>
         <field>Account_Id__c</field>
@@ -28,11 +28,11 @@
     </values>
     <values>
         <field>Create_Not_Found__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
     <values>
         <field>Custom_Query__c</field>
-        <value xsi:type="xsd:string">SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1</value>
+        <value xsi:type="xsd:string">SELECT Id,AcocuntId FROM Contact WHERE Email = :Email LIMIT 1</value>
     </values>
     <values>
         <field>Enable_Passwordless_Login__c</field>
@@ -64,7 +64,7 @@
     </values>
     <values>
         <field>Object_Create_Type__c</field>
-        <value xsi:type="xsd:string">Person Account</value>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Password_Match_Error__c</field>
@@ -80,7 +80,7 @@
     </values>
     <values>
         <field>Person_Account_Record_Type__c</field>
-        <value xsi:type="xsd:string">PersonAccount</value>
+        <value xsi:nil="true"/>
     </values>
     <values>
         <field>Portal_Error_Send_Verification_Code__c</field>

@@ -3,7 +3,7 @@
     <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>SF Labs: Custom Login</masterLabel>
-    <description>Login component for Experience Cloud sites. Configured on the "Login Settings" record of the Custom Experience Cloud Setting metadata type.</description>
+    <description>Login component for Experience Cloud sites. Configured on the "Login Logging" record of the Custom Experience Cloud Setting metadata type.</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>

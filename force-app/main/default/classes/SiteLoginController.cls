@@ -13,7 +13,7 @@ public with sharing class SiteLoginController {
     
     /**
      * @description Attempts to login the user. Redirects to the startURL query parameter when present and safe, otherwise the configured Portal Redirect.
-     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Login' so the guest user cannot influence it.
+     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Login' and Developer Name of 'Login_Logging' so the guest user cannot influence it.
      * @param formInputs - JSON String of the submitted login form values.
      * @param startUrl - optional relative or same-site URL from the Experience Cloud startURL query parameter.
      * @return String JSON of the login result to redirect to upon successful login.

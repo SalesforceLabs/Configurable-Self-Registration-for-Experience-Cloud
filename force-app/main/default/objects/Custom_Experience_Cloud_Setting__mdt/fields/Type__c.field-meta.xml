@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Type__c</fullName>
-    <description>Determines which component this record configures. The Login component reads the record where Type is Login, and the Self Registration component reads the record where Type is Self Registration.</description>
+    <description>Identifies which component this record is for. Login Logging should be Login. Self Registration Logging should be Self Registration. Apex loads records by Type and DeveloperName together.</description>
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
-    <inlineHelpText>Set to Login or Self Registration. Only one record of each type should be active.</inlineHelpText>
+    <inlineHelpText>Login Logging should be Login. Self Registration Logging should be Self Registration.</inlineHelpText>
     <label>Type</label>
-    <required>true</required>
+    <required>false</required>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>

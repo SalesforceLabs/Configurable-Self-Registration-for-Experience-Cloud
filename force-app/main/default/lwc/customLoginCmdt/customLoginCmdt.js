@@ -2,7 +2,7 @@
  * AUTHOR         : Jamie Lowe (Salesforce)
  * CREATE DATE    : 02/09/2026
  * PURPOSE        : Login LWC for Experience Builder pages.
- * SPECIAL NOTES  : Replaces customLoginCPE. Every setting is read from the "Login Settings" record of the
+ * SPECIAL NOTES  : Replaces customLoginCPE. Every setting is read from the "Login Logging" record of the
  *                  Custom Experience Cloud Setting metadata type, so this component exposes no Experience
  *                  Builder properties.
  *****************************************************************************************************/
@@ -35,7 +35,7 @@ export default class CustomLoginCmdt extends LightningElement {
 
     results = null; //Results for custom configuration search
     @track formInputs = {}; //Form values submitted.
-    displaySettings = {}; //Button labels loaded from the Login Settings record.
+    displaySettings = {}; //Button labels loaded from the Login Logging record.
 
     loginResults = null;
     registerResults = null;
@@ -98,7 +98,7 @@ export default class CustomLoginCmdt extends LightningElement {
         })
 
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration.
-        //Also validates the Login Settings record server side, so a missing or invalid configuration surfaces here.
+        //Also validates the Login Logging record server side, so a missing or invalid configuration surfaces here.
         getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: COMPONENT_NAME}).then(result=>{
             const fields = JSON.parse(result);
             this._prepareFieldIcons(fields);

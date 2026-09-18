@@ -4,13 +4,12 @@
  * PURPOSE        : DEPRECATED. Superseded by customLoginCmdt ("SF Labs: Custom Login").
  * SPECIAL NOTES  : This bundle cannot be removed from the managed package, so it is retained as an inert
  *                  component that renders a deprecation notice. The @api properties below must stay declared
- *                  because the <property> entries in the meta file reference them, but nothing reads them.
+ *                  because they are part of the managed package public API, but nothing reads them.
  *****************************************************************************************************/
 
 import {LightningElement, api} from 'lwc';
 
 export default class CustomLogin extends LightningElement {
-
     @api loginButtonLoginMessage;
     @api loginButtonWaitingMessage;
     @api loginButtonAwaitingCodeMessage;
@@ -22,4 +21,11 @@ export default class CustomLogin extends LightningElement {
     @api blockUserErrorMessage;
     @api incorrectUserCredentialsErrorMessage;
     @api userLockedOutErrorMessage;
+    @api buttonLabel;
+    @api showVerificationCode;
+    @api isButtonDisabled;
+    @api showSpinner;
+    @api anyServerError;
+    @api serverErrorMessage;
+    @api results;
 }

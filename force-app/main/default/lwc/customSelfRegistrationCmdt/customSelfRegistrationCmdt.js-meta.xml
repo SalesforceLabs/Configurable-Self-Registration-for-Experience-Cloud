@@ -3,7 +3,7 @@
     <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>SF Labs: Custom Self Registration</masterLabel>
-    <description>Self Registration component for Experience Cloud sites. Configured on the "Self Registration Settings" record of the Custom Experience Cloud Setting metadata type.</description>
+    <description>Self Registration component for Experience Cloud sites. Configured on the "Self Registration Logging" record of the Custom Experience Cloud Setting metadata type.</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>

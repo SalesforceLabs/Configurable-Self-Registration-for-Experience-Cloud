@@ -101,7 +101,7 @@ public with sharing class SiteRegistrationController {
 
     /**
      * @description Attempts to register a new user. Looks for existing record first based on configured query. If configured and record not found, new record is created. If record found, registered user is linked to existing Contact/Person Account.
-     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Self Registration' so the guest user cannot influence it.
+     * Behaviour comes from the Custom Experience Cloud Setting record with a Type of 'Self Registration' and Developer Name of 'Self_Registration_Logging' so the guest user cannot influence it.
      * @param formInputs - JSON String of the submitted form values 
      * @param startUrl - optional relative or same-site URL from the Experience Cloud startURL query parameter, used after registration login.
      * @return String Page URL if login is successful.
@@ -529,7 +529,7 @@ public with sharing class SiteRegistrationController {
     }
 
     /**
-     * @description Looks for an existing record matching the Custom Query on the Self Registration settings record. Can use values from the form using Bind Variables in the query.
+     * @description Looks for an existing record matching the Custom Query on the Self Registration Settings record. Can use values from the form using Bind Variables in the query.
      * @param formInputs - Map of the submitted form values 
      * @param configurationOptions - the server side settings map loaded from Custom_Experience_Cloud_Setting__mdt
      * @return Id of record found - either Contact.AccountId if type is a Contact or Id if Person Account

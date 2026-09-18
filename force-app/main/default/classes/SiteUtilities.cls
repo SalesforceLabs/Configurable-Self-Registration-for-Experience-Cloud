@@ -8,6 +8,8 @@ public without sharing class SiteUtilities {
 
     public static final String SELF_REG_COMPONENT_NAME = 'Self Registration';
     public static final String LOGIN_COMPONENT_NAME = 'Login';
+    public static final String LOGIN_LOGGING_RECORD = 'Login_Logging';
+    public static final String SELF_REG_LOGGING_RECORD = 'Self_Registration_Logging';
     public static final String SMS_LICENCE_NAME = 'setting/force.com/orgValue.IdentityVerificationCredits';
     public static final String INFORMATION_LOG_TYPE = 'Information';
     public static final String ERROR_LOG_TYPE = 'Error';
@@ -44,7 +46,7 @@ public without sharing class SiteUtilities {
     @TestVisible
     public static List<NetworkMember> mockNetworkMemberList;
     
-    // Test-visible mock for Custom_Experience_Cloud_Setting__mdt to allow mocking in tests. Keyed by Type__c i.e. 'Login' or 'Self Registration'.
+    // Test-visible mock for Custom_Experience_Cloud_Setting__mdt to allow mocking in tests. Keyed by component type i.e. 'Login' or 'Self Registration'.
     @TestVisible
     public static Map<String, Boolean> mockLoggingSettings;
 
@@ -74,10 +76,27 @@ public without sharing class SiteUtilities {
     public class ComponentSettingsException extends Exception {}
 
     /**
+     * @description Maps a component type to the packaged Custom Experience Cloud Setting DeveloperName.
+     * Login uses Login_Logging; Self Registration uses Self_Registration_Logging.
+     * @param componentType LOGIN_COMPONENT_NAME or SELF_REG_COMPONENT_NAME.
+     * @return the DeveloperName of the settings record for that component.
+     */
+    @TestVisible
+    private static String getSettingsDeveloperName(String componentType) {
+        if (componentType == LOGIN_COMPONENT_NAME) {
+            return LOGIN_LOGGING_RECORD;
+        }
+        if (componentType == SELF_REG_COMPONENT_NAME) {
+            return SELF_REG_LOGGING_RECORD;
+        }
+        throw new ComponentSettingsException('No Custom Experience Cloud Setting record was found with a Type of "' + componentType + '".');
+    }
+
+    /**
      * @description Loads the behavioural settings for a component from Custom_Experience_Cloud_Setting__mdt.
      * NOTE: Deliberately NOT @AuraEnabled. These settings contain the custom query, Account Id and access level mode which must never be
      * discoverable by the guest user. Apex loads them server side and ignores anything sent up from the client.
-     * @param componentType the Type__c picklist value identifying the record. Use LOGIN_COMPONENT_NAME or SELF_REG_COMPONENT_NAME.
+     * @param componentType LOGIN_COMPONENT_NAME or SELF_REG_COMPONENT_NAME. Matched on Type__c and DeveloperName (Login_Logging or Self_Registration_Logging).
      * @return a map of the settings using the unified camelCase keys shared by both components.
      */
     public static Map<String, Object> getComponentSettings(String componentType) {
@@ -85,8 +104,9 @@ public without sharing class SiteUtilities {
             return mockComponentSettings;
         }
 
+        String developerName = getSettingsDeveloperName(componentType);
         List<Custom_Experience_Cloud_Setting__mdt> settings = [
-            SELECT Type__c, Enable__c, Button_Label__c, Button_Waiting_Message__c, Button_Awaiting_Code_Message__c,
+            SELECT DeveloperName, Type__c, Enable__c, Button_Label__c, Button_Waiting_Message__c, Button_Awaiting_Code_Message__c,
                    Portal_Redirect__c, Enable_Passwordless_Login__c, Passwordless_Method__c, Passwordless_Profile_Id__c,
                    Failed_Code_Verification_Message__c, Portal_Error_Send_Verification_Code__c, Block_User_Error_Message__c,
                    Incorrect_User_Credentials_Error__c, User_Locked_Out_Error_Message__c, Custom_Query__c, Access_Level_Mode__c,
@@ -96,12 +116,13 @@ public without sharing class SiteUtilities {
                    Account_Id__c
             FROM Custom_Experience_Cloud_Setting__mdt
             WHERE Type__c = :componentType
+            AND DeveloperName = :developerName
             WITH SECURITY_ENFORCED
             LIMIT 1
         ];
 
         if (settings.isEmpty()) {
-            throw new ComponentSettingsException('No Custom Experience Cloud Setting record was found with a Type of "' + componentType + '".');
+            throw new ComponentSettingsException('No Custom Experience Cloud Setting record was found with a Type of "' + componentType + '" and Developer Name "' + developerName + '".');
         }
 
         Custom_Experience_Cloud_Setting__mdt setting = settings[0];
@@ -145,7 +166,7 @@ public without sharing class SiteUtilities {
      * value from Custom Metadata rather than from the deprecated Experience Builder properties.
      * NOTE: This deliberately excludes the custom query, Account Id, profile and record type. Those must never be discoverable by the
      * guest user, which is why getComponentSettings itself is not exposed to the client.
-     * @param componentName the Type__c of the settings record to load i.e. 'Login' or 'Self Registration'.
+     * @param componentName 'Login' or 'Self Registration'. Any other value falls back to Self Registration.
      * @return a JSON string of the display values only.
      */
     @AuraEnabled(cacheable=true)
@@ -168,7 +189,7 @@ public without sharing class SiteUtilities {
 
     /**
      * @description Derives the object being queried from the configured SOQL so it does not need to be stored or calculated in the browser.
-     * @param customQuery the SOQL configured on the Self Registration settings record.
+     * @param customQuery the SOQL configured on the Self Registration Logging record.
      * @return the sObject name that follows the FROM keyword, or a blank string if it cannot be determined.
      */
     public static String getObjectToQuery(String customQuery) {
@@ -602,7 +623,7 @@ public without sharing class SiteUtilities {
     /**
     * @description Checks to see if the Logging setting is activated for a component.
     * NOTE: Apex should prefer the 'loggingEnabled' key on the settings map it has already loaded via getComponentSettings.
-    * @param componentType - the Type__c value of the settings record i.e. 'Login' or 'Self Registration'
+    * @param componentType - 'Login' or 'Self Registration'. Matched on Type__c and DeveloperName (Login_Logging or Self_Registration_Logging).
     * @return true/false depending on setting value.
     */
     @AuraEnabled(cacheable=true)
@@ -611,10 +632,28 @@ public without sharing class SiteUtilities {
         if (mockLoggingSettings != null && mockLoggingSettings.containsKey(componentType)) {
             return mockLoggingSettings.get(componentType);
         }
-        
-        List<Custom_Experience_Cloud_Setting__mdt> logSetting = [SELECT Id, Enable__c, Type__c FROM Custom_Experience_Cloud_Setting__mdt WHERE (Type__c = :componentType AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
-        
-        return !logSetting.isEmpty();
+
+        String developerName;
+        if (componentType == LOGIN_COMPONENT_NAME) {
+            developerName = LOGIN_LOGGING_RECORD;
+        }
+        else if (componentType == SELF_REG_COMPONENT_NAME) {
+            developerName = SELF_REG_LOGGING_RECORD;
+        }
+        else {
+            return false;
+        }
+
+        List<Custom_Experience_Cloud_Setting__mdt> logSetting = [
+            SELECT Id, Enable__c
+            FROM Custom_Experience_Cloud_Setting__mdt
+            WHERE Type__c = :componentType
+            AND DeveloperName = :developerName
+            WITH SECURITY_ENFORCED
+            LIMIT 1
+        ];
+
+        return !logSetting.isEmpty() && logSetting[0].Enable__c;
     }
 
     /**
@@ -842,10 +881,10 @@ public without sharing class SiteUtilities {
 
     /**
      * @description verify the code submitted by the user, and return a JSON string with the redirect URL if verification is successful.
-     * The verification method and redirect URL are read from the Custom Experience Cloud Setting record matching the component type.
+     * The verification method and redirect URL are read from the Login_Logging or Self_Registration_Logging Custom Experience Cloud Setting record.
      * When startUrl is supplied (from the login page query string), it takes precedence over the configured Portal Redirect if it is a safe relative or same-site URL.
      * @param formInputs the submitted form values as a JSON string, including the identifier and the code entered by the user.
-     * @param componentName the Type__c of the settings record to load i.e. 'Login' or 'Self Registration'.
+     * @param componentName 'Login' or 'Self Registration'.
      * @param startUrl optional relative or same-site URL from the Experience Cloud startURL query parameter.
      * @return a JSON string containing the URL to redirect the verified user to.
      * NOTE: Not covered in Apex tests due to limitation on User Management class in test context. This method is mocked instead.

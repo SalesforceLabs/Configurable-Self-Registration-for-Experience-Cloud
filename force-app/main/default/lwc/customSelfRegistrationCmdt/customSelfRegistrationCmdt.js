@@ -3,7 +3,7 @@
  * CREATE DATE    : 02/09/2026
  * PURPOSE        : Self Registration LWC for Experience Builder pages.
  * SPECIAL NOTES  : Replaces customSelfRegistrationCPropEditor. Every setting is read from the "Self Registration
- *                  Settings" record of the Custom Experience Cloud Setting metadata type, so this component
+ *                  Logging" record of the Custom Experience Cloud Setting metadata type, so this component
  *                  exposes no Experience Builder properties.
  *****************************************************************************************************/
 
@@ -22,7 +22,7 @@ const COMPONENT_NAME = 'Self Registration';
 
 export default class CustomSelfRegistrationCmdt extends LightningElement {
 
-    displaySettings = {}; //Button labels and the password match message, loaded from the Self Registration Settings record.
+    displaySettings = {}; //Button labels and the password match message, loaded from the Self Registration Logging record.
 
     results = null; //Results for custom configuration search
     @track formInputs = {}; //Form values submitted.
@@ -107,7 +107,7 @@ export default class CustomSelfRegistrationCmdt extends LightningElement {
         })
 
         //Gets the customisation records from Custom Metadata. Includes standard/custom fields based on configuration.
-        //Also validates the Self Registration Settings record server side, so a missing or invalid configuration surfaces here.
+        //Also validates the Self Registration Logging record server side, so a missing or invalid configuration surfaces here.
         getCustomConfiguration({urlParams: JSON.stringify(this.urlParameters), componentName: COMPONENT_NAME}).then(result=>{
             const fields = JSON.parse(result);
             this._prepareFieldIcons(fields);

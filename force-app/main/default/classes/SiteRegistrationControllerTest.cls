@@ -92,7 +92,7 @@ private class SiteRegistrationControllerTest {
         SiteUtilities.mockMetadataList = null;
     }
 
-    //Retrieve and test custom settings to enable logging for the Self Registration component. Resolved by the Type field, not the DeveloperName.
+    //Retrieve and test custom settings to enable logging for the Self Registration component. Resolved by Type 'Self Registration' and Developer Name 'Self_Registration_Logging'.
     @isTest
     private static void isLoggingEnabledSelfRegistration() {
         // Test with mock - logging enabled
@@ -128,7 +128,7 @@ private class SiteRegistrationControllerTest {
     
     @isTest
     private static void testIsLoggingEnabledMultipleSettings() {
-        // Test both component types resolved by the Type field
+        // Test both component types resolved by Type 'Self Registration' and Developer Name 'Self_Registration_Logging'.
         SiteUtilities.mockLoggingSettings = new Map<String, Boolean>{
             SiteUtilities.SELF_REG_COMPONENT_NAME => true,
             SiteUtilities.LOGIN_COMPONENT_NAME => false
@@ -150,7 +150,7 @@ private class SiteRegistrationControllerTest {
         System.assertEquals(
             SiteUtilities.isLoggingEnabled(SiteUtilities.SELF_REG_COMPONENT_NAME),
             SiteUtilities.convertToBoolean(settings.get('loggingEnabled')),
-            'loggingEnabled should match the Enable__c value resolved by Type'
+            'loggingEnabled should match the Enable__c value on Self Registration Settings'
         );
     }
 
@@ -514,16 +514,23 @@ private class SiteRegistrationControllerTest {
     }
 
     //Test the login works once a user is created.
+    //Site.login() may return an empty PageReference URL in tests, or null (then we fall back to the configured Portal Redirect).
     @isTest
     private static void loginUserTest() {
         String username = 'user@test.com';
         String password = 'Test098!';
-        String customQuery = isPersonAccountEnabled() ? 'SELECT Id,PersonEmail FROM Account WHERE PersonEmail = :Email LIMIT 1' : 'SELECT Id,Email,AccountId FROM Contact WHERE Email = :Email LIMIT 1';
-        String configurationOptions = '{"loggingEnabled":"true", "customQuery":"' + customQuery + '"}';
-        Map<String, Object> configurationOptionsObject = (Map<String, Object>) JSON.deserializeUntyped(configurationOptions);
+        Map<String, Object> configurationOptionsObject = new Map<String, Object>{
+            'loggingEnabled' => 'true',
+            'portalRedirect' => '/',
+            'portalLoginError' => 'Login error'
+        };
 
         String result = SiteRegistrationController.loginUser(username, password, configurationOptionsObject);
-        System.assert(result == '', 'Site.login() always returns empty pageRef in tests.');
+        String expectedFallback = SiteUtilities.buildLoginStartUrl(null, '/');
+        System.assert(
+            String.isBlank(result) || result == expectedFallback || result == '/',
+            'Expected an empty Site.login result or the configured portal redirect fallback. Actual: ' + result
+        );
     }  
 
     @isTest

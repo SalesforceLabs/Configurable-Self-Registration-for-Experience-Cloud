@@ -78,10 +78,12 @@ Behavioural settings for both components live on the **Custom Experience Cloud S
 
 | Record label | Developer name | Type | Used by |
 | :--- | :--- | :--- | :--- |
-| Login Settings | `Login_Settings` | Login | SF Labs: Custom Login |
-| Self Registration Settings | `Self_Registration_Settings` | Self Registration | SF Labs: Custom Self Registration |
+| Login Logging | `Login_Logging` | Login | SF Labs: Custom Login |
+| Self Registration Logging | `Self_Registration_Logging` | Self Registration | SF Labs: Custom Self Registration |
 
-The **Type** field on the record is what the component uses to load settings. Keep one record with Type = Login and one with Type = Self Registration. Changes to these records take effect without republishing the site.
+NOTE: The Developer Name is *_Logging, due to historic releases it cannot be removed and so was just re-used by changing the label.
+
+The components load settings from the record that matches both **Type** and **Developer Name** (`Login` / `Login_Logging`, and `Self Registration` / `Self_Registration_Logging`). Changes to these records take effect without republishing the site.
 
 ![image10.png](/docs/images/image10.png)
 

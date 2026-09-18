@@ -54,10 +54,10 @@ If you only install the package and do not swap the components, existing sites k
 
 | Record label | Developer name | Type | Used by |
 | :--- | :--- | :--- | :--- |
-| Login Settings | `Login_Settings` | Login | SF Labs: Custom Login |
-| Self Registration Settings | `Self_Registration_Settings` | Self Registration | SF Labs: Custom Self Registration |
+| Login Logging | `Login_Logging` | Login | SF Labs: Custom Login |
+| Self Registration Logging | `Self_Registration_Logging` | Self Registration | SF Labs: Custom Self Registration |
 
-Form fields continue to be defined on **Custom Login Configuration** and **Custom Registration Configuration**.
+Apex loads these records by Type and Developer Name together (`Login` / `Login_Logging`, and `Self Registration` / `Self_Registration_Logging`). Form fields continue to be defined on **Custom Login Configuration** and **Custom Registration Configuration**.
 
 ## Logging outcomes and dashboard
 
@@ -83,7 +83,7 @@ The **Experience Cloud Logging** dashboard has been rebuilt around this field. N
 * Logs by Type & Component (Last 30 Days)
 * Missing Related Records (Last 30 Days) — logs with no User, Account, or Contact
 
-Enable Logging is now the **Enable Logging** checkbox on the Login Settings and Self Registration Settings records (the previous separate logging-only Custom Experience Cloud Setting records are no longer used).
+Enable Logging is the **Enable Logging** checkbox on the Login Logging and Self Registration Logging records, which now also hold the rest of the component configuration.
 
 ## Other changes
 
