@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Login Success</fullName>
+        <default>false</default>
+        <label>Login Success</label>
+    </customValue>
+    <customValue>
+        <fullName>Login Failed</fullName>
+        <default>false</default>
+        <label>Login Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>Registration Success</fullName>
+        <default>false</default>
+        <label>Registration Success</label>
+    </customValue>
+    <customValue>
+        <fullName>Username Exists</fullName>
+        <default>false</default>
+        <label>Username Exists</label>
+    </customValue>
+    <customValue>
+        <fullName>Username Not Found</fullName>
+        <default>false</default>
+        <label>Username Not Found</label>
+    </customValue>
+    <customValue>
+        <fullName>Invalid Password</fullName>
+        <default>false</default>
+        <label>Invalid Password</label>
+    </customValue>
+    <customValue>
+        <fullName>User Frozen</fullName>
+        <default>false</default>
+        <label>User Frozen</label>
+    </customValue>
+    <customValue>
+        <fullName>Password Lockout</fullName>
+        <default>false</default>
+        <label>Password Lockout</label>
+    </customValue>
+    <customValue>
+        <fullName>Password Validation Failed</fullName>
+        <default>false</default>
+        <label>Password Validation Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>Record Create Failed</fullName>
+        <default>false</default>
+        <label>Record Create Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>User Create Failed</fullName>
+        <default>false</default>
+        <label>User Create Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>Record Delete Failed</fullName>
+        <default>false</default>
+        <label>Record Delete Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>Query Error</fullName>
+        <default>false</default>
+        <label>Query Error</label>
+    </customValue>
+    <customValue>
+        <fullName>Configuration Error</fullName>
+        <default>false</default>
+        <label>Configuration Error</label>
+    </customValue>
+    <customValue>
+        <fullName>No Record Found</fullName>
+        <default>false</default>
+        <label>No Record Found</label>
+    </customValue>
+    <customValue>
+        <fullName>Multiple Records Found</fullName>
+        <default>false</default>
+        <label>Multiple Records Found</label>
+    </customValue>
+    <customValue>
+        <fullName>Verification Sent</fullName>
+        <default>false</default>
+        <label>Verification Sent</label>
+    </customValue>
+    <customValue>
+        <fullName>Verification Send Failed</fullName>
+        <default>false</default>
+        <label>Verification Send Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>Verification Failed</fullName>
+        <default>false</default>
+        <label>Verification Failed</label>
+    </customValue>
+    <customValue>
+        <fullName>Verification Success</fullName>
+        <default>false</default>
+        <label>Verification Success</label>
+    </customValue>
+    <description>Outcome of a login or self-registration attempt, used on Experience Cloud Log</description>
+    <masterLabel>Log Outcome</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

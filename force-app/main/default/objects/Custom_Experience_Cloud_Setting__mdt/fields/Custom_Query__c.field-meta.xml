@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Custom_Query__c</fullName>
+    <description>Self Registration only. Write a SOQL query to find a singular Contact, Account or Case record during registration. See docs for more information on using form values as bind variables. NOTE: You must include the AccountId field when querying Contacts.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Self Registration only. SOQL query used to find a single Contact, Account or Case during registration.</inlineHelpText>
+    <label>Custom Query</label>
+    <length>32768</length>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

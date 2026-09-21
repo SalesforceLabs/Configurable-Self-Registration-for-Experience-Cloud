@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Person_Account_Record_Type__c</fullName>
+    <description>Self Registration only. The Record Type Developer Name of the Person Account Record Type used when a Person Account is created during registration. The Record Type Label is also accepted, but the Developer Name is preferred because labels can be renamed and translated.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Self Registration only. Record Type Developer Name (not Id) used when creating a Person Account. The label is also accepted.</inlineHelpText>
+    <label>Person Account Record Type</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

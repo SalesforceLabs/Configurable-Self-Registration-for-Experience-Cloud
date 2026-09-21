@@ -1,10 +1,9 @@
 <template>
-    <lightning-combobox
-            name="personAccountRecordTypeId"
-            label="Person Account Record Type"
-            value={value}
-            options={options}
-            field-level-help="If creating a Person Account, set the Record Type that should be used. Setup Person Accounts via Setup before configuring this option. If using Contacts, leave this field blank as it is ignored."
-            onchange={handleChange} >
-	</lightning-combobox>
+    <div class="slds-box slds-theme_shade" role="alert">
+        <lightning-icon icon-name="utility:warning" variant="warning" alternative-text="Deprecated" title="Deprecated" size="small"></lightning-icon>
+        <p class="slds-text-heading_small slds-var-m-top_x-small">This component is deprecated and no longer functional.</p>
+        <p class="slds-var-m-top_xx-small">
+            Replace the deprecated Login and Self Registration components with "SF Labs: Custom Login" or "SF Labs: Custom Self Registration". Those components are configured on Custom Experience Cloud Setting metadata rather than in Experience Builder.
+        </p>
+    </div>
 </template>

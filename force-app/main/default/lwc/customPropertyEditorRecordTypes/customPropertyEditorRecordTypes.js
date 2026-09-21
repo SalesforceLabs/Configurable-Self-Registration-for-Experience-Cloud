@@ -1,29 +1,14 @@
-import { LightningElement, wire, api } from 'lwc';
-import getPersonAccountRecordTypes from '@salesforce/apex/SiteUtilities.getPersonAccountRecordTypes';
+/*****************************************************************************************************
+ * AUTHOR         : Jamie Lowe (Salesforce)
+ * CREATE DATE    : 05/05/2023
+ * PURPOSE        : DEPRECATED. Custom Property Editor retained for managed package compatibility.
+ * SPECIAL NOTES  : This bundle cannot be removed from the managed package, so it is retained as an inert
+ *                  component that renders a deprecation notice. The @api value property must stay declared
+ *                  because Experience Builder Custom Property Editors bind to it, but nothing reads it.
+ *****************************************************************************************************/
+
+import {LightningElement, api} from 'lwc';
 
 export default class customPropertyEditorRecordTypes extends LightningElement {
-    
     @api value;
-
-    objectType = 'Account';
-    rt;
-    jsonString;
-
-    @wire(getPersonAccountRecordTypes, {objectType: 'Account'})
-    wiredRecordTypes({error, data}) {
-        if(data) {
-            this.jsonString = JSON.parse(data);
-            this.rt = Object.values(this.jsonString.recordTypes);
-        }
-    }
-    
-    get options() {
-        return this.rt;
-    }
-
-    handleChange(event) {
-        this.value = event.detail.value;
-        this.dispatchEvent(new CustomEvent("valuechange", 
-        {detail: {value: this.value}}));
-    }
 }

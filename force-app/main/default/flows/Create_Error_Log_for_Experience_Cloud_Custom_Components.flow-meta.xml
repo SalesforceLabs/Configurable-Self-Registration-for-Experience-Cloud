@@ -61,6 +61,12 @@ Subscribes to a Platform Event for Custom Logging and creates an Error Log recor
             </value>
         </inputAssignments>
         <inputAssignments>
+            <field>Outcome__c</field>
+            <value>
+                <elementReference>$Record.Outcome__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
             <field>UserId__c</field>
             <value>
                 <elementReference>$Record.UserId__c</elementReference>

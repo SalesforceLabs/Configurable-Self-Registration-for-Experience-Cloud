@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Portal_Error_Send_Verification_Code__c</fullName>
+    <defaultValue>&quot;There was a problem sending a verification code. Please try again later or contact us for further assistance.&quot;</defaultValue>
+    <description>Error message shown if there is a problem sending a verification code to the user based on the method chosen.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Shown if a verification code cannot be sent to the user.</inlineHelpText>
+    <label>Portal Error Send Verification Code</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
