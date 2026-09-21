@@ -14,14 +14,17 @@ User Guide is available under the "docs" folder. See [INSTALLATION_GUIDE.md](doc
 
 Release notes for v2.0 are below. Older versions are in [docs/PREVIOUS_RELEASE_NOTES.md](docs/PREVIOUS_RELEASE_NOTES.md). Latest version is v2.0 - Winter 27 Release.
 
-#NOTES:
+## NOTES:
 
 If deploying from the repository as an unmanaged package, ensure that the user you are running the deployment as has a role assigned to them on their User record otherwise Apex Tests will fail with "portal owner must have a role".
+
 ---
 
 # RELEASE CHANGES - v2.0 - Winter 27 Release
 
-This is a breaking setup change for existing sites. Login and self-registration configuration has moved out of Experience Builder and onto Custom Metadata so that sensitive settings are never exposed to the guest user in the browser.
+If you are installing for the first time, then please follow the installation guide [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md). 
+
+For orgs upgrading from a previous version < v2.0, please note that v2.0 includes a breaking setup change for existing sites. Login and self-registration configuration has moved out of Experience Builder and onto Custom Metadata so that sensitive settings are never exposed to the guest user in the browser.
 
 ## Deprecated components — you must switch and reconfigure
 

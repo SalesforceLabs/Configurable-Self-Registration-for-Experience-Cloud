@@ -32,7 +32,7 @@
     </values>
     <values>
         <field>Custom_Query__c</field>
-        <value xsi:type="xsd:string">SELECT Id,AcocuntId FROM Contact WHERE Email = :Email LIMIT 1</value>
+        <value xsi:type="xsd:string">SELECT Id,AccountId FROM Contact WHERE Email = :Email LIMIT 1</value>
     </values>
     <values>
         <field>Enable_Passwordless_Login__c</field>
